@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ubuntu Perú — Plataforma de Cursos Virtuales</title>
+    <meta name="description" content="Plataforma gratuita de cursos virtuales de la ONG Ubuntu Perú. Aprende y crece con nuestra comunidad.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- SIDEBAR -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <img src="logo.png" alt="Ubuntu Perú" class="sidebar-logo-img">
+            <span class="sidebar-logo-text">Ubuntu Perú</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-page="inicio">
+                <i class="fa-solid fa-house"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="#" class="nav-item" data-page="cursos">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Mis Cursos</span>
+            </a>
+            <a href="#" class="nav-item" data-page="explorar">
+                <i class="fa-solid fa-compass"></i>
+                <span>Explorar</span>
+            </a>
+            <a href="#" class="nav-item" data-page="progreso">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Mi Progreso</span>
+            </a>
+            <a href="#" class="nav-item" data-page="comunidad">
+                <i class="fa-solid fa-users"></i>
+                <span>Comunidad</span>
+            </a>
+            <a href="#" class="nav-item" data-page="certificados">
+                <i class="fa-solid fa-award"></i>
+                <span>Certificados</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar">
+                    <span>MP</span>
+                </div>
+                <div class="user-info">
+                    <p class="user-name">María Pérez</p>
+                    <p class="user-role">Estudiante</p>
+                </div>
+                <button class="user-menu-btn" title="Opciones">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- MAIN CONTENT -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <main class="main-content">
+
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" title="Menú">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar cursos, temas..." class="search-input">
+                </div>
+            </div>
+            <div class="topbar-right">
+                <button class="topbar-btn" id="notifBtn" title="Notificaciones">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="badge">2</span>
+                </button>
+                <button class="topbar-btn" title="Mensajes">
+                    <i class="fa-regular fa-envelope"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable content area -->
+        <div class="content-area">
+
+            <!-- ═══════════ PAGE: INICIO ═══════════ -->
+            <div class="page active" id="page-inicio">
+
+                <!-- Welcome Banner -->
+                <section class="welcome-banner">
+                    <div class="welcome-text">
+                        <p class="welcome-greeting">¡Bienvenida, María! 👋</p>
+                        <h1 class="welcome-title">Sigue aprendiendo con Ubuntu Perú</h1>
+                        <p class="welcome-subtitle">Tienes 2 lecciones pendientes esta semana. ¡No pares, la comunidad te apoya!</p>
+                    </div>
+                    <div class="welcome-decoration">
+                        <div class="deco-circle deco-circle-1"></div>
+                        <div class="deco-circle deco-circle-2"></div>
+                        <div class="deco-circle deco-circle-3"></div>
+                        <i class="fa-solid fa-seedling welcome-icon"></i>
+                    </div>
+                </section>
+
+                <!-- Stats -->
+                <section class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--ubuntu-green-light);">
+                            <i class="fa-solid fa-book" style="color: var(--ubuntu-green);"></i>
+                        </div>
+                        <div class="stat-data">
+                            <span class="stat-number" data-target="3">0</span>
+                            <span class="stat-label">Cursos activos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--ubuntu-orange-light);">
+                            <i class="fa-solid fa-clock" style="color: var(--ubuntu-orange);"></i>
+                        </div>
+                        <div class="stat-data">
+                            <span class="stat-number" data-target="24">0</span>
+                            <span class="stat-label">Horas estudiadas</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--ubuntu-maroon-light);">
+                            <i class="fa-solid fa-trophy" style="color: var(--ubuntu-maroon);"></i>
+                        </div>
+                        <div class="stat-data">
+                            <span class="stat-number" data-target="1">0</span>
+                            <span class="stat-label">Certificados</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #ede9fe;">
+                            <i class="fa-solid fa-fire" style="color: #7c3aed;"></i>
+                        </div>
+                        <div class="stat-data">
+                            <span class="stat-number" data-target="7">0</span>
+                            <span class="stat-label">Días de racha</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Continue Learning -->
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Continuar aprendiendo</h2>
+                        <a href="#" class="section-link" data-page="cursos">Ver todos <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+
+                    <div class="continue-card">
+                        <div class="continue-thumb">
+                            <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80" alt="Liderazgo Comunitario">
+                            <div class="continue-play">
+                                <i class="fa-solid fa-play"></i>
+                            </div>
+                        </div>
+                        <div class="continue-body">
+                            <span class="tag tag-green">Liderazgo</span>
+                            <h3 class="continue-title">Liderazgo Comunitario y Gestión Social</h3>
+                            <p class="continue-module">Módulo 3: Herramientas para la organización comunitaria</p>
+                            <div class="progress-info">
+                                <span class="progress-text">Progreso: 65%</span>
+                                <span class="progress-lessons">8/12 Lecciones</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 65%;"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary continue-btn">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Continuar</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Recommended -->
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Recomendados para ti</h2>
+                        <a href="#" class="section-link" data-page="explorar">Explorar más <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="courses-grid" id="cursosContainer"></div>
+                </section>
+
+                <!-- Upcoming Events -->
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Próximos eventos</h2>
+                    </div>
+                    <div class="events-row">
+                        <div class="event-card">
+                            <div class="event-date">
+                                <span class="event-day">10</span>
+                                <span class="event-month">Jul</span>
+                            </div>
+                            <div class="event-info">
+                                <h4 class="event-title">Taller: Comunicación No Violenta</h4>
+                                <p class="event-meta"><i class="fa-solid fa-clock"></i> 5:00 PM — Zoom</p>
+                            </div>
+                            <button class="btn btn-outline btn-sm">Inscribirme</button>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-date">
+                                <span class="event-day">15</span>
+                                <span class="event-month">Jul</span>
+                            </div>
+                            <div class="event-info">
+                                <h4 class="event-title">Webinar: Derechos Humanos en Latinoamérica</h4>
+                                <p class="event-meta"><i class="fa-solid fa-clock"></i> 7:00 PM — Google Meet</p>
+                            </div>
+                            <button class="btn btn-outline btn-sm">Inscribirme</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ═══════════ PAGE: MIS CURSOS ═══════════ -->
+            <div class="page" id="page-cursos">
+                <div class="page-header">
+                    <h1 class="page-title">Mis Cursos</h1>
+                    <p class="page-subtitle">Continúa tu aprendizaje donde lo dejaste</p>
+                </div>
+                <div class="my-courses-list" id="myCoursesContainer"></div>
+            </div>
+
+            <!-- ═══════════ PAGE: EXPLORAR ═══════════ -->
+            <div class="page" id="page-explorar">
+                <div class="page-header">
+                    <h1 class="page-title">Explorar Cursos</h1>
+                    <p class="page-subtitle">Descubre nuevas oportunidades de aprendizaje gratuito</p>
+                </div>
+
+                <div class="filter-bar">
+                    <button class="filter-chip active" data-filter="todos">Todos</button>
+                    <button class="filter-chip" data-filter="liderazgo">Liderazgo</button>
+                    <button class="filter-chip" data-filter="derechos">Derechos Humanos</button>
+                    <button class="filter-chip" data-filter="tecnologia">Tecnología</button>
+                    <button class="filter-chip" data-filter="arte">Arte y Cultura</button>
+                    <button class="filter-chip" data-filter="salud">Salud</button>
+                </div>
+
+                <div class="courses-grid courses-grid-large" id="explorarContainer"></div>
+            </div>
+
+            <!-- ═══════════ PAGE: PROGRESO ═══════════ -->
+            <div class="page" id="page-progreso">
+                <div class="page-header">
+                    <h1 class="page-title">Mi Progreso</h1>
+                    <p class="page-subtitle">Revisa tu avance y mantén el ritmo</p>
+                </div>
+
+                <div class="progress-overview">
+                    <div class="progress-circle-card">
+                        <div class="progress-ring" data-percent="65">
+                            <svg viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="52" class="ring-bg"/>
+                                <circle cx="60" cy="60" r="52" class="ring-fill" style="stroke-dasharray: 326.73; stroke-dashoffset: 114.35;"/>
+                            </svg>
+                            <span class="ring-label">65%</span>
+                        </div>
+                        <p class="progress-circle-title">Progreso general</p>
+                    </div>
+                    <div class="progress-details">
+                        <div class="progress-detail-item">
+                            <div class="detail-header">
+                                <span class="detail-name">Liderazgo Comunitario</span>
+                                <span class="detail-percent">65%</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:65%; background: var(--ubuntu-green);"></div></div>
+                        </div>
+                        <div class="progress-detail-item">
+                            <div class="detail-header">
+                                <span class="detail-name">Derechos Humanos Básico</span>
+                                <span class="detail-percent">100%</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:100%; background: var(--ubuntu-orange);"></div></div>
+                        </div>
+                        <div class="progress-detail-item">
+                            <div class="detail-header">
+                                <span class="detail-name">Alfabetización Digital</span>
+                                <span class="detail-percent">30%</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:30%; background: var(--ubuntu-maroon);"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-section">
+                    <h3 class="subsection-title">Actividad reciente</h3>
+                    <div class="activity-feed">
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background: var(--ubuntu-green);"></div>
+                            <div class="activity-content">
+                                <p>Completaste la lección <strong>"Mapeo de actores sociales"</strong></p>
+                                <span class="activity-time">Hace 2 horas</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background: var(--ubuntu-orange);"></div>
+                            <div class="activity-content">
+                                <p>Obtuviste el certificado de <strong>"Derechos Humanos Básico"</strong></p>
+                                <span class="activity-time">Hace 1 día</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background: var(--ubuntu-maroon);"></div>
+                            <div class="activity-content">
+                                <p>Te inscribiste en <strong>"Alfabetización Digital"</strong></p>
+                                <span class="activity-time">Hace 3 días</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════ PAGE: COMUNIDAD ═══════════ -->
+            <div class="page" id="page-comunidad">
+                <div class="page-header">
+                    <h1 class="page-title">Comunidad</h1>
+                    <p class="page-subtitle">"Yo soy porque nosotros somos" — Filosofía Ubuntu</p>
+                </div>
+
+                <div class="community-grid">
+                    <div class="community-card">
+                        <div class="community-icon" style="background: var(--ubuntu-green-light);">
+                            <i class="fa-solid fa-comments" style="color: var(--ubuntu-green);"></i>
+                        </div>
+                        <h3>Foro de Discusión</h3>
+                        <p>Participa en debates y comparte tus ideas con la comunidad</p>
+                        <span class="community-badge">12 temas activos</span>
+                    </div>
+                    <div class="community-card">
+                        <div class="community-icon" style="background: var(--ubuntu-orange-light);">
+                            <i class="fa-solid fa-handshake" style="color: var(--ubuntu-orange);"></i>
+                        </div>
+                        <h3>Grupos de Estudio</h3>
+                        <p>Únete a un grupo y aprende junto a otros estudiantes</p>
+                        <span class="community-badge">5 grupos</span>
+                    </div>
+                    <div class="community-card">
+                        <div class="community-icon" style="background: var(--ubuntu-maroon-light);">
+                            <i class="fa-solid fa-calendar-check" style="color: var(--ubuntu-maroon);"></i>
+                        </div>
+                        <h3>Voluntariado</h3>
+                        <p>Contribuye como voluntario/a y ayuda a otros a crecer</p>
+                        <span class="community-badge">3 oportunidades</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════ PAGE: CERTIFICADOS ═══════════ -->
+            <div class="page" id="page-certificados">
+                <div class="page-header">
+                    <h1 class="page-title">Certificados</h1>
+                    <p class="page-subtitle">Reconocimientos de tus logros</p>
+                </div>
+
+                <div class="certificates-grid">
+                    <div class="certificate-card">
+                        <div class="certificate-ribbon">
+                            <i class="fa-solid fa-certificate"></i>
+                        </div>
+                        <div class="certificate-body">
+                            <h3>Derechos Humanos Básico</h3>
+                            <p class="certificate-date">Completado: 4 de julio, 2026</p>
+                            <p class="certificate-hours">20 horas de estudio</p>
+                            <button class="btn btn-primary btn-sm">
+                                <i class="fa-solid fa-download"></i> Descargar PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="certificate-card certificate-locked">
+                        <div class="certificate-ribbon locked">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <div class="certificate-body">
+                            <h3>Liderazgo Comunitario</h3>
+                            <p class="certificate-date">En progreso — 65% completado</p>
+                            <p class="certificate-hours">Completa el curso para obtener tu certificado</p>
+                            <button class="btn btn-outline btn-sm" disabled>
+                                <i class="fa-solid fa-hourglass-half"></i> Pendiente
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /content-area -->
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
