@@ -59,46 +59,91 @@ async function cargarCursosDesdeAPI() {
 }
 
 // 2. LA MAGIA DEL CLIC: ABRIR EL CURSO
+// 2. LA MAGIA DEL CLIC: ABRIR EL CURSO (Actualizado)
 function abrirCurso(id) {
     const curso = allCourses.find(c => c.id === id);
     if (!curso) return;
 
     const pageAsync = document.getElementById('page-curso-async');
     
-    // Cambiar Título e Instructor
+    // Cambiar Título e Instructor del encabezado principal
     pageAsync.querySelector('.page-title').textContent = curso.title;
     pageAsync.querySelector('.page-subtitle').textContent = `Impartido por ${curso.instructor} · ${curso.rawModules.length} módulos`;
     pageAsync.querySelector('.tag').textContent = curso.categoryLabel;
     pageAsync.querySelector('.tag').className = `tag ${curso.tagClass}`;
 
-    // Renderizar los módulos dinámicamente
     const syllabusList = pageAsync.querySelector('.syllabus-list');
+    const iframe = pageAsync.querySelector('.video-player-wrapper iframe');
+    const videoTitle = pageAsync.querySelector('.video-info-main h2');
+    const videoDesc = pageAsync.querySelector('.video-info-main p');
+    const metaInstructor = pageAsync.querySelector('.video-meta-row .meta-item');
     
     if (curso.rawModules.length === 0) {
         syllabusList.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);">
             <i class="fa-solid fa-person-digging" style="font-size:2rem;margin-bottom:10px;"></i>
-            <p>El instructor aún está construyendo los módulos de este curso.</p>
+            <p>El instructor aún está construyendo los módulos.</p>
         </div>`;
+        iframe.src = "";
+        videoTitle.textContent = "Curso en construcción";
+        videoDesc.textContent = "Pronto se agregarán las lecciones aquí.";
     } else {
+        // Renderizar el temario (Módulos y Lecciones) y hacer las lecciones clickeables
         syllabusList.innerHTML = curso.rawModules.map((mod, index) => {
-            const lessonCount = (mod.lessons || []).length;
-            // El primer módulo sale activo, el resto bloqueados visualmente (solo para dar estilo)
-            const isActive = index === 0;
+            const leccionesHTML = (mod.lessons || []).map((lesson) => {
+                // Escapamos comillas por seguridad para el onclick
+                const safeTitle = lesson.title.replace(/'/g, "\\'");
+                const safeInst = curso.instructor.replace(/'/g, "\\'");
+                return `
+                <div style="padding: 10px 10px 10px 24px; font-size: 0.85rem; margin-top: 4px; cursor: pointer; color: var(--text-secondary); transition: 0.2s;" 
+                     onmouseover="this.style.color='var(--siemens-teal)'" 
+                     onmouseout="this.style.color='var(--text-secondary)'"
+                     onclick="cambiarVideo('${lesson.youtube_id}', '${safeTitle}', '${safeInst}')">
+                    <i class="fa-brands fa-youtube" style="color: #ef4444; margin-right: 4px;"></i> ${lesson.title}
+                </div>`;
+            }).join('');
+
             return `
-            <div class="syllabus-item ${isActive ? 'active' : 'locked'}">
-                <i class="fa-solid ${isActive ? 'fa-circle-play' : 'fa-lock'} item-icon"></i>
-                <div class="item-details">
-                    <h4>${index + 1}. ${mod.title}</h4>
-                    <span><i class="fa-solid fa-play-circle"></i> ${lessonCount} lecciones</span>
+            <div class="syllabus-item active" style="flex-direction: column; align-items: flex-start;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-folder-open item-icon" style="color: var(--siemens-teal);"></i>
+                    <h4 style="margin:0; font-size: 0.9rem;">${index + 1}. ${mod.title}</h4>
                 </div>
-                ${isActive ? '<span class="item-badge active-badge">En curso</span>' : ''}
+                <div style="width: 100%;">
+                    ${leccionesHTML}
+                </div>
             </div>`;
         }).join('');
+
+        // ¡EL ARREGLO!: Cargar automáticamente la primera lección del primer módulo
+        if (curso.rawModules[0].lessons && curso.rawModules[0].lessons.length > 0) {
+            const primeraLeccion = curso.rawModules[0].lessons[0];
+            cambiarVideo(primeraLeccion.youtube_id, primeraLeccion.title, curso.instructor);
+        } else {
+            videoTitle.textContent = "Sin lecciones";
+            videoDesc.textContent = "Este módulo no tiene videos agregados.";
+            iframe.src = "";
+        }
     }
 
-    // Navegar a la página
     setActivePage('curso-async');
 }
+
+// 2.1 Nueva función para actualizar el reproductor al hacer clic
+window.cambiarVideo = function(youtubeId, tituloLeccion, instructor) {
+    const pageAsync = document.getElementById('page-curso-async');
+    const iframe = pageAsync.querySelector('.video-player-wrapper iframe');
+    const videoTitle = pageAsync.querySelector('.video-info-main h2');
+    const videoDesc = pageAsync.querySelector('.video-info-main p');
+    const metaInstructor = pageAsync.querySelector('.video-meta-row .meta-item'); // Selecciona el primer badge de metadata
+
+    // Inyecta el ID real de YouTube y limpia el "quemado"
+    iframe.src = `https://www.youtube.com/embed/${youtubeId}?rel=0&modestbranding=1&autoplay=1`;
+    
+    // Actualiza los textos debajo del video
+    videoTitle.textContent = tituloLeccion;
+    videoDesc.textContent = "Disfruta de esta lección. Recuerda tomar notas y participar en la comunidad de Ubuntu Perú.";
+    metaInstructor.innerHTML = `<i class="fa-solid fa-chalkboard-user"></i> ${instructor}`;
+};
 
 // 3. TARJETAS MODIFICADAS CON EVENTO ONCLICK
 function createCourseCard(c) {
