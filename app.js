@@ -60,6 +60,7 @@ async function cargarCursosDesdeAPI() {
 
 // 2. LA MAGIA DEL CLIC: ABRIR EL CURSO
 // 2. LA MAGIA DEL CLIC: ABRIR EL CURSO (Actualizado)
+// 2. LA MAGIA DEL CLIC: ABRIR EL CURSO (Actualizado)
 function abrirCurso(id) {
     const curso = allCourses.find(c => c.id === id);
     if (!curso) return;
@@ -144,6 +145,7 @@ window.cambiarVideo = function(youtubeId, tituloLeccion, instructor) {
     videoDesc.textContent = "Disfruta de esta lección. Recuerda tomar notas y participar en la comunidad de Ubuntu Perú.";
     metaInstructor.innerHTML = `<i class="fa-solid fa-chalkboard-user"></i> ${instructor}`;
 };
+
 
 // 3. TARJETAS MODIFICADAS CON EVENTO ONCLICK
 function createCourseCard(c) {
