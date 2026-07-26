@@ -23,34 +23,76 @@ let allCourses = [];
 
 // Función para traer datos del backend
 async function cargarCursosDesdeAPI() {
+    // Mapeo de categorías a etiquetas legibles
+    const categoryLabels = {
+        'tecnologia': 'Tecnología', 'liderazgo': 'Liderazgo',
+        'derechos': 'Derechos Humanos', 'finanzas': 'Finanzas',
+        'salud': 'Salud', 'arte': 'Arte y Cultura'
+    };
+    // Mapeo de categorías a clases de tag CSS
+    const tagClasses = {
+        'tecnologia': 'tag-siemens', 'liderazgo': 'tag-green',
+        'derechos': 'tag-orange', 'finanzas': 'tag-maroon',
+        'salud': 'tag-green', 'arte': 'tag-orange'
+    };
+
     try {
-        // Reemplaza con tu dominio real
         const response = await fetch('https://api.ubuntuafroperuana.org/api/courses');
         const dbCourses = await response.json();
 
         // Mapeamos los datos de la DB para agregar los campos visuales que el HTML necesita
-        allCourses = dbCourses.map(c => ({
-            id: c.id,
-            title: c.title,
-            category: c.category,
-            categoryLabel: c.category.charAt(0).toUpperCase() + c.category.slice(1), 
-            instructor: c.instructor,
-            image: c.image_url,
-            // Datos simulados por ahora para mantener la interfaz bonita
-            rating: 4.8,
-            reviews: Math.floor(Math.random() * 1000) + 100,
-            popular: true,
-            enrolled: false,
-            progress: 0,
-            lessons: "0/5 módulos",
-            tagClass: c.category === 'tecnologia' ? 'tag-siemens' : 'tag-green'
-        }));
+        allCourses = dbCourses.map(c => {
+            const moduleCount = (c.modules || []).length;
+            return {
+                id: c.id,
+                title: c.title,
+                category: c.category,
+                categoryLabel: categoryLabels[c.category] || c.category.charAt(0).toUpperCase() + c.category.slice(1),
+                instructor: c.instructor,
+                image: c.image_url,
+                // Datos visuales complementarios
+                rating: 4.8,
+                reviews: Math.floor(Math.random() * 1000) + 100,
+                popular: true,
+                enrolled: false,
+                progress: 0,
+                lessons: `${moduleCount} módulo${moduleCount !== 1 ? 's' : ''}`,
+                tagClass: tagClasses[c.category] || 'tag-siemens'
+            };
+        });
+
+        // Si no hay cursos, mostrar mensaje amigable
+        if (allCourses.length === 0) {
+            const homeGrid = document.getElementById('homeCoursesGrid');
+            const emptyMsg = `
+                <div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
+                    <i class="fa-solid fa-book-open" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;display:block;"></i>
+                    <p style="color:var(--text-muted);font-size:1.1rem;">No hay cursos disponibles aún</p>
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px;">¡Próximamente nuevos cursos gratuitos!</p>
+                </div>`;
+            if (homeGrid) homeGrid.innerHTML = emptyMsg;
+            const explorarContainer = document.getElementById('explorarContainer');
+            if (explorarContainer) explorarContainer.innerHTML = emptyMsg;
+            animateCounters();
+            return;
+        }
 
         // Una vez que tenemos los datos, inicializamos la página
         initAllPages();
 
     } catch (error) {
         console.error("Error al conectar con la API:", error);
+        // Mostrar mensaje de error amigable en la interfaz
+        const homeGrid = document.getElementById('homeCoursesGrid');
+        if (homeGrid) {
+            homeGrid.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
+                    <i class="fa-solid fa-wifi" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;display:block;opacity:0.5;"></i>
+                    <p style="color:var(--text-muted);font-size:1.1rem;">No se pudo conectar con el servidor</p>
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px;">Intenta recargar la página</p>
+                </div>`;
+        }
+        animateCounters();
     }
 }
 
