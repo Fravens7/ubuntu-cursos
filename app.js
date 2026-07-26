@@ -18,63 +18,41 @@ const C = {
     slate: '#1E2225',
 };
 
-// ── MOCK DATA: ALL COURSES ──
-const allCourses = [
-    {
-        id: 1, title: "Alfabetización Digital 4.0", category: "tecnologia", categoryLabel: "Tecnología",
-        instructor: "Prof. Roberto Flores", rating: 4.8, reviews: 1342, popular: true, enrolled: true, progress: 40, lessons: "2/5 módulos",
-        image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-siemens"
-    },
-    {
-        id: 2, title: "Liderazgo Comunitario y Gestión Social", category: "liderazgo", categoryLabel: "Liderazgo",
-        instructor: "Ana Quispe", rating: 4.9, reviews: 892, popular: true, enrolled: true, progress: 65, lessons: "8/12 lecciones",
-        image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-green"
-    },
-    {
-        id: 3, title: "Derechos Humanos: Fundamentos y Práctica", category: "derechos", categoryLabel: "Derechos Humanos",
-        instructor: "Carlos Mamani", rating: 4.8, reviews: 458, popular: false, enrolled: true, progress: 100, lessons: "15/15 lecciones",
-        image: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-maroon"
-    },
-    {
-        id: 4, title: "Inclusión Financiera para Comunidades", category: "finanzas", categoryLabel: "Finanzas",
-        instructor: "Dr. Patricia Suárez", rating: 4.7, reviews: 341, popular: false, enrolled: true, progress: 15, lessons: "2/14 lecciones",
-        image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-orange"
-    },
-    {
-        id: 5, title: "Arte y Cultura Afroperuana", category: "arte", categoryLabel: "Arte y Cultura",
-        instructor: "Lucía Mendoza", rating: 4.9, reviews: 267, popular: true, enrolled: false, progress: 0, lessons: "0/10",
-        image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-orange"
-    },
-    {
-        id: 6, title: "Salud Mental y Bienestar Comunitario", category: "salud", categoryLabel: "Salud",
-        instructor: "Dra. María Torres", rating: 4.8, reviews: 512, popular: true, enrolled: false, progress: 0, lessons: "0/12",
-        image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-green"
-    },
-    {
-        id: 7, title: "Emprendimiento Social con IA", category: "tecnologia", categoryLabel: "Tecnología",
-        instructor: "Jorge Chávez", rating: 4.7, reviews: 203, popular: false, enrolled: false, progress: 0, lessons: "0/11",
-        image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-siemens"
-    },
-    {
-        id: 8, title: "Derechos de la Mujer en el Perú", category: "derechos", categoryLabel: "Derechos Humanos",
-        instructor: "Dra. Rosa Palacios", rating: 4.9, reviews: 387, popular: true, enrolled: false, progress: 0, lessons: "0/13",
-        image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-maroon"
-    },
-    {
-        id: 9, title: "Comunicación No Violenta", category: "liderazgo", categoryLabel: "Liderazgo",
-        instructor: "Pedro García", rating: 4.6, reviews: 156, popular: false, enrolled: false, progress: 0, lessons: "0/8",
-        image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=600&q=80",
-        tagClass: "tag-green"
-    },
-];
+// Variable global vacía
+let allCourses = [];
+
+// Función para traer datos del backend
+async function cargarCursosDesdeAPI() {
+    try {
+        // Reemplaza con tu dominio real
+        const response = await fetch('https://api.tudominio.com/api/courses');
+        const dbCourses = await response.json();
+
+        // Mapeamos los datos de la DB para agregar los campos visuales que el HTML necesita
+        allCourses = dbCourses.map(c => ({
+            id: c.id,
+            title: c.title,
+            category: c.category,
+            categoryLabel: c.category.charAt(0).toUpperCase() + c.category.slice(1), 
+            instructor: c.instructor,
+            image: c.image_url,
+            // Datos simulados por ahora para mantener la interfaz bonita
+            rating: 4.8,
+            reviews: Math.floor(Math.random() * 1000) + 100,
+            popular: true,
+            enrolled: false,
+            progress: 0,
+            lessons: "0/5 módulos",
+            tagClass: c.category === 'tecnologia' ? 'tag-siemens' : 'tag-green'
+        }));
+
+        // Una vez que tenemos los datos, inicializamos la página
+        initAllPages();
+
+    } catch (error) {
+        console.error("Error al conectar con la API:", error);
+    }
+}
 
 // ── RENDER HELPERS ──
 function renderStars(rating) {
