@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Nuevo Curso</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f4f7f6; padding: 40px; }
+        .admin-card { background: white; max-width: 500px; margin: 0 auto; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #009999; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #007777; }
+        #mensaje { text-align: center; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+    <h2>Crear Nuevo Curso</h2>
+    <form id="courseForm">
+        <label>Título del Curso:</label>
+        <input type="text" id="title" required placeholder="Ej: Excel Básico">
+
+        <label>Categoría:</label>
+        <select id="category">
+            <option value="tecnologia">Tecnología</option>
+            <option value="liderazgo">Liderazgo</option>
+            <option value="derechos">Derechos Humanos</option>
+            <option value="finanzas">Finanzas</option>
+        </select>
+
+        <label>Instructor:</label>
+        <input type="text" id="instructor" required placeholder="Ej: Merby">
+
+        <label>URL de la Imagen (Unsplash, etc):</label>
+        <input type="text" id="image_url" required placeholder="https://...">
+
+        <button type="submit">Guardar Curso</button>
+    </form>
+    <div id="mensaje"></div>
+</div>
+
+<script>
+    document.getElementById('courseForm').addEventListener('submit', async (e) => {
+        e.preventDefault(); // Evita que la página recargue
+        const btn = document.querySelector('button');
+        const msgDiv = document.getElementById('mensaje');
+        
+        btn.textContent = "Guardando...";
+        msgDiv.textContent = "";
+
+        // Recolectar datos del form
+        const datos = {
+            title: document.getElementById('title').value,
+            category: document.getElementById('category').value,
+            instructor: document.getElementById('instructor').value,
+            image_url: document.getElementById('image_url').value
+        };
+
+        try {
+            // Enviar datos al backend
+            const response = await fetch('https://api.ubuntuafroperuana.org/api/courses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            if(response.ok) {
+                msgDiv.style.color = "green";
+                msgDiv.textContent = "¡Curso creado con éxito!";
+                document.getElementById('courseForm').reset(); // Limpiar formulario
+            } else {
+                msgDiv.style.color = "red";
+                msgDiv.textContent = "Error al crear el curso.";
+            }
+        } catch (error) {
+            msgDiv.style.color = "red";
+            msgDiv.textContent = "Fallo de conexión con el servidor.";
+        } finally {
+            btn.textContent = "Guardar Curso";
+        }
+    });
+</script>
+
+</body>
+</html>
