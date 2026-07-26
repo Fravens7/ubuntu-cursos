@@ -481,4 +481,5 @@ document.getElementById('notifBtn')?.addEventListener('click', function() {
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', initAllPages);
+
+document.addEventListener('DOMContentLoaded', cargarCursosDesdeAPI);
