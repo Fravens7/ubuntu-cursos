@@ -25,7 +25,7 @@ let allCourses = [];
 async function cargarCursosDesdeAPI() {
     try {
         // Reemplaza con tu dominio real
-        const response = await fetch('https://api.tudominio.com/api/courses');
+        const response = await fetch('https://api.ubuntuafroperuana.org/api/courses');
         const dbCourses = await response.json();
 
         // Mapeamos los datos de la DB para agregar los campos visuales que el HTML necesita
