@@ -22,14 +22,16 @@ const C = {
 let allCourses = [];
 
 // Función para traer datos del backend
+// Variable global para clases en vivo
+let allLiveClasses = [];
+
+// Función actualizada para traer cursos y clases en vivo desde la API
 async function cargarCursosDesdeAPI() {
-    // Mapeo de categorías a etiquetas legibles
     const categoryLabels = {
         'tecnologia': 'Tecnología', 'liderazgo': 'Liderazgo',
         'derechos': 'Derechos Humanos', 'finanzas': 'Finanzas',
         'salud': 'Salud', 'arte': 'Arte y Cultura'
     };
-    // Mapeo de categorías a clases de tag CSS
     const tagClasses = {
         'tecnologia': 'tag-siemens', 'liderazgo': 'tag-green',
         'derechos': 'tag-orange', 'finanzas': 'tag-maroon',
@@ -37,12 +39,22 @@ async function cargarCursosDesdeAPI() {
     };
 
     try {
-        const response = await fetch('https://api.ubuntuafroperuana.org/api/courses');
-        const dbCourses = await response.json();
+        // 1. Fetch de Cursos y Clases en Vivo en paralelo
+        const [coursesRes, liveRes] = await Promise.all([
+            fetch('http://localhost:8000/api/courses'), // Asegúrate de usar la URL de tu API local
+            fetch('http://localhost:8000/api/live-classes')
+        ]);
+        
+        const dbCourses = await coursesRes.json();
+        allLiveClasses = await liveRes.json();
 
-        // Mapeamos los datos de la DB para agregar los campos visuales que el HTML necesita
+        // 2. Mapeo dinámico de cursos
         allCourses = dbCourses.map(c => {
             const moduleCount = (c.modules || []).length;
+            
+            // Lógica temporal de inscripción: Si el curso tiene "Gemini" en el título, simulamos que estás inscrito.
+            const isGeminiCourse = c.title.toLowerCase().includes('gemini');
+
             return {
                 id: c.id,
                 title: c.title,
@@ -50,50 +62,103 @@ async function cargarCursosDesdeAPI() {
                 categoryLabel: categoryLabels[c.category] || c.category.charAt(0).toUpperCase() + c.category.slice(1),
                 instructor: c.instructor,
                 image: c.image_url,
-                // Datos visuales complementarios
-                rating: 4.8,
+                rating: 4.8, // Pendiente: Traer de DB
                 reviews: Math.floor(Math.random() * 1000) + 100,
                 popular: true,
-                enrolled: false,
-                progress: 0,
+                enrolled: isGeminiCourse, // ¡Aquí ocurre la magia para "Mis Cursos"!
+                progress: isGeminiCourse ? 20 : 0, // Progreso simulado al 20%
                 lessons: `${moduleCount} módulo${moduleCount !== 1 ? 's' : ''}`,
                 tagClass: tagClasses[c.category] || 'tag-siemens'
             };
         });
 
-        // Si no hay cursos, mostrar mensaje amigable
         if (allCourses.length === 0) {
-            const homeGrid = document.getElementById('homeCoursesGrid');
-            const emptyMsg = `
-                <div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
-                    <i class="fa-solid fa-book-open" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;display:block;"></i>
-                    <p style="color:var(--text-muted);font-size:1.1rem;">No hay cursos disponibles aún</p>
-                    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px;">¡Próximamente nuevos cursos gratuitos!</p>
-                </div>`;
-            if (homeGrid) homeGrid.innerHTML = emptyMsg;
-            const explorarContainer = document.getElementById('explorarContainer');
-            if (explorarContainer) explorarContainer.innerHTML = emptyMsg;
-            animateCounters();
+            mostrarMensajeVacio();
             return;
         }
 
-        // Una vez que tenemos los datos, inicializamos la página
+        // 3. Actualizar contadores estáticos de index.html con datos reales
+        actualizarEstadisticasDinamicas(dbCourses.length);
+
+        // 4. Inicializar todas las vistas
         initAllPages();
+        renderizarClasesEnVivo();
 
     } catch (error) {
         console.error("Error al conectar con la API:", error);
-        // Mostrar mensaje de error amigable en la interfaz
-        const homeGrid = document.getElementById('homeCoursesGrid');
-        if (homeGrid) {
-            homeGrid.innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
-                    <i class="fa-solid fa-wifi" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;display:block;opacity:0.5;"></i>
-                    <p style="color:var(--text-muted);font-size:1.1rem;">No se pudo conectar con el servidor</p>
-                    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px;">Intenta recargar la página</p>
-                </div>`;
-        }
-        animateCounters();
+        mostrarMensajeError();
     }
+}
+
+// Helper para actualizar los números del Dashboard de Inicio
+function actualizarEstadisticasDinamicas(totalCursos) {
+    const statCursos = document.querySelectorAll('.stat-number');
+    statCursos.forEach(stat => {
+        // Si el target original era 24 (el dummy), lo cambiamos por el total real de tu base de datos
+        if(stat.dataset.target === "24") {
+            stat.dataset.target = totalCursos;
+        }
+    });
+}
+
+// Helper para renderizar las clases en vivo reales en la vista de Inicio
+function renderizarClasesEnVivo() {
+    const eventsContainer = document.querySelector('.events-row');
+    if (!eventsContainer || allLiveClasses.length === 0) return;
+
+    const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    eventsContainer.innerHTML = allLiveClasses.map((clase, index) => {
+        const dateObj = clase.scheduled_at ? new Date(clase.scheduled_at) : new Date();
+        const day = dateObj.getDate();
+        const month = months[dateObj.getMonth()];
+        const timeStr = dateObj.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+        
+        // La primera clase la marcamos como "Próximamente"
+        const badge = index === 0 ? `<span class="live-badge-small"><span class="pulse-small"></span> PRÓXIMAMENTE</span>` : '';
+
+        return `
+        <div class="event-card" onclick="window.open('${clase.zoom_link}', '_blank')">
+            <div class="event-date">
+                <span class="event-day">${day}</span>
+                <span class="event-month">${month}</span>
+            </div>
+            <div class="event-info">
+                ${badge}
+                <h4 class="event-title">${clase.title}</h4>
+                <p class="event-meta"><i class="fa-solid fa-clock"></i> ${timeStr} · <i class="fa-solid fa-video"></i> Zoom</p>
+            </div>
+            <button class="btn btn-outline btn-sm">Unirse</button>
+        </div>`;
+    }).join('');
+}
+
+// Helpers de UI (Mantenemos los que ya tenías o los agregamos si faltan)
+function mostrarMensajeVacio() {
+    const homeGrid = document.getElementById('homeCoursesGrid');
+    const emptyMsg = `
+        <div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
+            <i class="fa-solid fa-book-open" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;display:block;"></i>
+            <p style="color:var(--text-muted);font-size:1.1rem;">No hay cursos disponibles aún</p>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px;">¡Próximamente nuevos cursos gratuitos!</p>
+        </div>`;
+    if (homeGrid) homeGrid.innerHTML = emptyMsg;
+    const explorarContainer = document.getElementById('explorarContainer');
+    if (explorarContainer) explorarContainer.innerHTML = emptyMsg;
+    animateCounters();
+}
+
+function mostrarMensajeError() {
+    const homeGrid = document.getElementById('homeCoursesGrid');
+    if (homeGrid) {
+        homeGrid.innerHTML = `
+            <div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
+                <i class="fa-solid fa-wifi" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;display:block;opacity:0.5;"></i>
+                <p style="color:var(--text-muted);font-size:1.1rem;">No se pudo conectar con el servidor</p>
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px;">Intenta recargar la página</p>
+            </div>`;
+    }
+    animateCounters();
 }
 
 // ── RENDER HELPERS ──
