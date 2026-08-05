@@ -2,63 +2,188 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Chiquiprueba - Progreso Local</title>
+    <title>Plataforma de Estudios</title>
+    <style>
+        /* Diseño ultra básico para separar los elementos */
+        body { font-family: Arial, sans-serif; text-align: center; margin: 40px; background-color: #f9f9f9; }
+        
+        /* Sistema de pantallas: Solo se muestra la que tiene la clase 'activa' */
+        .pantalla { display: none; }
+        .activa { display: block; }
+
+        /* Estilos para creación y selección de perfiles */
+        .avatar-opcion, .perfil-guardado { font-size: 50px; cursor: pointer; display: inline-block; margin: 10px; padding: 10px; border: 3px solid transparent; border-radius: 15px; transition: 0.2s; }
+        .avatar-opcion:hover, .perfil-guardado:hover { background-color: #e0e0e0; }
+        .avatar-opcion.seleccionado { border-color: #4CAF50; background-color: #e8f5e9; }
+        
+        .perfil-guardado p { font-size: 16px; margin: 5px 0 0 0; font-weight: bold; font-family: sans-serif; }
+
+        /* Estilos de los cursos */
+        .curso-box { border: 2px solid #ddd; background: white; padding: 20px; margin: 15px auto; width: 300px; border-radius: 10px; text-align: left; }
+        
+        button { padding: 10px 15px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #0056b3; }
+        input { padding: 10px; font-size: 16px; text-align: center; border: 1px solid #ccc; border-radius: 5px; }
+    </style>
 </head>
 <body>
-    <h2>Plataforma de Estudios (Prueba LocalStorage)</h2>
 
-    <div style="margin-bottom: 20px; padding: 10px; border: 1px solid black;">
-        <h3>Matemáticas Básicas</h3>
-        <p>Progreso actual: <strong id="progreso-mate">0</strong><strong>%</strong></p>
-        <button onclick="avanzarLeccion('mate')">Completar lección (+20%)</button>
+    <!-- PANTALLA 1: SELECCIÓN DE PERFIL (Estilo Netflix) -->
+    <div id="pantalla-seleccion" class="pantalla">
+        <h2>¿Quién está jugando hoy?</h2>
+        <div id="lista-perfiles"></div>
+        <br>
+        <button onclick="mostrarCreacion()">+ Nuevo Jugador</button>
     </div>
 
-    <div style="margin-bottom: 20px; padding: 10px; border: 1px solid black;">
-        <h3>Inglés Básico</h3>
-        <p>Progreso actual: <strong id="progreso-ingles">0</strong><strong>%</strong></p>
-        <button onclick="avanzarLeccion('ingles')">Completar lección (+20%)</button>
+    <!-- PANTALLA 2: CREACIÓN DE PERFIL (El Onboarding) -->
+    <div id="pantalla-creacion" class="pantalla">
+        <h2>¡Hola! ¿Cómo te llamas?</h2>
+        <input type="text" id="nombre-jugador" placeholder="Escribe tu nombre">
+        
+        <h3>Elige tu personaje:</h3>
+        <div>
+            <span class="avatar-opcion" onclick="seleccionarAvatar(this, '🐶')">🐶</span>
+            <span class="avatar-opcion" onclick="seleccionarAvatar(this, '🐱')">🐱</span>
+            <span class="avatar-opcion" onclick="seleccionarAvatar(this, '🐸')">🐸</span>
+            <span class="avatar-opcion" onclick="seleccionarAvatar(this, '🦊')">🦊</span>
+        </div>
+        <br><br>
+        <button onclick="crearPerfil()">¡A jugar!</button>
     </div>
 
-    <hr>
-    <button onclick="borrarProgreso()">Borrar Todo (Simular usuario nuevo / otra PC)</button>
+    <!-- PANTALLA 3: EL PANEL DE CURSOS -->
+    <div id="pantalla-cursos" class="pantalla">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 400px; margin: 0 auto;">
+            <h2 id="saludo-jugador">Hola</h2>
+            <button onclick="cerrarSesion()" style="background-color: #dc3545; font-size: 12px;">Cambiar jugador</button>
+        </div>
+
+        <div class="curso-box">
+            <h3>🔢 Matemáticas Divertidas</h3>
+            <p>Progreso: <strong id="prog-mate">0</strong><strong>%</strong></p>
+            <button onclick="completarEjercicio('mate')">Resolver ejercicio (+10%)</button>
+        </div>
+
+        <div class="curso-box">
+            <h3>🔤 Palabras Mágicas</h3>
+            <p>Progreso: <strong id="prog-letras">0</strong><strong>%</strong></p>
+            <button onclick="completarEjercicio('letras')">Aprender palabra (+10%)</button>
+        </div>
+    </div>
 
     <script>
-        // 1. LEER EL STORAGE AL INICIAR
-        // Si no hay nada guardado, iniciamos los cursos en 0.
-        let progreso = JSON.parse(localStorage.getItem('progresoEstudios')) || {
-            mate: 0,
-            ingles: 0
-        };
+        // --- 1. CONFIGURACIÓN INICIAL Y LECTURA DE LA BÓVEDA ---
+        // Leemos todo el objeto de usuarios o creamos uno vacío si es la primera vez
+        let baseDeDatos = JSON.parse(localStorage.getItem('bd_ninos')) || {};
+        let jugadorActual = null;
+        let avatarTemporal = '';
 
-        // Función para reflejar los datos en el HTML
-        function actualizarPantalla() {
-            document.getElementById('progreso-mate').innerText = progreso.mate;
-            document.getElementById('progreso-ingles').innerText = progreso.ingles;
-        }
-
-        // 2. MODIFICAR Y GUARDAR EN EL STORAGE
-        function avanzarLeccion(curso) {
-            // Aumentamos el progreso solo si es menor a 100
-            if (progreso[curso] < 100) {
-                progreso[curso] += 20; 
-                
-                // Sobrescribimos la "bóveda" con el nuevo progreso
-                localStorage.setItem('progresoEstudios', JSON.stringify(progreso));
-                
-                // Actualizamos la vista
-                actualizarPantalla();
+        // Función que decide qué pantalla mostrar al cargar la web
+        function iniciarPlataforma() {
+            if (Object.keys(baseDeDatos).length === 0) {
+                // Si la bóveda está vacía (Día 1)
+                cambiarPantalla('pantalla-creacion');
+            } else {
+                // Si ya hay perfiles (Día 2 en adelante)
+                renderizarPerfiles();
+                cambiarPantalla('pantalla-seleccion');
             }
         }
 
-        // 3. LIMPIAR EL STORAGE
-        function borrarProgreso() {
-            localStorage.removeItem('progresoEstudios');
-            progreso = { mate: 0, ingles: 0 }; // Reiniciamos variables
-            actualizarPantalla();
+        // --- 2. LÓGICA DE CREACIÓN DE PERFIL ---
+        function seleccionarAvatar(elemento, emoji) {
+            // Remueve la selección anterior y resalta la nueva
+            document.querySelectorAll('.avatar-opcion').forEach(el => el.classList.remove('seleccionado'));
+            elemento.classList.add('seleccionado');
+            avatarTemporal = emoji;
         }
 
-        // Ejecutar al cargar la página por primera vez
-        actualizarPantalla();
+        function crearPerfil() {
+            const nombre = document.getElementById('nombre-jugador').value.trim();
+            if (!nombre || !avatarTemporal) {
+                alert("Por favor, escribe tu nombre y elige un personaje.");
+                return;
+            }
+
+            // Creamos el perfil con progreso en 0 y lo guardamos
+            baseDeDatos[nombre] = {
+                avatar: avatarTemporal,
+                progreso: { mate: 0, letras: 0 }
+            };
+            
+            guardarEnBoveda(); // Guardado invisible inmediato
+            entrarAlJuego(nombre);
+        }
+
+        // --- 3. LÓGICA DE SELECCIÓN DE PERFIL (NETFLIX) ---
+        function renderizarPerfiles() {
+            const contenedor = document.getElementById('lista-perfiles');
+            contenedor.innerHTML = ''; // Limpiamos la lista
+
+            for (const nombre in baseDeDatos) {
+                const perfil = baseDeDatos[nombre];
+                contenedor.innerHTML += `
+                    <div class="perfil-guardado" onclick="entrarAlJuego('${nombre}')">
+                        ${perfil.avatar}
+                        <p>${nombre}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function mostrarCreacion() {
+            // Limpiar formulario para nuevo usuario
+            document.getElementById('nombre-jugador').value = '';
+            document.querySelectorAll('.avatar-opcion').forEach(el => el.classList.remove('seleccionado'));
+            avatarTemporal = '';
+            cambiarPantalla('pantalla-creacion');
+        }
+
+        // --- 4. ENTRADA AL JUEGO Y AUTOGUARDADO INVISIBLE ---
+        function entrarAlJuego(nombre) {
+            jugadorActual = nombre;
+            document.getElementById('saludo-jugador').innerText = `¡Hola, ${jugadorActual}! ${baseDeDatos[nombre].avatar}`;
+            actualizarPantallaCursos();
+            cambiarPantalla('pantalla-cursos');
+        }
+
+        function completarEjercicio(curso) {
+            let progresoActual = baseDeDatos[jugadorActual].progreso[curso];
+            
+            if (progresoActual < 100) {
+                baseDeDatos[jugadorActual].progreso[curso] += 10;
+                
+                // MAGIA: El autoguardado instantáneo ocurre aquí.
+                // Sin botones ni pantallas de carga, directo a la memoria.
+                guardarEnBoveda(); 
+                
+                actualizarPantallaCursos();
+            }
+        }
+
+        function actualizarPantallaCursos() {
+            document.getElementById('prog-mate').innerText = baseDeDatos[jugadorActual].progreso.mate;
+            document.getElementById('prog-letras').innerText = baseDeDatos[jugadorActual].progreso.letras;
+        }
+
+        function guardarEnBoveda() {
+            localStorage.setItem('bd_ninos', JSON.stringify(baseDeDatos));
+        }
+
+        function cerrarSesion() {
+            jugadorActual = null;
+            iniciarPlataforma();
+        }
+
+        // --- FUNCIONES DE UTILIDAD ---
+        function cambiarPantalla(idPantalla) {
+            document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+            document.getElementById(idPantalla).classList.add('activa');
+        }
+
+        // Arrancar el sistema
+        iniciarPlataforma();
     </script>
 </body>
 </html>
