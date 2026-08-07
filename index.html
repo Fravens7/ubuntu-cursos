@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Plataforma de Estudios</title>
+    <script src="https://meet.jit.si/external_api.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 40px; background-color: #f9f9f9; }
         
@@ -217,6 +218,25 @@
         #btn-ejecutar { background-color: #00ff00; color: #121212; font-weight: bold; font-family: 'Courier New', Courier, monospace; margin-top: 20px; width: 100%; font-size: 20px; }
         #btn-ejecutar:hover { background-color: #00cc00; transform: none; }
     </style>
+
+
+    <div class="curso-box" style="border-color: #f44336; border-width: 3px;">
+    <h3>🔴 Clases EN VIVO</h3>
+    <p>Conéctate con el profesor ahora mismo.</p>
+    <button onclick="abrirClaseVivo()" style="background-color: #f44336; font-weight: bold;">Ver ahora</button>
+</div>
+    <!-- PANTALLA 9: CLASE EN VIVO -->
+<div id="pantalla-clase-vivo" class="pantalla">
+    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin: 0 auto 15px auto;">
+        <h2>🔴 Transmisión en Vivo</h2>
+        <button onclick="cerrarClaseVivo()" style="background-color: #dc3545;">Salir de la clase</button>
+    </div>
+    
+    <!-- Contenedor donde Jitsi inyectará el iframe -->
+    <div id="contenedor-jitsi" style="width: 100%; max-width: 800px; height: 500px; margin: 0 auto; border: 2px solid #333; border-radius: 8px; overflow: hidden; background-color: #000;"></div>
+</div>
+
+<script src="meet.js"></script>
     
     <script>
         // --- 1. BASE DE DATOS Y ESTADO ---
