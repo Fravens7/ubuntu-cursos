@@ -14,13 +14,15 @@ function abrirClaseVivo() {
         height: '100%',
         parentNode: document.querySelector('#contenedor-jitsi'),
         userInfo: {
-            // Tomamos el nombre del jugador que ya está guardado en tu index
+            // Toma el nombre del jugador que ya está guardado en tu index
             displayName: jugadorActual 
         },
         configOverwrite: {
             // Entrar con cámara y micrófono apagados por defecto
             startWithAudioMuted: true,
-            startWithVideoMuted: true
+            startWithVideoMuted: true,
+            // 👇 ESTA ES LA LÍNEA MÁGICA PARA SALTAR LA PANTALLA PREVIA 👇
+            prejoinPageEnabled: false 
         }
     };
 
@@ -39,6 +41,5 @@ function cerrarClaseVivo() {
     document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
     document.getElementById('pantalla-cursos').classList.add('activa');
     
-    // Opcional: Actualizar la interfaz por si ganó puntos en otra sección
     actualizarPantallaCursos();
 }
