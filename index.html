@@ -67,6 +67,7 @@
             <h3>🤖 Conociendo a la IA</h3>
             <p>Progreso: <strong id="prog-ia">0</strong><strong>%</strong></p>
             <button onclick="abrirLeccion('ia')" style="background-color: #9c27b0;">Jugar Lección 1</button>
+            <button onclick="abrirLeccionMultiple()" style="background-color: #673ab7; margin-left: 5px;">Lección 2</button>
         </div>
 
         <div class="curso-box">
@@ -116,7 +117,34 @@
     </style>
 
 
+<!-- PANTALLA 6: LECCIÓN DE OPCIÓN MÚLTIPLE -->
+    <div id="pantalla-leccion-multiple" class="pantalla">
+        <h2>🧠 Lección 2: Las IAs más populares</h2>
+        
+        <div class="curso-box" style="width: 80%; max-width: 500px; text-align: center; padding: 30px;">
+            <p style="font-size: 20px; margin-bottom: 30px;">
+                Casi todas estas son Inteligencias Artificiales muy famosas, pero hay un intruso. <br><strong>¿Cuál de estas NO es una IA?</strong>
+            </p>
+            
+            <div id="botones-multiple">
+                <button class="btn-opcion" onclick="evaluarMultiple('Gemini')">Gemini</button>
+                <button class="btn-opcion" onclick="evaluarMultiple('ChatGPT')">ChatGPT</button>
+                <button class="btn-opcion" onclick="evaluarMultiple('Volkswagen')">Volkswagen</button>
+                <button class="btn-opcion" onclick="evaluarMultiple('DeepSeek')">DeepSeek</button>
+            </div>
 
+            <div id="feedback-multiple" style="display: none; margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 18px; line-height: 1.5;">
+                <p id="texto-feedback-multiple"></p>
+                <button id="btn-continuar-multiple" style="margin-top: 15px;"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estilo para los botones de las opciones -->
+    <style>
+        .btn-opcion { background-color: #007bff; margin: 10px; width: 140px; font-weight: bold; font-size: 16px; }
+        .btn-opcion:hover { background-color: #0056b3; }
+    </style>
 
 
     
@@ -293,6 +321,50 @@
             actualizarPantallaCursos();
             cambiarPantalla('pantalla-cursos');
         }
+
+        function abrirLeccionMultiple() {
+            // Reiniciamos la vista
+            document.getElementById('botones-multiple').style.display = 'block';
+            document.getElementById('feedback-multiple').style.display = 'none';
+            
+            cambiarPantalla('pantalla-leccion-multiple');
+        }
+
+        function evaluarMultiple(respuesta) {
+            document.getElementById('botones-multiple').style.display = 'none'; // Ocultamos opciones
+            
+            const cajaFeedback = document.getElementById('feedback-multiple');
+            const textoFeedback = document.getElementById('texto-feedback-multiple');
+            const btnContinuar = document.getElementById('btn-continuar-multiple');
+            
+            cajaFeedback.style.display = 'block';
+
+            if (respuesta === 'Volkswagen') {
+                // RESPUESTA CORRECTA (Encontró al intruso)
+                cajaFeedback.style.backgroundColor = '#d4edda';
+                cajaFeedback.style.color = '#155724';
+                cajaFeedback.style.border = '2px solid #c3e6cb';
+                textoFeedback.innerHTML = "<strong>¡Excelente!</strong> Volkswagen es una marca de autos 🚗, no una Inteligencia Artificial. ¡Las demás sí lo son!";
+                
+                // Lo mandamos a la pantalla de Victoria (reciclando la función que ya existe)
+                btnContinuar.innerText = "¡Abrir cofre de recompensa! 🎁";
+                btnContinuar.style.backgroundColor = "#ff9800"; 
+                btnContinuar.setAttribute('onclick', 'mostrarVictoria()'); 
+            } else {
+                // RESPUESTA INCORRECTA
+                cajaFeedback.style.backgroundColor = '#f8d7da';
+                cajaFeedback.style.color = '#721c24';
+                cajaFeedback.style.border = '2px solid #f5c6cb';
+                textoFeedback.innerHTML = `<strong>¡Ups!</strong> ${respuesta} sí es una Inteligencia Artificial. ¡Busca al intruso!`;
+                
+                // Le damos otra oportunidad recargando la lección
+                btnContinuar.innerText = "Intentar de nuevo 🔄";
+                btnContinuar.style.backgroundColor = "#dc3545";
+                btnContinuar.setAttribute('onclick', 'abrirLeccionMultiple()');
+            }
+        }
+
+
         
     </script>
 </body>
