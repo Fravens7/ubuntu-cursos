@@ -4,31 +4,35 @@
     <meta charset="UTF-8">
     <title>Plataforma de Estudios</title>
     <style>
-        /* Diseño ultra básico para separar los elementos */
         body { font-family: Arial, sans-serif; text-align: center; margin: 40px; background-color: #f9f9f9; }
         
-        /* Sistema de pantallas: Solo se muestra la que tiene la clase 'activa' */
         .pantalla { display: none; }
         .activa { display: block; }
 
-        /* Estilos para creación y selección de perfiles */
         .avatar-opcion, .perfil-guardado { font-size: 50px; cursor: pointer; display: inline-block; margin: 10px; padding: 10px; border: 3px solid transparent; border-radius: 15px; transition: 0.2s; }
         .avatar-opcion:hover, .perfil-guardado:hover { background-color: #e0e0e0; }
         .avatar-opcion.seleccionado { border-color: #4CAF50; background-color: #e8f5e9; }
         
         .perfil-guardado p { font-size: 16px; margin: 5px 0 0 0; font-weight: bold; font-family: sans-serif; }
 
-        /* Estilos de los cursos */
-        .curso-box { border: 2px solid #ddd; background: white; padding: 20px; margin: 15px auto; width: 300px; border-radius: 10px; text-align: left; }
+        .curso-box { border: 2px solid #ddd; background: white; padding: 20px; margin: 15px auto; width: 350px; border-radius: 10px; text-align: left; }
         
-        button { padding: 10px 15px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
-        button:hover { background-color: #0056b3; }
+        button { padding: 10px 15px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; transition: 0.2s; }
+        button:hover { background-color: #0056b3; transform: scale(1.05); }
         input { padding: 10px; font-size: 16px; text-align: center; border: 1px solid #ccc; border-radius: 5px; }
+
+        /* Estilos específicos para la lección interactiva */
+        .btn-verdadero { background-color: #e53935; margin: 10px; width: 120px; font-weight: bold; }
+        .btn-verdadero:hover { background-color: #c62828; }
+        .btn-falso { background-color: #4CAF50; margin: 10px; width: 120px; font-weight: bold; }
+        .btn-falso:hover { background-color: #2E7D32; }
+        
+        #feedback-leccion { display: none; margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 18px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA 1: SELECCIÓN DE PERFIL (Estilo Netflix) -->
+    <!-- PANTALLA 1: SELECCIÓN DE PERFIL -->
     <div id="pantalla-seleccion" class="pantalla">
         <h2>¿Quién está jugando hoy?</h2>
         <div id="lista-perfiles"></div>
@@ -36,7 +40,7 @@
         <button onclick="mostrarCreacion()">+ Nuevo Jugador</button>
     </div>
 
-    <!-- PANTALLA 2: CREACIÓN DE PERFIL (El Onboarding) -->
+    <!-- PANTALLA 2: CREACIÓN DE PERFIL -->
     <div id="pantalla-creacion" class="pantalla">
         <h2>¡Hola! ¿Cómo te llamas?</h2>
         <input type="text" id="nombre-jugador" placeholder="Escribe tu nombre">
@@ -59,41 +63,57 @@
             <button onclick="cerrarSesion()" style="background-color: #dc3545; font-size: 12px;">Cambiar jugador</button>
         </div>
 
-        <div class="curso-box">
-            <h3>🔢 Matemáticas Divertidas</h3>
-            <p>Progreso: <strong id="prog-mate">0</strong><strong>%</strong></p>
-            <button onclick="completarEjercicio('mate')">Resolver ejercicio (+10%)</button>
+        <div class="curso-box" style="border-color: #9c27b0; border-width: 3px;">
+            <h3>🤖 Conociendo a la IA</h3>
+            <p>Progreso: <strong id="prog-ia">0</strong><strong>%</strong></p>
+            <button onclick="abrirLeccion('ia')" style="background-color: #9c27b0;">Jugar Lección 1</button>
         </div>
 
         <div class="curso-box">
-            <h3>🔤 Palabras Mágicas</h3>
-            <p>Progreso: <strong id="prog-letras">0</strong><strong>%</strong></p>
-            <button onclick="completarEjercicio('letras')">Aprender palabra (+10%)</button>
+            <h3>🔢 Matemáticas Divertidas</h3>
+            <p>Progreso: <strong id="prog-mate">0</strong><strong>%</strong></p>
+            <button onclick="completarEjercicioRapido('mate')">Resolver (+10%)</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA 4: LA LECCIÓN (VERDADERO O FALSO) -->
+    <div id="pantalla-leccion" class="pantalla">
+        <h2>🤖 Lección 1: ¿La IA se equivoca?</h2>
+        
+        <div class="curso-box" style="width: 80%; max-width: 500px; text-align: center; padding: 30px;">
+            <p style="font-size: 20px; margin-bottom: 30px;">
+                Si le pides un dibujo de un gato a la IA y te hace uno verde, <strong>significa que la IA está rota y ya no sirve.</strong>
+            </p>
+            
+            <div id="botones-respuesta">
+                <button class="btn-verdadero" onclick="evaluarRespuesta(true)">Verdadero</button>
+                <button class="btn-falso" onclick="evaluarRespuesta(false)">Falso</button>
+            </div>
+
+            <div id="feedback-leccion">
+                <p id="texto-feedback"></p>
+                <button id="btn-continuar" onclick="volverACursos()" style="margin-top: 15px;">Volver a los cursos</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- 1. CONFIGURACIÓN INICIAL Y LECTURA DE LA BÓVEDA ---
-        // Leemos todo el objeto de usuarios o creamos uno vacío si es la primera vez
+        // --- 1. BASE DE DATOS Y ESTADO ---
         let baseDeDatos = JSON.parse(localStorage.getItem('bd_ninos')) || {};
         let jugadorActual = null;
         let avatarTemporal = '';
 
-        // Función que decide qué pantalla mostrar al cargar la web
         function iniciarPlataforma() {
             if (Object.keys(baseDeDatos).length === 0) {
-                // Si la bóveda está vacía (Día 1)
                 cambiarPantalla('pantalla-creacion');
             } else {
-                // Si ya hay perfiles (Día 2 en adelante)
                 renderizarPerfiles();
                 cambiarPantalla('pantalla-seleccion');
             }
         }
 
-        // --- 2. LÓGICA DE CREACIÓN DE PERFIL ---
+        // --- 2. PERFILES ---
         function seleccionarAvatar(elemento, emoji) {
-            // Remueve la selección anterior y resalta la nueva
             document.querySelectorAll('.avatar-opcion').forEach(el => el.classList.remove('seleccionado'));
             elemento.classList.add('seleccionado');
             avatarTemporal = emoji;
@@ -106,26 +126,23 @@
                 return;
             }
 
-            // Creamos el perfil con progreso en 0 y lo guardamos
+            // Agregamos "ia" a los progresos iniciales
             baseDeDatos[nombre] = {
                 avatar: avatarTemporal,
-                progreso: { mate: 0, letras: 0 }
+                progreso: { mate: 0, ia: 0 }
             };
             
-            guardarEnBoveda(); // Guardado invisible inmediato
+            guardarEnBoveda();
             entrarAlJuego(nombre);
         }
 
-        // --- 3. LÓGICA DE SELECCIÓN DE PERFIL (NETFLIX) ---
         function renderizarPerfiles() {
             const contenedor = document.getElementById('lista-perfiles');
-            contenedor.innerHTML = ''; // Limpiamos la lista
-
+            contenedor.innerHTML = '';
             for (const nombre in baseDeDatos) {
-                const perfil = baseDeDatos[nombre];
                 contenedor.innerHTML += `
                     <div class="perfil-guardado" onclick="entrarAlJuego('${nombre}')">
-                        ${perfil.avatar}
+                        ${baseDeDatos[nombre].avatar}
                         <p>${nombre}</p>
                     </div>
                 `;
@@ -133,38 +150,82 @@
         }
 
         function mostrarCreacion() {
-            // Limpiar formulario para nuevo usuario
             document.getElementById('nombre-jugador').value = '';
             document.querySelectorAll('.avatar-opcion').forEach(el => el.classList.remove('seleccionado'));
             avatarTemporal = '';
             cambiarPantalla('pantalla-creacion');
         }
 
-        // --- 4. ENTRADA AL JUEGO Y AUTOGUARDADO INVISIBLE ---
         function entrarAlJuego(nombre) {
             jugadorActual = nombre;
+            
+            // Parche de seguridad: si el perfil es antiguo y no tiene el curso de IA, se lo agregamos
+            if (baseDeDatos[jugadorActual].progreso.ia === undefined) {
+                baseDeDatos[jugadorActual].progreso.ia = 0;
+            }
+
             document.getElementById('saludo-jugador').innerText = `¡Hola, ${jugadorActual}! ${baseDeDatos[nombre].avatar}`;
             actualizarPantallaCursos();
             cambiarPantalla('pantalla-cursos');
         }
 
-        function completarEjercicio(curso) {
-            let progresoActual = baseDeDatos[jugadorActual].progreso[curso];
+        // --- 3. LÓGICA DE LA LECCIÓN INTERACTIVA (VERDADERO / FALSO) ---
+        function abrirLeccion(curso) {
+            // Reiniciamos la vista de la lección por si ya la había jugado antes
+            document.getElementById('botones-respuesta').style.display = 'block';
+            document.getElementById('feedback-leccion').style.display = 'none';
             
-            if (progresoActual < 100) {
+            cambiarPantalla('pantalla-leccion');
+        }
+
+        function evaluarRespuesta(esVerdadero) {
+            // Ocultamos los botones de verdadero/falso para que no los presione dos veces
+            document.getElementById('botones-respuesta').style.display = 'none';
+            
+            const cajaFeedback = document.getElementById('feedback-leccion');
+            const textoFeedback = document.getElementById('texto-feedback');
+            
+            cajaFeedback.style.display = 'block';
+
+            if (esVerdadero === false) {
+                // RESPUESTA CORRECTA
+                cajaFeedback.style.backgroundColor = '#d4edda';
+                cajaFeedback.style.color = '#155724';
+                cajaFeedback.style.border = '2px solid #c3e6cb';
+                textoFeedback.innerHTML = "<strong>¡Genial!</strong> La IA está aprendiendo contigo. Si se equivoca, solo dile: <em>'No, quiero que el gato sea naranja y tenga un sombrero'</em>, ¡y lo intentará de nuevo!";
+                
+                // Sumamos el progreso y autoguardamos en la bóveda al instante
+                if (baseDeDatos[jugadorActual].progreso.ia < 100) {
+                    baseDeDatos[jugadorActual].progreso.ia += 25; // Sube 25% por esta lección
+                    guardarEnBoveda();
+                }
+            } else {
+                // RESPUESTA INCORRECTA
+                cajaFeedback.style.backgroundColor = '#f8d7da';
+                cajaFeedback.style.color = '#721c24';
+                cajaFeedback.style.border = '2px solid #f5c6cb';
+                textoFeedback.innerHTML = "<strong>¡Ups!</strong> No está rota. Solo necesitas darle más pistas. Puedes decirle: <em>'Haz que el gato sea de color naranja'</em>, ¡y ella lo corregirá al instante!";
+            }
+        }
+
+        function volverACursos() {
+            actualizarPantallaCursos();
+            cambiarPantalla('pantalla-cursos');
+        }
+
+        // --- 4. FUNCIONES GENERALES ---
+        function completarEjercicioRapido(curso) {
+            // Botón genérico de los otros cursos
+            if (baseDeDatos[jugadorActual].progreso[curso] < 100) {
                 baseDeDatos[jugadorActual].progreso[curso] += 10;
-                
-                // MAGIA: El autoguardado instantáneo ocurre aquí.
-                // Sin botones ni pantallas de carga, directo a la memoria.
-                guardarEnBoveda(); 
-                
+                guardarEnBoveda();
                 actualizarPantallaCursos();
             }
         }
 
         function actualizarPantallaCursos() {
             document.getElementById('prog-mate').innerText = baseDeDatos[jugadorActual].progreso.mate;
-            document.getElementById('prog-letras').innerText = baseDeDatos[jugadorActual].progreso.letras;
+            document.getElementById('prog-ia').innerText = baseDeDatos[jugadorActual].progreso.ia;
         }
 
         function guardarEnBoveda() {
@@ -176,13 +237,11 @@
             iniciarPlataforma();
         }
 
-        // --- FUNCIONES DE UTILIDAD ---
         function cambiarPantalla(idPantalla) {
             document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
             document.getElementById(idPantalla).classList.add('activa');
         }
 
-        // Arrancar el sistema
         iniciarPlataforma();
     </script>
 </body>
