@@ -68,6 +68,7 @@
             <p>Progreso: <strong id="prog-ia">0</strong><strong>%</strong></p>
             <button onclick="abrirLeccion('ia')" style="background-color: #9c27b0;">Jugar Lección 1</button>
             <button onclick="abrirLeccionMultiple()" style="background-color: #673ab7; margin-left: 5px;">Lección 2</button>
+            <button onclick="abrirLeccionFrase()" style="background-color: #3f51b5; margin-left: 5px;">Lección 3</button>
         </div>
 
         <div class="curso-box">
@@ -146,6 +147,39 @@
         .btn-opcion:hover { background-color: #0056b3; }
     </style>
 
+    <!-- PANTALLA 7: LECCIÓN ARMAR FRASE -->
+    <div id="pantalla-leccion-frase" class="pantalla">
+        <h2>🧩 Lección 3: Armar la frase (El Prompt)</h2>
+        
+        <div class="curso-box" style="width: 80%; max-width: 600px; text-align: center; padding: 30px;">
+            <p style="font-size: 20px; margin-bottom: 20px;">
+                Ordena los bloques para pedirle un cuento a la IA.
+            </p>
+            
+            <!-- Zona donde caen las palabras armadas -->
+            <div id="zona-construccion" style="min-height: 60px; border: 2px dashed #ccc; border-radius: 10px; padding: 10px; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px;">
+            </div>
+
+            <!-- Zona de palabras disponibles -->
+            <div id="zona-palabras" style="min-height: 60px; padding: 10px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+            </div>
+
+            <button id="btn-comprobar-frase" onclick="evaluarFrase()" style="margin-top: 20px; background-color: #28a745; display: none;">Comprobar</button>
+
+            <!-- Feedback -->
+            <div id="feedback-frase" style="display: none; margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 18px; line-height: 1.5;">
+                <p id="texto-feedback-frase"></p>
+                <button id="btn-continuar-frase" style="margin-top: 15px;"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estilo para que las palabras parezcan bloques de lego/botones -->
+    <style>
+        .bloque-palabra { background-color: #fff; border: 2px solid #007bff; color: #007bff; padding: 10px 15px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); user-select: none; transition: transform 0.1s; }
+        .bloque-palabra:active { transform: scale(0.95); }
+        .bloque-palabra:hover { background-color: #e9f5ff; }
+    </style>
 
     
     <script>
@@ -364,7 +398,96 @@
             }
         }
 
+        const palabrasCorrectas = ["Quiero", "un cuento", "de", "piratas"];
+        const palabrasDesordenadas = ["piratas", "Quiero", "de", "un cuento"];
 
+        function abrirLeccionFrase() {
+            document.getElementById('feedback-frase').style.display = 'none';
+            document.getElementById('btn-comprobar-frase').style.display = 'none';
+            
+            const zonaConstruccion = document.getElementById('zona-construccion');
+            const zonaPalabras = document.getElementById('zona-palabras');
+            
+            // Limpiamos las zonas
+            zonaConstruccion.innerHTML = '';
+            zonaPalabras.innerHTML = '';
+
+            // Pintamos los bloques sueltos
+            palabrasDesordenadas.forEach(palabra => {
+                const div = document.createElement('div');
+                div.className = 'bloque-palabra';
+                div.innerText = palabra;
+                div.onclick = function() { moverPalabra(this); };
+                zonaPalabras.appendChild(div);
+            });
+
+            cambiarPantalla('pantalla-leccion-frase');
+        }
+
+        function moverPalabra(elemento) {
+            const zonaConstruccion = document.getElementById('zona-construccion');
+            const zonaPalabras = document.getElementById('zona-palabras');
+
+            // Si la tocas abajo, sube a la caja de construcción
+            if (elemento.parentNode === zonaPalabras) {
+                zonaConstruccion.appendChild(elemento);
+            } 
+            // Si la tocas arriba, regresa abajo
+            else {
+                zonaPalabras.appendChild(elemento);
+            }
+
+            // Solo mostramos el botón "Comprobar" cuando todas las palabras estén arriba
+            if (zonaPalabras.children.length === 0) {
+                document.getElementById('btn-comprobar-frase').style.display = 'inline-block';
+            } else {
+                document.getElementById('btn-comprobar-frase').style.display = 'none';
+            }
+        }
+
+        function evaluarFrase() {
+            const zonaConstruccion = document.getElementById('zona-construccion');
+            const bloques = zonaConstruccion.getElementsByClassName('bloque-palabra');
+            
+            // Leemos el orden que armó el niño
+            let fraseArmada = [];
+            for (let bloque of bloques) {
+                fraseArmada.push(bloque.innerText);
+            }
+
+            // Comparamos los textos
+            const respuestaUsuario = fraseArmada.join(" ");
+            const respuestaCorrecta = palabrasCorrectas.join(" ");
+
+            const cajaFeedback = document.getElementById('feedback-frase');
+            const textoFeedback = document.getElementById('texto-feedback-frase');
+            const btnContinuar = document.getElementById('btn-continuar-frase');
+
+            document.getElementById('btn-comprobar-frase').style.display = 'none';
+            cajaFeedback.style.display = 'block';
+
+            if (respuestaUsuario === respuestaCorrecta) {
+                // RESPUESTA CORRECTA
+                cajaFeedback.style.backgroundColor = '#d4edda';
+                cajaFeedback.style.color = '#155724';
+                cajaFeedback.style.border = '2px solid #c3e6cb';
+                textoFeedback.innerHTML = "<strong>¡Excelente!</strong> Si le dices los pasos en orden, la IA te entiende mejor.";
+                
+                btnContinuar.innerText = "¡Abrir cofre de recompensa! 🎁";
+                btnContinuar.style.backgroundColor = "#ff9800"; 
+                btnContinuar.setAttribute('onclick', 'mostrarVictoria()');
+            } else {
+                // RESPUESTA INCORRECTA
+                cajaFeedback.style.backgroundColor = '#f8d7da';
+                cajaFeedback.style.color = '#721c24';
+                cajaFeedback.style.border = '2px solid #f5c6cb';
+                textoFeedback.innerHTML = "<strong>¡Casi!</strong> Las palabras están un poco desordenadas. ¡Inténtalo de nuevo!";
+                
+                btnContinuar.innerText = "Reintentar 🔄";
+                btnContinuar.style.backgroundColor = "#dc3545";
+                btnContinuar.setAttribute('onclick', 'abrirLeccionFrase()');
+            }
+        }
         
     </script>
 </body>
