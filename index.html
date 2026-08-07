@@ -619,5 +619,42 @@
         }
         
     </script>
+    <script type="module">
+  // Importamos las herramientas directamente desde la web (CDN)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // Tus llaves exactas de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAplMdumdxbNTm9ySnkgKINGLoUDtkuXY8",
+    authDomain: "ubuntu-cursos.firebaseapp.com",
+    projectId: "ubuntu-cursos",
+    storageBucket: "ubuntu-cursos.firebasestorage.app",
+    messagingSenderId: "427990859227",
+    appId: "1:427990859227:web:12fa3ccb9fe081fe41bbfe"
+  };
+
+  // Inicializamos la conexión
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Función global para la chiquiprueba
+  window.hacerChiquiprueba = async function() {
+    try {
+      // Intentamos crear la colección "jugadores" e inyectar este documento
+      const docRef = await addDoc(collection(db, "jugadores"), {
+        nombre: "Usuario de Prueba",
+        edad: 12,
+        progreso_ia: 50,
+        fecha_registro: new Date()
+      });
+      console.log("¡Éxito! ID del documento: ", docRef.id);
+      alert("¡Conexión exitosa! Revisa tu consola de Firebase.");
+    } catch (e) {
+      console.error("Error al guardar: ", e);
+      alert("Hubo un error. Abre la consola del navegador (F12) para ver el detalle.");
+    }
+  }
+</script>
 </body>
 </html>
