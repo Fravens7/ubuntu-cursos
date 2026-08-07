@@ -36,7 +36,41 @@
 <button onclick="hacerChiquiprueba()" style="background-color: #28a745; margin-top: 20px;">
     🚀 Enviar Chiquiprueba a Firebase
 </button>
+<!-- PANTALLA 0: INICIO (NUEVA) -->
+    <div id="pantalla-inicio" class="pantalla">
+        <h2>¡Hola! Bienvenido a la Plataforma</h2>
+        <button onclick="mostrarRegistro()" style="background-color: #28a745; margin: 10px;">Soy nuevo, registrarme</button>
+        <br>
+        <button onclick="mostrarLogin()" style="background-color: #007bff; margin: 10px;">Ya tengo una cuenta</button>
+    </div>
 
+    <!-- PANTALLA 0.1: REGISTRO (NUEVA) -->
+    <div id="pantalla-registro" class="pantalla">
+        <h2>Crear nueva cuenta</h2>
+        <input type="email" id="reg-correo" placeholder="Correo electrónico" style="margin-bottom: 10px; width: 80%; max-width: 300px;"><br>
+        <input type="text" id="reg-nombre" placeholder="Tu nombre" style="margin-bottom: 10px; width: 80%; max-width: 300px;"><br>
+        
+        <h3 style="font-size: 18px;">¿Cuántos años tienes?</h3>
+        <select id="reg-edad" style="padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 20px; width: 80%; max-width: 320px; border: 1px solid #ccc;">
+            <option value="" disabled selected>Selecciona tu edad...</option>
+            <option value="ninos">Niños (6-12 años)</option>
+            <option value="jovenes">Joven (13 años +)</option>
+        </select><br>
+
+        <button onclick="procesarRegistro()" style="background-color: #28a745;">Continuar</button>
+        <br><br>
+        <button onclick="volverInicio()" style="background-color: #6c757d; font-size: 14px;">Volver</button>
+    </div>
+
+    <!-- PANTALLA 0.2: LOGIN BÁSICO (NUEVA) -->
+    <div id="pantalla-login" class="pantalla">
+        <h2>Iniciar Sesión</h2>
+        <input type="email" id="login-correo" placeholder="Correo electrónico" style="margin-bottom: 10px; width: 80%; max-width: 300px;"><br>
+        <input type="password" id="login-password" placeholder="Contraseña" style="margin-bottom: 20px; width: 80%; max-width: 300px;"><br>
+        <button onclick="procesarLogin()" style="background-color: #007bff;">Entrar</button>
+        <br><br>
+        <button onclick="volverInicio()" style="background-color: #6c757d; font-size: 14px;">Volver</button>
+    </div>
     
     <!-- PANTALLA 1: SELECCIÓN DE PERFIL -->
     <div id="pantalla-seleccion" class="pantalla">
@@ -252,13 +286,26 @@
         let jugadorActual = null;
         let avatarTemporal = '';
 
+// --- 1.5 NAVEGACIÓN DEL CHIQUILOGIN ---
+        function mostrarRegistro() {
+            cambiarPantalla('pantalla-registro');
+        }
+        function mostrarLogin() {
+            cambiarPantalla('pantalla-login');
+        }
+        function volverInicio() {
+            cambiarPantalla('pantalla-inicio');
+        }
+        function procesarRegistro() {
+            alert("Fase visual lista. Aquí conectaremos Firebase para CREAR la cuenta.");
+        }
+        function procesarLogin() {
+            alert("Fase visual lista. Aquí conectaremos Firebase para ENTRAR.");
+        }
+        
         function iniciarPlataforma() {
-            if (Object.keys(baseDeDatos).length === 0) {
-                cambiarPantalla('pantalla-creacion');
-            } else {
-                renderizarPerfiles();
-                cambiarPantalla('pantalla-seleccion');
-            }
+            // Ahora la puerta de entrada principal es siempre la pantalla de inicio
+            cambiarPantalla('pantalla-inicio');
         }
 
         // --- 2. PERFILES ---
