@@ -181,15 +181,16 @@
         .bloque-palabra:active { transform: scale(0.95); }
         .bloque-palabra:hover { background-color: #e9f5ff; }
     </style>
-    <!-- PANTALLA 8: SIMULADOR HACKER -->
+   <!-- PANTALLA 8: SIMULADOR HACKER -->
     <div id="pantalla-hacker" class="pantalla">
         <h2>💻 Lección 4: Simulador Hacker</h2>
         
         <div class="curso-box terminal-box">
             <p>>_ CONECTANDO A LA IA... [OK]</p>
+            <p style="color: #00cc00; font-style: italic;">>_ OPCIONES DISPONIBLES: "elefante", "auto", "gato"</p>
             <p>>_ INSTRUCCIÓN RECIBIDA:</p>
             <p class="comando">
-                "Crea una imagen de un <input type="text" id="input-hacker" placeholder="ej. gato" autocomplete="off"> volador."
+                "Crea una imagen de un <input type="text" id="input-hacker" placeholder="escribe aquí" autocomplete="off"> volador."
             </p>
             
             <button id="btn-ejecutar" onclick="ejecutarCodigo()">[ EJECUTAR CÓDIGO ]</button>
