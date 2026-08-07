@@ -68,7 +68,8 @@
             <p>Progreso: <strong id="prog-ia">0</strong><strong>%</strong></p>
             <button onclick="abrirLeccion('ia')" style="background-color: #9c27b0;">Jugar Lección 1</button>
             <button onclick="abrirLeccionMultiple()" style="background-color: #673ab7; margin-left: 5px;">Lección 2</button>
-            <button onclick="abrirLeccionFrase()" style="background-color: #3f51b5; margin-left: 5px;">Lección 3</button>
+            <button onclick="abrirLeccionFrase()" style="background-color: #3f51b5; margin-left: 5px;">Lección 3</button>            
+            <button onclick="abrirLeccionHacker()" style="background-color: #2196f3; margin: 5px;">Lección 4</button>
         </div>
 
         <div class="curso-box">
@@ -180,7 +181,41 @@
         .bloque-palabra:active { transform: scale(0.95); }
         .bloque-palabra:hover { background-color: #e9f5ff; }
     </style>
+    <!-- PANTALLA 8: SIMULADOR HACKER -->
+    <div id="pantalla-hacker" class="pantalla">
+        <h2>💻 Lección 4: Simulador Hacker</h2>
+        
+        <div class="curso-box terminal-box">
+            <p>>_ CONECTANDO A LA IA... [OK]</p>
+            <p>>_ INSTRUCCIÓN RECIBIDA:</p>
+            <p class="comando">
+                "Crea una imagen de un <input type="text" id="input-hacker" placeholder="ej. gato" autocomplete="off"> volador."
+            </p>
+            
+            <button id="btn-ejecutar" onclick="ejecutarCodigo()">[ EJECUTAR CÓDIGO ]</button>
 
+            <!-- Consola de carga invisible al inicio -->
+            <p id="texto-carga" style="display: none; color: yellow; margin-top: 20px;"></p>
+            
+            <!-- Aquí aparecerá tu imagen JPG -->
+            <img id="imagen-resultado" src="" alt="Resultado IA" style="display: none; width: 100%; border-radius: 8px; margin-top: 15px; border: 2px solid #00ff00;">
+
+            <!-- Feedback final -->
+            <div id="feedback-hacker" style="display: none; margin-top: 20px; text-align: center;">
+                <p id="texto-feedback-hacker" style="color: white; font-family: Arial, sans-serif;"></p>
+                <button id="btn-continuar-hacker" style="margin-top: 15px;"></button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Estilos exclusivos para la terminal */
+        .terminal-box { background-color: #121212; color: #00ff00; font-family: 'Courier New', Courier, monospace; width: 80%; max-width: 600px; padding: 30px; border: 4px solid #333; }
+        .terminal-box input { background-color: transparent; border: none; border-bottom: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', Courier, monospace; font-size: 18px; width: 120px; text-align: center; outline: none; }
+        .terminal-box input::placeholder { color: #005500; font-style: italic; }
+        #btn-ejecutar { background-color: #00ff00; color: #121212; font-weight: bold; font-family: 'Courier New', Courier, monospace; margin-top: 20px; width: 100%; font-size: 20px; }
+        #btn-ejecutar:hover { background-color: #00cc00; transform: none; }
+    </style>
     
     <script>
         // --- 1. BASE DE DATOS Y ESTADO ---
@@ -487,6 +522,76 @@
                 btnContinuar.style.backgroundColor = "#dc3545";
                 btnContinuar.setAttribute('onclick', 'abrirLeccionFrase()');
             }
+        }
+
+        function abrirLeccionHacker() {
+            // Reiniciamos la consola a su estado de fábrica
+            document.getElementById('input-hacker').value = '';
+            document.getElementById('input-hacker').disabled = false;
+            document.getElementById('btn-ejecutar').style.display = 'block';
+            document.getElementById('texto-carga').style.display = 'none';
+            document.getElementById('imagen-resultado').style.display = 'none';
+            document.getElementById('feedback-hacker').style.display = 'none';
+            
+            cambiarPantalla('pantalla-hacker');
+        }
+
+        function ejecutarCodigo() {
+            // Leemos lo que escribió el niño (quitando espacios y poniéndolo en minúsculas)
+            const palabra = document.getElementById('input-hacker').value.trim().toLowerCase();
+            
+            if (palabra === "") {
+                alert("¡Hey, hacker! Escribe una palabra primero en el espacio.");
+                return;
+            }
+
+            // Bloqueamos el input y el botón mientras la "IA" hace su magia
+            document.getElementById('input-hacker').disabled = true;
+            document.getElementById('btn-ejecutar').style.display = 'none';
+            
+            // Arrancamos la barra de carga falsa
+            const textoCarga = document.getElementById('texto-carga');
+            textoCarga.style.display = 'block';
+            textoCarga.innerText = ">_ Procesando...";
+
+            // Esperamos 1.5 segundos (magia de Hollywood) y mostramos el resultado
+            setTimeout(() => {
+                textoCarga.innerText = ">_ Generando píxeles... [||||||||||] 100%";
+                mostrarResultadoHacker(palabra);
+            }, 1500); 
+        }
+
+        function mostrarResultadoHacker(palabra) {
+            const imagen = document.getElementById('imagen-resultado');
+            const cajaFeedback = document.getElementById('feedback-hacker');
+            const textoFeedback = document.getElementById('texto-feedback-hacker');
+            const btnContinuar = document.getElementById('btn-continuar-hacker');
+
+            // AQUÍ PONES LOS NOMBRES DE TUS JPG. Si pegaste gato.jpg, elefante.jpg y auto.jpg en la misma carpeta:
+            const palabrasValidas = ['gato', 'elefante', 'auto'];
+
+            if (palabrasValidas.includes(palabra)) {
+                // Si adivina una de tus imágenes, la cargamos dinámicamente
+                imagen.src = palabra + ".jpg"; 
+                imagen.style.display = 'block';
+                
+                textoFeedback.innerHTML = "<strong>¡EJECUCIÓN PERFECTA!</strong> Has dado una instrucción exacta y el sistema te ha devuelto el resultado.";
+                
+                // Lo mandamos a la pantalla de Victoria
+                btnContinuar.innerText = "¡Abrir cofre de recompensa! 🎁";
+                btnContinuar.style.backgroundColor = "#ff9800"; 
+                btnContinuar.setAttribute('onclick', 'mostrarVictoria()'); 
+            } else {
+                // Si escribe algo para lo que no tienes imagen
+                imagen.style.display = 'none'; 
+                textoFeedback.innerHTML = `>_ ERROR 404: La base de datos no tiene una imagen para '${palabra}'. <br><br> (Pista: intenta con 'gato', 'elefante' o 'auto').`;
+                
+                btnContinuar.innerText = "Limpiar consola y reintentar 🔄";
+                btnContinuar.style.backgroundColor = "#dc3545";
+                btnContinuar.setAttribute('onclick', 'abrirLeccionHacker()');
+            }
+
+            cajaFeedback.style.display = 'block';
         }
         
     </script>
