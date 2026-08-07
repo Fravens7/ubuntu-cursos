@@ -96,7 +96,30 @@
             </div>
         </div>
     </div>
+<!-- PANTALLA 5: VICTORIA -->
+    <div id="pantalla-victoria" class="pantalla">
+        <!-- Animación sencilla con emojis (puedes cambiarlo por un GIF después) -->
+        <div style="font-size: 80px; margin: 20px 0; animation: saltar 1s infinite alternate;">🎁✨🪙</div>
+        
+        <h2>¡Lección completada!</h2>
+        <p style="font-size: 20px;">Ya eres un aprendiz de mago de la IA.</p>
+        <h3 style="color: #ff9800; font-size: 24px;">⭐ Recompensa: +15 XP ⭐</h3>
+        
+        <button onclick="siguienteNivel()" style="background-color: #ff9800; font-size: 20px; padding: 15px 30px; margin-top: 20px;">
+            ¡Siguiente nivel!
+        </button>
+    </div>
 
+    <!-- Mini-estilo para que el cofre "salte" -->
+    <style>
+        @keyframes saltar { 0% { transform: translateY(0); } 100% { transform: translateY(-15px); } }
+    </style>
+
+
+
+
+
+    
     <script>
         // --- 1. BASE DE DATOS Y ESTADO ---
         let baseDeDatos = JSON.parse(localStorage.getItem('bd_ninos')) || {};
@@ -192,14 +215,15 @@
                 cajaFeedback.style.backgroundColor = '#d4edda';
                 cajaFeedback.style.color = '#155724';
                 cajaFeedback.style.border = '2px solid #c3e6cb';
-                textoFeedback.innerHTML = "<strong>¡Genial!</strong> La IA está aprendiendo contigo. Si se equivoca, solo dile: <em>'No, quiero que el gato sea naranja y tenga un sombrero'</em>, ¡y lo intentará de nuevo!";
+                textoFeedback.innerHTML = "<strong>¡Genial!</strong> La IA está aprendiendo contigo...";
                 
-                // Sumamos el progreso y autoguardamos en la bóveda al instante
-                if (baseDeDatos[jugadorActual].progreso.ia < 100) {
-                    baseDeDatos[jugadorActual].progreso.ia += 25; // Sube 25% por esta lección
-                    guardarEnBoveda();
-                }
+                // CAMBIO AQUÍ: Transformamos el botón para ir a la Victoria
+                const btnContinuar = document.getElementById('btn-continuar');
+                btnContinuar.innerText = "¡Abrir cofre de recompensa! 🎁";
+                btnContinuar.style.backgroundColor = "#ff9800"; // Lo hacemos dorado
+                btnContinuar.setAttribute('onclick', 'mostrarVictoria()'); 
             } else {
+                // RESPUESTA INCORRECTA (Esta parte déjala exactamente igual que antes)
                 // RESPUESTA INCORRECTA
                 cajaFeedback.style.backgroundColor = '#f8d7da';
                 cajaFeedback.style.color = '#721c24';
@@ -243,6 +267,33 @@
         }
 
         iniciarPlataforma();
+
+        function mostrarVictoria() {
+            // 1. Guardamos que existe la variable XP por si es un perfil antiguo
+            if (baseDeDatos[jugadorActual].xp === undefined) {
+                baseDeDatos[jugadorActual].xp = 0;
+            }
+            
+            // 2. Sumamos la experiencia y el progreso del curso
+            baseDeDatos[jugadorActual].xp += 15;
+            if (baseDeDatos[jugadorActual].progreso.ia < 100) {
+                baseDeDatos[jugadorActual].progreso.ia += 25; 
+            }
+            
+            // 3. Autoguardamos en la bóveda
+            guardarEnBoveda();
+            
+            // 4. Mostramos la pantalla 5
+            cambiarPantalla('pantalla-victoria');
+        }
+
+        function siguienteNivel() {
+            // Cuando le dan a "Siguiente nivel", los regresamos al panel principal
+            // (En el futuro, esto podría llevarlos directo a la Lección 2)
+            actualizarPantallaCursos();
+            cambiarPantalla('pantalla-cursos');
+        }
+        
     </script>
 </body>
 </html>
