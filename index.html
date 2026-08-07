@@ -49,13 +49,15 @@
         <h2>Crear nueva cuenta</h2>
         <input type="email" id="reg-correo" placeholder="Correo electrónico" style="margin-bottom: 10px; width: 80%; max-width: 300px;"><br>
         <input type="text" id="reg-nombre" placeholder="Tu nombre" style="margin-bottom: 10px; width: 80%; max-width: 300px;"><br>
+        <input type="password" id="reg-password" placeholder="Crea una contraseña" style="margin-bottom: 20px; width: 80%; max-width: 300px;"><br>
         
         <h3 style="font-size: 18px;">¿Cuántos años tienes?</h3>
-        <select id="reg-edad" style="padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 20px; width: 80%; max-width: 320px; border: 1px solid #ccc;">
-            <option value="" disabled selected>Selecciona tu edad...</option>
-            <option value="ninos">Niños (6-12 años)</option>
-            <option value="jovenes">Joven (13 años +)</option>
-        </select><br>
+        
+        <!-- Zona de los dos botones de edad -->
+        <div id="botones-edad" style="margin-bottom: 20px;">
+            <button class="btn-edad" onclick="seleccionarEdad('ninos', this)" style="background-color: #f8f9fa; color: #333; border: 2px solid #ccc;">Niños (6-12 años)</button>
+            <button class="btn-edad" onclick="seleccionarEdad('adultos', this)" style="background-color: #f8f9fa; color: #333; border: 2px solid #ccc;">Adultos (13 años +)</button>
+        </div>
 
         <button onclick="procesarRegistro()" style="background-color: #28a745;">Continuar</button>
         <br><br>
@@ -296,11 +298,44 @@
         function volverInicio() {
             cambiarPantalla('pantalla-inicio');
         }
-        function procesarRegistro() {
-            alert("Fase visual lista. Aquí conectaremos Firebase para CREAR la cuenta.");
-        }
         function procesarLogin() {
             alert("Fase visual lista. Aquí conectaremos Firebase para ENTRAR.");
+        }
+
+        // --- LÓGICA DE LOS BOTONES DE EDAD Y REGISTRO ---
+        let rangoEdadSeleccionado = ""; // Aquí guardaremos si es niño o adulto
+
+        function seleccionarEdad(rango, elementoBoton) {
+            rangoEdadSeleccionado = rango;
+
+            // 1. Limpiamos todos los botones para que vuelvan a verse grises
+            const botones = document.querySelectorAll('.btn-edad');
+            botones.forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.color = '#333';
+                btn.style.borderColor = '#ccc';
+            });
+
+            // 2. Pintamos de azul solo el botón que el usuario tocó
+            elementoBoton.style.backgroundColor = '#17a2b8';
+            elementoBoton.style.color = 'white';
+            elementoBoton.style.borderColor = '#17a2b8';
+        }
+
+        function procesarRegistro() {
+            // Leemos todo lo que escribió en las cajas de texto
+            const correo = document.getElementById('reg-correo').value.trim();
+            const nombre = document.getElementById('reg-nombre').value.trim();
+            const password = document.getElementById('reg-password').value.trim();
+
+            // Verificamos que no deje nada en blanco
+            if (!correo || !nombre || !password || rangoEdadSeleccionado === "") {
+                alert("Por favor, completa todos los campos y selecciona tu edad.");
+                return;
+            }
+
+            // Nueva alerta temporal comprobando que capturamos todo bien
+            alert("¡Todo capturado!\nNombre: " + nombre + "\nCorreo: " + correo + "\nRango: " + rangoEdadSeleccionado + "\n\n(Listo para inyectar a Firebase)");
         }
         
         function iniciarPlataforma() {
