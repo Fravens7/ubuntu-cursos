@@ -298,8 +298,17 @@
         function volverInicio() {
             cambiarPantalla('pantalla-inicio');
         }
-        function procesarLogin() {
-            alert("Fase visual lista. Aquí conectaremos Firebase para ENTRAR.");
+function procesarLogin() {
+            const correo = document.getElementById('login-correo').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+
+            if (!correo || !password) {
+                alert("Por favor, ingresa tu correo y contraseña.");
+                return;
+            }
+
+            // ¡Validamos con Firebase!
+            window.loginNube(correo, password);
         }
 
         // --- LÓGICA DE LOS BOTONES DE EDAD Y REGISTRO ---
@@ -322,20 +331,18 @@
             elementoBoton.style.borderColor = '#17a2b8';
         }
 
-        function procesarRegistro() {
-            // Leemos todo lo que escribió en las cajas de texto
+function procesarRegistro() {
             const correo = document.getElementById('reg-correo').value.trim();
             const nombre = document.getElementById('reg-nombre').value.trim();
             const password = document.getElementById('reg-password').value.trim();
 
-            // Verificamos que no deje nada en blanco
             if (!correo || !nombre || !password || rangoEdadSeleccionado === "") {
                 alert("Por favor, completa todos los campos y selecciona tu edad.");
                 return;
             }
 
-            // Nueva alerta temporal comprobando que capturamos todo bien
-            alert("¡Todo capturado!\nNombre: " + nombre + "\nCorreo: " + correo + "\nRango: " + rangoEdadSeleccionado + "\n\n(Listo para inyectar a Firebase)");
+            // ¡Enviamos los datos a Firebase!
+            window.registroNube(correo, password, nombre, rangoEdadSeleccionado);
         }
         
         function iniciarPlataforma() {
@@ -707,11 +714,11 @@
         
     </script>
     <script type="module">
-  // Importamos las herramientas directamente desde la web (CDN)
+  // 1. Importaciones actualizadas (Agregamos Auth y nuevas funciones de Firestore)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-  // Tus llaves exactas de Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyAplMdumdxbNTm9ySnkgKINGLoUDtkuXY8",
     authDomain: "ubuntu-cursos.firebaseapp.com",
@@ -721,9 +728,12 @@
     appId: "1:427990859227:web:12fa3ccb9fe081fe41bbfe"
   };
 
-  // Inicializamos la conexión
+  // 2. Inicializamos las herramientas
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app); // ¡NUEVO! Conexión a la autenticación
+
+  // (Tu función window.hacerChiquiprueba se queda igual aquí)
 
   // Función global para la chiquiprueba
   window.hacerChiquiprueba = async function() {
@@ -742,6 +752,55 @@
       alert("Hubo un error. Abre la consola del navegador (F12) para ver el detalle.");
     }
   }
+// --- FASE DE REGISTRO EN LA NUBE ---
+  window.registroNube = async function(correo, password, nombre, edad) {
+    try {
+      // A) Creamos la cuenta segura en Authentication
+      const credencial = await createUserWithEmailAndPassword(auth, correo, password);
+      const usuario = credencial.user;
+
+      // B) Vinculamos su perfil en Firestore usando su ID único (uid)
+      await setDoc(doc(db, "jugadores", usuario.uid), {
+        nombre: nombre,
+        rango_edad: edad,
+        progreso: { mate: 0, ia: 0 },
+        xp: 0,
+        fecha_registro: new Date()
+      });
+
+      alert("¡Cuenta creada con éxito! Por favor inicia sesión.");
+      window.mostrarLogin(); // Lo mandamos a la pantalla de login
+    } catch (error) {
+      alert("Error al crear la cuenta: " + error.message);
+    }
+  };
+
+  // --- FASE DE LOGIN EN LA NUBE ---
+  window.loginNube = async function(correo, password) {
+    try {
+      // A) Validamos credenciales en Authentication
+      const credencial = await signInWithEmailAndPassword(auth, correo, password);
+      const usuario = credencial.user;
+
+      // B) Buscamos su perfil en Firestore
+      const docRef = doc(db, "jugadores", usuario.uid);
+      const perfilGuardado = await getDoc(docRef);
+
+      if (perfilGuardado.exists()) {
+        const datos = perfilGuardado.data();
+        
+        // C) Actualizamos el juego con sus datos y lo dejamos entrar
+        window.entrarAlJuego(datos.nombre);
+      } else {
+        alert("El perfil no existe en la base de datos.");
+      }
+    } catch (error) {
+      alert("Error al iniciar sesión. Revisa tu correo o contraseña.");
+    }
+  };
+</script>
+
+        
 </script>
 </body>
 </html>
