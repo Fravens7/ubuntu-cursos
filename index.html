@@ -789,8 +789,16 @@ function procesarRegistro() {
       if (perfilGuardado.exists()) {
         const datos = perfilGuardado.data();
         
-        // C) Actualizamos el juego con sus datos y lo dejamos entrar
-        window.entrarAlJuego(datos.nombre);
+        // C) Actualizamos el juego con sus datos y lo dejamos entrar (NUEVO FLUJO)
+        jugadorActual = datos.nombre; // Guardamos el nombre globalmente
+        
+        // Actualizamos los textos en pantalla directamente con los datos de Firebase
+        document.getElementById('saludo-jugador').innerText = `¡Hola, ${datos.nombre}!`;
+        document.getElementById('prog-mate').innerText = datos.progreso.mate;
+        document.getElementById('prog-ia').innerText = datos.progreso.ia;
+        
+        // Lo mandamos a la pantalla de cursos
+        window.cambiarPantalla('pantalla-cursos');
       } else {
         alert("El perfil no existe en la base de datos.");
       }
