@@ -1338,6 +1338,103 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: EDITAR CURSO ================= -->
+    <div class="modal-overlay" id="editCourseModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-pen-to-square"></i> Editar Curso</h3>
+                <button class="modal-close" onclick="closeModal('editCourseModal')">&times;</button>
+            </div>
+            <form id="editCourseForm" onsubmit="handleSaveEditCourse(event)">
+                <input type="hidden" id="editCourseId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editCourseTitle">Título del Curso *</label>
+                        <input type="text" id="editCourseTitle" class="form-control" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editCourseCategory">Categoría *</label>
+                            <select id="editCourseCategory" class="form-control" required>
+                                <option value="IA">Inteligencia Artificial</option>
+                                <option value="Matemáticas">Matemáticas & Datos</option>
+                                <option value="Programación">Programación & Web</option>
+                                <option value="Ingeniería">Ingeniería & Robótica</option>
+                                <option value="Ciberseguridad">Ciberseguridad</option>
+                                <option value="Cloud">Cloud & DevOps</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editCourseLevel">Nivel *</label>
+                            <select id="editCourseLevel" class="form-control" required>
+                                <option value="Principiante">Principiante</option>
+                                <option value="Intermedio">Intermedio</option>
+                                <option value="Avanzado">Avanzado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editCourseInstructor">Instructor / Docente *</label>
+                            <input type="text" id="editCourseInstructor" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editCourseDuration">Duración estimada</label>
+                            <input type="text" id="editCourseDuration" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editCourseDescription">Descripción del Curso</label>
+                        <textarea id="editCourseDescription" class="form-control"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editCourseIcon">Icono Temático</label>
+                        <select id="editCourseIcon" class="form-control">
+                            <option value="fa-brain">🧠 Cerebro / IA</option>
+                            <option value="fa-calculator">📐 Calculadora / Matemáticas</option>
+                            <option value="fa-code">💻 Código / Desarrollo</option>
+                            <option value="fa-robot">🤖 Robot / Automatización</option>
+                            <option value="fa-shield-halved">🛡️ Seguridad / Redes</option>
+                            <option value="fa-cloud">☁️ Nube / Servidores</option>
+                        </select>
+                    </div>
+
+                    <!-- MATERIALES Y ENLACES (TÉCNICA DEL ENLACE) -->
+                    <div style="background: var(--bg-body); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px; border: 1px dashed var(--border-color);">
+                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); margin-bottom: 10px;">
+                            <i class="fa-solid fa-link"></i> Materiales del Curso (Técnica del Enlace)
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="editCourseVideoUrl"><i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Enlace de Video (YouTube o Google Drive)</label>
+                            <input type="url" id="editCourseVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=...">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="editCoursePdfUrl"><i class="fa-solid fa-file-pdf" style="color: var(--ubuntu-orange);"></i> Enlace a Diapositivas / Guía PDF (Google Drive / OneDrive)</label>
+                            <input type="url" id="editCoursePdfUrl" class="form-control" placeholder="https://docs.google.com/presentation/d/... o drive.google.com/...">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="editCourseResourceUrl"><i class="fa-solid fa-code" style="color: var(--siemens-teal);"></i> Enlace a Laboratorio / GitHub / Colab / Miro</label>
+                            <input type="url" id="editCourseResourceUrl" class="form-control" placeholder="https://colab.research.google.com/... o github.com/...">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editCourseModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <!-- ================= MODAL 3: PROGRAMAR CLASE EN VIVO (FUTURA) ================= -->
     <div class="modal-overlay" id="createLiveModal">
@@ -1474,7 +1571,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { initCursosModule } from "./cursos.js";
+        import { initCursosModule, setCursosUser } from "./cursos.js";
 
         // Configuración de Firebase
         const firebaseConfig = {
@@ -1534,6 +1631,7 @@
             }
 
             applyUserRoleUI(userDisplayName, currentUserRole);
+            setCursosUser(user, currentUserRole, userDisplayName);
         });
 
         // Actualizar interfaz según el rol y nombre
