@@ -3,83 +3,30 @@
 // Cero costo en Firebase (Técnica del Enlace)
 // ==========================================
 
-import { collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+    collection, 
+    addDoc, 
+    doc, 
+    updateDoc, 
+    arrayUnion, 
+    arrayRemove, 
+    onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Dataset inicial base para catálogo
-const initialCoursesData = [
-    {
-        id: "base-1",
-        title: "Inteligencia Artificial & Deep Learning Aplicado",
-        category: "IA",
-        level: "Intermedio",
-        instructor: "Dra. Elena Rivera",
-        duration: "32 horas",
-        description: "Aprende redes neuronales convolucionales, transformers y creación de modelos predictivos con PyTorch.",
-        rating: 4.9,
-        reviews: 184,
-        icon: "fa-brain",
-        enrolled: true,
-        price: "Gratis",
-        videoUrl: "https://www.youtube.com/watch?v=aircAruvnKk",
-        pdfUrl: "https://drive.google.com",
-        resourceUrl: "https://colab.research.google.com"
-    },
-    {
-        id: "base-2",
-        title: "Matemáticas y Álgebra Lineal para Machine Learning",
-        category: "Matemáticas",
-        level: "Principiante",
-        instructor: "Dr. Manuel Rojas",
-        duration: "24 horas",
-        description: "Vectores, matrices, cálculo multivariable y optimización matemática orientada a algoritmos inteligentes.",
-        rating: 4.8,
-        reviews: 95,
-        icon: "fa-calculator",
-        enrolled: true,
-        price: "Gratis",
-        videoUrl: "https://www.youtube.com/watch?v=fNk_zzaMoSs",
-        pdfUrl: "https://drive.google.com",
-        resourceUrl: "https://github.com"
-    },
-    {
-        id: "base-3",
-        title: "Desarrollo Web Full Stack con Node.js & React",
-        category: "Programación",
-        level: "Intermedio",
-        instructor: "Ing. Carlos Mendoza",
-        duration: "40 horas",
-        description: "Crea aplicaciones modernas escalables con arquitectura REST, bases de datos PostgreSQL y frontend reactivo.",
-        rating: 4.9,
-        reviews: 240,
-        icon: "fa-code",
-        enrolled: false,
-        price: "Gratis",
-        videoUrl: "",
-        pdfUrl: "",
-        resourceUrl: "https://github.com"
-    },
-    {
-        id: "base-4",
-        title: "Robótica Industrial y Control de Automatización Siemens",
-        category: "Ingeniería",
-        level: "Avanzado",
-        instructor: "Ing. Klaus Schmidt",
-        duration: "28 horas",
-        description: "Programación de PLCs Siemens S7-1200/1500, TIA Portal y protocolos industriales Profinet.",
-        rating: 5.0,
-        reviews: 78,
-        icon: "fa-robot",
-        enrolled: false,
-        price: "Certificado Siemens",
-        videoUrl: "",
-        pdfUrl: "https://drive.google.com",
-        resourceUrl: ""
-    }
-];
-
-let coursesList = [...initialCoursesData];
+let coursesList = [];
 let currentCategory = 'all';
 let dbInstance = null;
+let currentAuthUser = null;
+let currentUserRole = 'estudiante';
+let currentUserName = 'Usuario';
+
+// Asignar datos del usuario activo desde index.html
+export function setCursosUser(user, role, name) {
+    currentAuthUser = user;
+    currentUserRole = role ? role.toLowerCase().trim() : 'estudiante';
+    currentUserName = name || 'Usuario';
+    renderCourses();
+}
 
 // Inicializador del módulo con Firestore
 export function initCursosModule(db) {
@@ -90,19 +37,20 @@ export function initCursosModule(db) {
         const cursosRef = collection(db, 'cursos');
         onSnapshot(cursosRef, (snapshot) => {
             const firestoreCourses = [];
-            snapshot.forEach((doc) => {
-                const data = doc.data();
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
                 firestoreCourses.push({
-                    id: doc.id,
+                    id: docSnap.id,
+                    activo: data.activo !== false, // Por defecto activo: true
+                    inscritos: Array.isArray(data.inscritos) ? data.inscritos : [],
                     ...data
                 });
             });
 
-            // Combinar los de Firestore primero + los iniciales que no colisionen
-            coursesList = [...firestoreCourses, ...initialCoursesData.filter(ic => !firestoreCourses.some(fc => fc.id === ic.id))];
+            coursesList = firestoreCourses;
             renderCourses();
         }, (error) => {
-            console.warn("Aviso de Firestore (Cursos): usando datos locales:", error);
+            console.warn("Aviso de Firestore (Cursos):", error);
             renderCourses();
         });
     } catch (err) {
@@ -172,111 +120,6 @@ function getEmbeddableDocumentUrl(url) {
     return null;
 }
 
-// Renderizar Cursos en el Catálogo
-export function renderCourses() {
-    const grid = document.getElementById('coursesGrid');
-    const myGrid = document.getElementById('myCoursesGrid');
-    const searchInput = document.getElementById('searchInput');
-    const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
-
-    let filtered = coursesList.filter(c => {
-        const matchCategory = currentCategory === 'all' || c.category === currentCategory;
-        const matchSearch = (c.title || '').toLowerCase().includes(searchQuery) ||
-                            (c.instructor || '').toLowerCase().includes(searchQuery) ||
-                            (c.category || '').toLowerCase().includes(searchQuery);
-        return matchCategory && matchSearch;
-    });
-
-    if (grid) {
-        if (filtered.length === 0) {
-            grid.innerHTML = `
-                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
-                    <i class="fa-solid fa-search" style="font-size: 2rem; margin-bottom: 12px; display: block;"></i>
-                    No se encontraron cursos con los filtros seleccionados.
-                </div>`;
-        } else {
-            grid.innerHTML = filtered.map(course => `
-                <div class="course-card" onclick="openCourseDetail('${course.id}')">
-                    <div class="course-img-wrapper">
-                        <div class="course-icon-bg">
-                            <i class="fa-solid ${course.icon || 'fa-graduation-cap'}"></i>
-                        </div>
-                        <span class="course-badge">${course.category}</span>
-                        <span class="course-level-badge">${course.level}</span>
-                    </div>
-                    <div class="course-body">
-                        <div class="course-category">${course.category} • ${course.duration || '20 horas'}</div>
-                        <h3 class="course-title">${course.title}</h3>
-                        <p class="course-desc">${course.description || 'Sin descripción disponible.'}</p>
-                        <div class="course-meta">
-                            <span><i class="fa-regular fa-user"></i> ${course.instructor}</span>
-                        </div>
-                        <div class="course-rating">
-                            <span class="stars">★★★★★</span>
-                            <span class="rating-num">${course.rating || 5.0}</span>
-                            <span class="rating-count">(${course.reviews || 1})</span>
-                        </div>
-                        <div class="course-footer">
-                            <span class="course-price">${course.price || 'Gratis'}</span>
-                            <button class="btn btn-sm ${course.enrolled ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleEnroll('${course.id}')">
-                                ${course.enrolled ? '<i class="fa-solid fa-check"></i> Inscrito' : '<i class="fa-solid fa-plus"></i> Inscribirme'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-    }
-
-    // Renderizar Mis Cursos Inscritos
-    const myEnrolled = coursesList.filter(c => c.enrolled);
-    if (myGrid) {
-        if (myEnrolled.length === 0) {
-            myGrid.innerHTML = `
-                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
-                    No tienes cursos inscritos aún. ¡Explora el catálogo e inscríbete para empezar a aprender!
-                </div>`;
-        } else {
-            myGrid.innerHTML = myEnrolled.map(course => `
-                <div class="course-card" onclick="openCourseDetail('${course.id}')">
-                    <div class="course-img-wrapper">
-                        <div class="course-icon-bg" style="background: linear-gradient(135deg, #1E2225, var(--siemens-teal));">
-                            <i class="fa-solid ${course.icon || 'fa-graduation-cap'}"></i>
-                        </div>
-                        <span class="course-badge">${course.category}</span>
-                    </div>
-                    <div class="course-body">
-                        <div class="course-category">En Progreso • Materiales Disponibles</div>
-                        <h3 class="course-title">${course.title}</h3>
-                        <p class="course-desc">${course.description || ''}</p>
-                        <div class="course-footer">
-                            <button class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;" onclick="event.stopPropagation(); openCourseDetail('${course.id}')">
-                                <i class="fa-solid fa-play"></i> Ingresar al Aula Virtual
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-    }
-}
-
-// Inscribirse / Cancelar Inscripción
-export function toggleEnroll(id) {
-    const course = coursesList.find(c => c.id === id);
-    if (course) {
-        course.enrolled = !course.enrolled;
-        renderCourses();
-        if (window.showToast) {
-            if (course.enrolled) {
-                window.showToast(`¡Te has inscrito en "${course.title}"!`, 'success');
-            } else {
-                window.showToast(`Has cancelado tu inscripción en "${course.title}".`);
-            }
-        }
-    }
-}
-
 // Cambiar pestaña multimedia entre Video y Diapositivas
 window.switchMediaTab = function(tabName, btn) {
     document.querySelectorAll('.media-tab-btn').forEach(b => {
@@ -297,6 +140,274 @@ window.switchMediaTab = function(tabName, btn) {
     if (docPane) docPane.style.display = (tabName === 'doc') ? 'block' : 'none';
 };
 
+// Renderizar Cursos en el Catálogo
+export function renderCourses() {
+    const grid = document.getElementById('coursesGrid');
+    const myGrid = document.getElementById('myCoursesGrid');
+    const searchInput = document.getElementById('searchInput');
+    const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'admin');
+    const currentUserId = currentAuthUser ? currentAuthUser.uid : null;
+
+    // Filtrar cursos para el catálogo:
+    // Si es estudiante: solo cursos con activo !== false
+    // Si es profesor: ve todos (los ocultos llevan etiqueta)
+    let filtered = coursesList.filter(c => {
+        const isVisible = isTeacher ? true : (c.activo !== false);
+        const matchCategory = currentCategory === 'all' || c.category === currentCategory;
+        const matchSearch = (c.title || '').toLowerCase().includes(searchQuery) ||
+                            (c.instructor || '').toLowerCase().includes(searchQuery) ||
+                            (c.category || '').toLowerCase().includes(searchQuery);
+        return isVisible && matchCategory && matchSearch;
+    });
+
+    if (grid) {
+        if (filtered.length === 0) {
+            grid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color);">
+                    <i class="fa-solid fa-graduation-cap" style="font-size: 2.5rem; margin-bottom: 12px; display: block; color: var(--siemens-teal);"></i>
+                    <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 6px;">
+                        ${isTeacher ? 'No has publicado cursos aún' : 'No hay cursos disponibles por el momento'}
+                    </h3>
+                    <p style="font-size: 0.85rem; max-width: 420px; margin: 0 auto 16px auto;">
+                        ${isTeacher ? 'Haz clic en el botón "Crear Curso" para subir tu primer curso con videos de YouTube y diapositivas de Google Drive.' : 'Vuelve pronto para explorar nuevos cursos o únete a las clases en vivo.'}
+                    </p>
+                    ${isTeacher ? `
+                        <button class="btn btn-primary" onclick="openCreateCourseModal()">
+                            <i class="fa-solid fa-plus"></i> Crear Mi Primer Curso
+                        </button>` : ''}
+                </div>`;
+        } else {
+            grid.innerHTML = filtered.map(course => {
+                const isEnrolled = currentUserId && Array.isArray(course.inscritos) && course.inscritos.includes(currentUserId);
+                const isHidden = course.activo === false;
+
+                return `
+                <div class="course-card ${isHidden ? 'is-hidden-course' : ''}" onclick="openCourseDetail('${course.id}')" style="${isHidden ? 'opacity: 0.7; border: 1.5px dashed #ef4444;' : ''}">
+                    <div class="course-img-wrapper">
+                        <div class="course-icon-bg">
+                            <i class="fa-solid ${course.icon || 'fa-graduation-cap'}"></i>
+                        </div>
+                        <span class="course-badge">${course.category || 'General'}</span>
+                        <span class="course-level-badge">${course.level || 'Principiante'}</span>
+                        ${isHidden ? '<span style="position: absolute; bottom: 8px; left: 8px; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.05em;"><i class="fa-solid fa-eye-slash"></i> OCULTO</span>' : ''}
+                    </div>
+                    <div class="course-body">
+                        <div class="course-category">${course.category || ''} • ${course.duration || '20 horas'}</div>
+                        <h3 class="course-title">${course.title}</h3>
+                        <p class="course-desc">${course.description || 'Sin descripción disponible.'}</p>
+                        <div class="course-meta">
+                            <span><i class="fa-regular fa-user"></i> ${course.instructor || 'Profesor'}</span>
+                        </div>
+                        
+                        <div class="course-footer" style="flex-wrap: wrap; gap: 8px;">
+                            ${isTeacher ? `
+                                <!-- ACCIONES DE PROFESOR: EDITAR Y OCULTAR -->
+                                <div style="display: flex; gap: 6px; width: 100%; justify-content: space-between; align-items: center;">
+                                    <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditCourseModal('${course.id}')" title="Editar información y enlaces del curso">
+                                        <i class="fa-solid fa-pen-to-square"></i> Editar
+                                    </button>
+                                    <button class="btn btn-sm ${isHidden ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleHideCourse('${course.id}')" title="${isHidden ? 'Volver a mostrar en el catálogo' : 'Ocultar curso del catálogo'}">
+                                        <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'}"></i> ${isHidden ? 'Reactivar' : 'Ocultar'}
+                                    </button>
+                                </div>
+                            ` : `
+                                <!-- ACCIÓN DE ESTUDIANTE: INSCRIBIRME -->
+                                <span class="course-price">${course.price || 'Gratis'}</span>
+                                <button class="btn btn-sm ${isEnrolled ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleEnroll('${course.id}')">
+                                    ${isEnrolled ? '<i class="fa-solid fa-check"></i> Inscrito' : '<i class="fa-solid fa-plus"></i> Inscribirme'}
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // Renderizar Mis Cursos Inscritos (Para estudiantes y profesores)
+    const myEnrolled = coursesList.filter(c => {
+        if (!currentUserId) return false;
+        return Array.isArray(c.inscritos) && c.inscritos.includes(currentUserId);
+    });
+
+    if (myGrid) {
+        if (myEnrolled.length === 0) {
+            myGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color);">
+                    <i class="fa-solid fa-book-open-reader" style="font-size: 2.5rem; margin-bottom: 12px; display: block; color: var(--ubuntu-orange);"></i>
+                    <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 6px;">No tienes cursos inscritos aún</h3>
+                    <p style="font-size: 0.85rem; max-width: 400px; margin: 0 auto 16px auto;">Explora nuestro catálogo de cursos especializados y presiona "Inscribirme" para empezar tu ruta de aprendizaje.</p>
+                    <button class="btn btn-outline" onclick="switchView('view-courses', document.querySelectorAll('.nav-item')[0])">
+                        <i class="fa-solid fa-compass"></i> Explorar Catálogo de Cursos
+                    </button>
+                </div>`;
+        } else {
+            myGrid.innerHTML = myEnrolled.map(course => `
+                <div class="course-card" onclick="openCourseDetail('${course.id}')">
+                    <div class="course-img-wrapper">
+                        <div class="course-icon-bg" style="background: linear-gradient(135deg, #1E2225, var(--siemens-teal));">
+                            <i class="fa-solid ${course.icon || 'fa-graduation-cap'}"></i>
+                        </div>
+                        <span class="course-badge">${course.category || 'General'}</span>
+                    </div>
+                    <div class="course-body">
+                        <div class="course-category"><i class="fa-solid fa-circle-check" style="color: var(--ubuntu-green);"></i> Inscrito • Materiales Listos</div>
+                        <h3 class="course-title">${course.title}</h3>
+                        <p class="course-desc">${course.description || ''}</p>
+                        <div class="course-footer">
+                            <button class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;" onclick="event.stopPropagation(); openCourseDetail('${course.id}')">
+                                <i class="fa-solid fa-play"></i> Ingresar al Aula Virtual
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+// Inscribirse / Cancelar Inscripción (Persistente en Firestore)
+export async function toggleEnroll(id) {
+    if (!currentAuthUser) {
+        if (window.showToast) window.showToast('Debes iniciar sesión para inscribirte.', 'normal');
+        return;
+    }
+
+    const course = coursesList.find(c => c.id === id);
+    if (!course) return;
+
+    const currentUserId = currentAuthUser.uid;
+    const isEnrolled = Array.isArray(course.inscritos) && course.inscritos.includes(currentUserId);
+
+    try {
+        if (dbInstance) {
+            const courseRef = doc(dbInstance, 'cursos', id);
+            if (isEnrolled) {
+                await updateDoc(courseRef, {
+                    inscritos: arrayRemove(currentUserId)
+                });
+                if (window.showToast) window.showToast(`Has cancelado tu inscripción en "${course.title}".`);
+            } else {
+                await updateDoc(courseRef, {
+                    inscritos: arrayUnion(currentUserId)
+                });
+                if (window.showToast) window.showToast(`¡Te has inscrito en "${course.title}"!`, 'success');
+            }
+        }
+    } catch (error) {
+        console.error("Error al actualizar inscripción:", error);
+        // Fallback local
+        if (isEnrolled) {
+            course.inscritos = course.inscritos.filter(uid => uid !== currentUserId);
+        } else {
+            course.inscritos.push(currentUserId);
+        }
+        renderCourses();
+    }
+}
+
+// Ocultar / Reactivar Curso (Soft Delete para Profesor)
+export async function toggleHideCourse(id) {
+    const course = coursesList.find(c => c.id === id);
+    if (!course) return;
+
+    const newActiveState = course.activo === false ? true : false;
+
+    try {
+        if (dbInstance) {
+            const courseRef = doc(dbInstance, 'cursos', id);
+            await updateDoc(courseRef, {
+                activo: newActiveState
+            });
+        } else {
+            course.activo = newActiveState;
+            renderCourses();
+        }
+
+        if (window.showToast) {
+            if (newActiveState) {
+                window.showToast(`El curso "${course.title}" ahora es visible en el catálogo.`, 'success');
+            } else {
+                window.showToast(`El curso "${course.title}" ha sido ocultado del catálogo.`);
+            }
+        }
+    } catch (error) {
+        console.error("Error al cambiar estado del curso:", error);
+        if (window.showToast) window.showToast("Error al modificar el estado del curso.");
+    }
+}
+
+// Abrir Modal para Editar Curso
+export function openEditCourseModal(id) {
+    const course = coursesList.find(c => c.id === id);
+    if (!course) return;
+
+    document.getElementById('editCourseId').value = course.id;
+    document.getElementById('editCourseTitle').value = course.title || '';
+    document.getElementById('editCourseCategory').value = course.category || 'IA';
+    document.getElementById('editCourseLevel').value = course.level || 'Principiante';
+    document.getElementById('editCourseInstructor').value = course.instructor || currentUserName;
+    document.getElementById('editCourseDuration').value = course.duration || '20 horas';
+    document.getElementById('editCourseDescription').value = course.description || '';
+    document.getElementById('editCourseIcon').value = course.icon || 'fa-graduation-cap';
+    document.getElementById('editCourseVideoUrl').value = course.videoUrl || '';
+    document.getElementById('editCoursePdfUrl').value = course.pdfUrl || '';
+    document.getElementById('editCourseResourceUrl').value = course.resourceUrl || '';
+
+    const modal = document.getElementById('editCourseModal');
+    if (modal) modal.classList.add('active');
+}
+
+// Guardar Cambios de Edición en Firestore
+export async function handleSaveEditCourse(e) {
+    e.preventDefault();
+
+    const id = document.getElementById('editCourseId').value;
+    const title = document.getElementById('editCourseTitle').value.trim();
+    const category = document.getElementById('editCourseCategory').value;
+    const level = document.getElementById('editCourseLevel').value;
+    const instructor = document.getElementById('editCourseInstructor').value.trim();
+    const duration = document.getElementById('editCourseDuration').value.trim() || '20 horas';
+    const description = document.getElementById('editCourseDescription').value.trim();
+    const icon = document.getElementById('editCourseIcon').value || 'fa-graduation-cap';
+    const videoUrl = document.getElementById('editCourseVideoUrl').value.trim();
+    const pdfUrl = document.getElementById('editCoursePdfUrl').value.trim();
+    const resourceUrl = document.getElementById('editCourseResourceUrl').value.trim();
+
+    const updatedData = {
+        title,
+        category,
+        level,
+        instructor,
+        duration,
+        description,
+        icon,
+        videoUrl,
+        pdfUrl,
+        resourceUrl,
+        updatedAt: new Date().toISOString()
+    };
+
+    try {
+        if (dbInstance) {
+            const courseRef = doc(dbInstance, 'cursos', id);
+            await updateDoc(courseRef, updatedData);
+        } else {
+            const course = coursesList.find(c => c.id === id);
+            if (course) Object.assign(course, updatedData);
+            renderCourses();
+        }
+
+        if (window.closeModal) window.closeModal('editCourseModal');
+        if (window.showToast) window.showToast(`¡Curso "${title}" actualizado con éxito!`, 'success');
+    } catch (error) {
+        console.error("Error al guardar edición en Firestore:", error);
+        if (window.showToast) window.showToast("Error al guardar los cambios.");
+    }
+}
+
 // Abrir Aula Virtual / Detalle del Curso (Modal con Video YouTube, PDF y Recursos)
 export function openCourseDetail(id) {
     const course = coursesList.find(c => c.id === id);
@@ -305,8 +416,12 @@ export function openCourseDetail(id) {
     const modal = document.getElementById('courseDetailModal');
     if (!modal) return;
 
+    const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'admin');
+    const currentUserId = currentAuthUser ? currentAuthUser.uid : null;
+    const isEnrolled = currentUserId && Array.isArray(course.inscritos) && course.inscritos.includes(currentUserId);
+
     document.getElementById('detailCourseTitle').textContent = course.title;
-    document.getElementById('detailCourseCategory').textContent = `${course.category} • Nivel ${course.level}`;
+    document.getElementById('detailCourseCategory').textContent = `${course.category || 'Curso'} • Nivel ${course.level || 'Principiante'}`;
     document.getElementById('detailCourseInstructor').innerHTML = `<i class="fa-regular fa-user"></i> Instructor: <strong>${course.instructor}</strong> • Duración: ${course.duration || '20 horas'}`;
     document.getElementById('detailCourseDesc').textContent = course.description || 'Sin descripción adicional.';
 
@@ -316,7 +431,7 @@ export function openCourseDetail(id) {
 
     // Contenido multimedia interactivo (Video y/o Diapositivas)
     if (videoEmbedUrl && docEmbedUrl) {
-        // AMBOS PRESENTES: Renderizar pestañas para alternar entre video y diapositivas
+        // AMBOS PRESENTES: Pestañas interactivas
         videoContainer.innerHTML = `
             <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                 <button type="button" class="btn btn-sm media-tab-btn" onclick="switchMediaTab('video', this)" style="background: var(--siemens-teal); color: #fff; border: 1.5px solid var(--siemens-teal); border-radius: 20px;">
@@ -335,13 +450,13 @@ export function openCourseDetail(id) {
         `;
         videoContainer.style.display = 'block';
     } else if (docEmbedUrl) {
-        // SOLO DIAPOSITIVAS / DOCUMENTO (Google Slides / Google Drive PDF)
+        // SOLO DIAPOSITIVAS / PRESENTACIÓN DE GOOGLE SLIDES / PDF
         videoContainer.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                 <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Diapositivas Interactivas
                 </span>
-                <a href="${course.pdfUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="Abrir en pestaña completa de Google Drive">
+                <a href="${course.pdfUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="Abrir en pestaña completa">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> Pantalla Completa
                 </a>
             </div>
@@ -357,7 +472,7 @@ export function openCourseDetail(id) {
             </div>`;
         videoContainer.style.display = 'block';
     } else if (course.videoUrl) {
-        // Enlace de video no embebible (ej: link crudo de Drive)
+        // Enlace no embebible
         videoContainer.innerHTML = `
             <div style="margin-bottom: 16px;">
                 <a href="${course.videoUrl}" target="_blank" class="btn btn-orange" style="width: 100%; justify-content: center;">
@@ -392,15 +507,23 @@ export function openCourseDetail(id) {
         }
     }
 
-    // Botón Inscribirse / Estado
+    // Botón Inscribirse / Estado en Modal
     const btnEnroll = document.getElementById('detailBtnEnroll');
     if (btnEnroll) {
-        btnEnroll.className = `btn ${course.enrolled ? 'btn-green' : 'btn-primary'}`;
-        btnEnroll.innerHTML = course.enrolled ? '<i class="fa-solid fa-check"></i> Ya estás inscrito' : '<i class="fa-solid fa-plus"></i> Inscribirme a este Curso';
-        btnEnroll.onclick = () => {
-            toggleEnroll(course.id);
-            openCourseDetail(course.id);
-        };
+        if (isTeacher) {
+            btnEnroll.className = 'btn btn-outline';
+            btnEnroll.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar este Curso';
+            btnEnroll.onclick = () => {
+                window.closeModal('courseDetailModal');
+                openEditCourseModal(course.id);
+            };
+        } else {
+            btnEnroll.className = `btn ${isEnrolled ? 'btn-green' : 'btn-primary'}`;
+            btnEnroll.innerHTML = isEnrolled ? '<i class="fa-solid fa-check"></i> Ya estás inscrito' : '<i class="fa-solid fa-plus"></i> Inscribirme a este Curso';
+            btnEnroll.onclick = () => {
+                toggleEnroll(course.id);
+            };
+        }
     }
 
     modal.classList.add('active');
@@ -413,7 +536,7 @@ export async function handleCreateCourse(e) {
     const title = document.getElementById('courseTitle').value.trim();
     const category = document.getElementById('courseCategory').value;
     const level = document.getElementById('courseLevel').value;
-    const instructor = (document.getElementById('courseInstructor') && document.getElementById('courseInstructor').value.trim()) || 'Profesor';
+    const instructor = (document.getElementById('courseInstructor') && document.getElementById('courseInstructor').value.trim()) || currentUserName;
     const duration = document.getElementById('courseDuration').value.trim() || '20 horas';
     const description = document.getElementById('courseDescription').value.trim();
     const icon = document.getElementById('courseIcon').value || 'fa-graduation-cap';
@@ -436,7 +559,8 @@ export async function handleCreateCourse(e) {
         resourceUrl,
         rating: 5.0,
         reviews: 1,
-        enrolled: false,
+        inscritos: [],
+        activo: true,
         price: "Gratis",
         createdAt: new Date().toISOString()
     };
@@ -458,13 +582,7 @@ export async function handleCreateCourse(e) {
         }
     } catch (error) {
         console.error("Error guardando curso en Firestore:", error);
-        newCourseData.id = 'local-' + Date.now();
-        coursesList.unshift(newCourseData);
-        renderCourses();
-        if (window.closeModal) window.closeModal('createCourseModal');
-        if (window.showToast) {
-            window.showToast(`¡Curso "${title}" publicado localmente!`, 'success');
-        }
+        if (window.showToast) window.showToast(`Error al publicar el curso en la base de datos.`);
     }
 }
 
@@ -485,5 +603,8 @@ window.renderCourses = renderCourses;
 window.toggleEnroll = toggleEnroll;
 window.openCourseDetail = openCourseDetail;
 window.handleCreateCourse = handleCreateCourse;
+window.openEditCourseModal = openEditCourseModal;
+window.handleSaveEditCourse = handleSaveEditCourse;
+window.toggleHideCourse = toggleHideCourse;
 window.setCategoryFilter = setCategoryFilter;
 window.filterCourses = filterCourses;
