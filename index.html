@@ -1619,7 +1619,7 @@
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 // No hay sesión -> Volver al Login
-                window.location.href = 'login.html';
+                window.location.href = '/login';
                 return;
             }
 
@@ -1705,10 +1705,10 @@
         async function logout() {
             try {
                 await signOut(auth);
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             } catch (error) {
                 console.error("Error al cerrar sesión:", error);
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             }
         }
         window.logout = logout;
