@@ -322,6 +322,16 @@
         .btn-danger:hover {
             background: #dc2626;
         }
+        .btn-outline-danger {
+            border: 1.5px solid #fca5a5;
+            color: #ef4444;
+            background: #fff;
+        }
+        .btn-outline-danger:hover {
+            border-color: #ef4444;
+            background: #fee2e2;
+            color: #dc2626;
+        }
         .btn-jitsi-live {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             color: #fff;
@@ -1425,11 +1435,16 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" onclick="closeModal('editCourseModal')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteCourse(document.getElementById('editCourseId').value)" title="Eliminar este curso permanentemente">
+                        <i class="fa-solid fa-trash-can"></i> Eliminar Curso
                     </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-outline" onclick="closeModal('editCourseModal')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1556,7 +1571,12 @@
                 </div>
             </div>
             <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-                <button type="button" class="btn btn-outline" onclick="closeModal('courseDetailModal')">Cerrar</button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('courseDetailModal')">Cerrar</button>
+                    <button type="button" id="detailBtnDelete" class="btn btn-outline-danger btn-sm" style="display: none;" title="Eliminar curso permanentemente">
+                        <i class="fa-solid fa-trash-can"></i> Eliminar
+                    </button>
+                </div>
                 <button type="button" id="detailBtnEnroll" class="btn btn-primary"></button>
             </div>
         </div>
@@ -1571,7 +1591,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { initCursosModule, setCursosUser } from "./cursos.js";
+        import { initCursosModule, setCursosUser, deleteCourse } from "./cursos.js";
 
         // Configuración de Firebase
         const firebaseConfig = {
