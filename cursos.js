@@ -202,7 +202,76 @@ function getEmbeddableResourceUrl(url) {
     return null;
 }
 
-// Cargar y renderizar cuaderno Jupyter (.ipynb) nativamente en el navegador sin depender de servidores lentos
+// Resaltador de sintaxis Python estilo Google Colab / VS Code Dark
+function highlightPythonCode(rawCode) {
+    if (!rawCode) return '';
+    
+    // Escapar caracteres HTML básicos
+    let text = rawCode
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const tokens = [];
+
+    // 1. Strings (Comillas simples y dobles)
+    text = text.replace(/("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, (match) => {
+        const id = `___STR_${tokens.length}___`;
+        tokens.push({ id, html: `<span style="color: #ce9178;">${match}</span>` });
+        return id;
+    });
+
+    // 2. Comentarios (# ...)
+    text = text.replace(/(#[^\n]*)/g, (match) => {
+        const id = `___COMM_${tokens.length}___`;
+        tokens.push({ id, html: `<span style="color: #6a9955; font-style: italic;">${match}</span>` });
+        return id;
+    });
+
+    // 3. Números (enteros y flotantes)
+    text = text.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span style="color: #b5cea8;">$1</span>');
+
+    // 4. Palabras clave de Python
+    const keywords = ['def', 'return', 'for', 'in', 'if', 'elif', 'else', 'while', 'break', 'continue', 'import', 'from', 'as', 'try', 'except', 'finally', 'with', 'class', 'lambda', 'yield', 'and', 'or', 'not', 'is', 'pass', 'raise'];
+    const kwRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+    text = text.replace(kwRegex, '<span style="color: #c586c0; font-weight: 600;">$1</span>');
+
+    // 5. Funciones integradas (Built-ins)
+    const builtins = ['print', 'input', 'len', 'int', 'float', 'str', 'tuple', 'list', 'dict', 'set', 'range', 'sum', 'min', 'max', 'abs', 'round', 'enumerate', 'zip', 'map', 'filter', 'open', 'type', 'isinstance'];
+    const biRegex = new RegExp(`\\b(${builtins.join('|')})\\b(?=\\s*\\()`, 'g');
+    text = text.replace(biRegex, '<span style="color: #dcdcaa;">$1</span>');
+
+    // 6. Nombres de funciones invocadas
+    text = text.replace(/\b([a-zA-Z_]\w*)\s*(?=\()/g, '<span style="color: #dcdcaa;">$1</span>');
+
+    // Restaurar cadenas y comentarios
+    tokens.forEach(t => {
+        text = text.replace(t.id, t.html);
+    });
+
+    return text;
+}
+
+// Almacén seguro de celdas para copiado sin errores de sintaxis
+window.__notebookCells = window.__notebookCells || {};
+window.copyNotebookCell = function(cellKey) {
+    const code = window.__notebookCells ? window.__notebookCells[cellKey] : null;
+    if (code) {
+        navigator.clipboard.writeText(code).then(() => {
+            if (window.showToast) window.showToast('Código copiado al portapapeles', 'success');
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = code;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (window.showToast) window.showToast('Código copiado al portapapeles', 'success');
+        });
+    }
+};
+
+// Cargar y renderizar cuaderno Jupyter (.ipynb) nativamente con diseño Google Colab
 async function loadAndRenderNotebook(containerElement, rawUrl, directUrl) {
     if (!containerElement) return;
 
@@ -238,6 +307,8 @@ async function loadAndRenderNotebook(containerElement, rawUrl, directUrl) {
         if (Array.isArray(notebook.cells)) {
             notebook.cells.forEach((cell, idx) => {
                 const sourceText = Array.isArray(cell.source) ? cell.source.join('') : (cell.source || '');
+                const cellKey = `cell_${Date.now()}_${idx}`;
+                window.__notebookCells[cellKey] = sourceText;
                 
                 if (cell.cell_type === 'markdown') {
                     // Renderizar Markdown limpio
@@ -258,11 +329,8 @@ async function loadAndRenderNotebook(containerElement, rawUrl, directUrl) {
                         </div>
                     `;
                 } else if (cell.cell_type === 'code') {
-                    // Renderizar Celda de Código
-                    const escapedCode = sourceText
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
+                    // Resaltado de sintaxis estilo Google Colab
+                    const highlightedCode = highlightPythonCode(sourceText);
 
                     // Renderizar Outputs si existen
                     let outputHtml = '';
@@ -275,17 +343,20 @@ async function loadAndRenderNotebook(containerElement, rawUrl, directUrl) {
                         });
                     }
 
-                    const copyData = sourceText.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-
                     notebookHtml += `
                         <div style="margin-bottom: 18px; border-radius: 8px; overflow: hidden; border: 1px solid #33383f; background: #111214;">
                             <div style="display: flex; justify-content: space-between; align-items: center; background: #1a1d21; padding: 6px 14px; border-bottom: 1px solid #272b30;">
-                                <span style="font-size: 0.72rem; font-family: monospace; color: #71717a; font-weight: 600;">[ ${cell.execution_count ? cell.execution_count : ' '} ] In Python:</span>
-                                <button type="button" onclick="navigator.clipboard.writeText(\`${copyData}\`); if(window.showToast) window.showToast('Código copiado al portapapeles', 'success');" style="background: transparent; border: 0; color: #a1a1aa; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 2px 6px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: #272b30; color: #38bdf8; font-size: 0.65rem;">
+                                        <i class="fa-solid fa-play" style="margin-left: 1px;"></i>
+                                    </span>
+                                    <span style="font-size: 0.72rem; font-family: monospace; color: #71717a; font-weight: 600;">[ ${cell.execution_count ? cell.execution_count : ' '} ] In Python:</span>
+                                </div>
+                                <button type="button" onclick="copyNotebookCell('${cellKey}')" style="background: transparent; border: 0; color: #a1a1aa; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 2px 6px;">
                                     <i class="fa-regular fa-copy"></i> Copiar Código
                                 </button>
                             </div>
-                            <pre style="margin: 0; padding: 14px; background: #111214; color: #38bdf8; font-family: 'Consolas', 'Fira Code', monospace; font-size: 0.88rem; line-height: 1.55; overflow-x: auto; white-space: pre;"><code>${escapedCode}</code></pre>
+                            <pre style="margin: 0; padding: 14px; background: #111214; color: #d4d4d4; font-family: 'Consolas', 'Fira Code', monospace; font-size: 0.88rem; line-height: 1.55; overflow-x: auto; white-space: pre;"><code>${highlightedCode}</code></pre>
                             ${outputHtml ? `<div style="border-top: 1px solid #272b30; background: #131416;">${outputHtml}</div>` : ''}
                         </div>
                     `;
