@@ -1282,6 +1282,28 @@
                             <option value="fa-cloud">☁️ Nube / Servidores</option>
                         </select>
                     </div>
+
+                    <!-- MATERIALES Y ENLACES (TÉCNICA DEL ENLACE - CERO COSTO FIREBASE) -->
+                    <div style="background: var(--bg-body); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px; border: 1px dashed var(--border-color);">
+                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); margin-bottom: 10px;">
+                            <i class="fa-solid fa-link"></i> Materiales del Curso (Técnica del Enlace)
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="courseVideoUrl"><i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Enlace de Video (YouTube o Google Drive)</label>
+                            <input type="url" id="courseVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=... o drive.google.com/...">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="coursePdfUrl"><i class="fa-solid fa-file-pdf" style="color: var(--ubuntu-orange);"></i> Enlace a Diapositivas / Guía PDF (Google Drive / OneDrive)</label>
+                            <input type="url" id="coursePdfUrl" class="form-control" placeholder="https://drive.google.com/file/d/.../view">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="courseResourceUrl"><i class="fa-solid fa-code" style="color: var(--siemens-teal);"></i> Enlace a Laboratorio / GitHub / Colab / Miro</label>
+                            <input type="url" id="courseResourceUrl" class="form-control" placeholder="https://colab.research.google.com/... o github.com/...">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeModal('createCourseModal')">Cancelar</button>
@@ -1380,6 +1402,46 @@
         </div>
     </div>
 
+    <!-- ================= MODAL 5: AULA VIRTUAL / DETALLE DE CURSO ================= -->
+    <div class="modal-overlay" id="courseDetailModal">
+        <div class="modal-box" style="max-width: 760px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--siemens-slate), var(--siemens-teal));">
+                <div>
+                    <span id="detailCourseCategory" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--siemens-teal-light); font-weight: 700;"></span>
+                    <h3 id="detailCourseTitle" style="margin-top: 2px;"></h3>
+                </div>
+                <button class="modal-close" onclick="closeModal('courseDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 24px;">
+                <!-- Video Container -->
+                <div id="detailVideoContainer"></div>
+
+                <!-- Instructor y Duración -->
+                <div id="detailCourseInstructor" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;"></div>
+
+                <!-- Descripción / Temario -->
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; color: var(--siemens-slate);">Sobre este Curso / Instrucciones</h4>
+                    <p id="detailCourseDesc" style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;"></p>
+                </div>
+
+                <!-- Botones de Materiales y Recursos -->
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;">
+                    <a id="detailBtnPdf" href="#" target="_blank" class="btn btn-orange btn-sm" style="display: none;">
+                        <i class="fa-solid fa-file-pdf"></i> Ver Diapositivas / PDF (Drive)
+                    </a>
+                    <a id="detailBtnResource" href="#" target="_blank" class="btn btn-outline btn-sm" style="display: none;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Laboratorio / Recursos
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn btn-outline" onclick="closeModal('courseDetailModal')">Cerrar</button>
+                <button type="button" id="detailBtnEnroll" class="btn btn-primary"></button>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -1389,6 +1451,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initCursosModule } from "./cursos.js";
 
         // Configuración de Firebase
         const firebaseConfig = {
@@ -1403,6 +1466,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // Inicializar módulo de Cursos con Firestore
+        initCursosModule(db);
 
         // Estado del usuario activo
         let currentUser = null;
@@ -1510,136 +1576,6 @@
         let currentJitsiApi = null;
         let lastCreatedRoomUrl = '';
 
-        // Initial Dataset: 9+ Standard Courses
-        let coursesData = [
-            {
-                id: 1,
-                title: "Inteligencia Artificial & Deep Learning Aplicado",
-                category: "IA",
-                level: "Intermedio",
-                instructor: "Dra. Elena Rivera",
-                duration: "32 horas",
-                description: "Aprende redes neuronales convolucionales, transformers y creación de modelos predictivos con PyTorch.",
-                rating: 4.9,
-                reviews: 184,
-                icon: "fa-brain",
-                enrolled: true,
-                price: "Gratis"
-            },
-            {
-                id: 2,
-                title: "Matemáticas y Álgebra Lineal para Machine Learning",
-                category: "Matemáticas",
-                level: "Principiante",
-                instructor: "Dr. Manuel Rojas",
-                duration: "24 horas",
-                description: "Vectores, matrices, cálculo multivariable y optimización matemática orientada a algoritmos inteligentes.",
-                rating: 4.8,
-                reviews: 95,
-                icon: "fa-calculator",
-                enrolled: true,
-                price: "Gratis"
-            },
-            {
-                id: 3,
-                title: "Desarrollo Web Full Stack con Node.js & React",
-                category: "Programación",
-                level: "Intermedio",
-                instructor: "Ing. Carlos Mendoza",
-                duration: "40 horas",
-                description: "Crea aplicaciones modernas escalables con arquitectura REST, bases de datos PostgreSQL y frontend reactivo.",
-                rating: 4.9,
-                reviews: 240,
-                icon: "fa-code",
-                enrolled: false,
-                price: "Gratis"
-            },
-            {
-                id: 4,
-                title: "Robótica Industrial y Control de Automatización Siemens",
-                category: "Ingeniería",
-                level: "Avanzado",
-                instructor: "Ing. Klaus Schmidt",
-                duration: "28 horas",
-                description: "Programación de PLCs Siemens S7-1200/1500, TIA Portal y protocolos industriales Profinet.",
-                rating: 5.0,
-                reviews: 78,
-                icon: "fa-robot",
-                enrolled: false,
-                price: "Certificado Siemens"
-            },
-            {
-                id: 5,
-                title: "Ciberseguridad Ofensiva y Análisis Forense Digital",
-                category: "Ciberseguridad",
-                level: "Intermedio",
-                instructor: "Mg. Andrea Prado",
-                duration: "30 horas",
-                description: "Técnicas de pentesting ético, seguridad en redes corporativas, detección de vulnerabilidades y mitigación.",
-                rating: 4.7,
-                reviews: 112,
-                icon: "fa-shield-halved",
-                enrolled: false,
-                price: "Gratis"
-            },
-            {
-                id: 6,
-                title: "Cloud Architecture y DevOps con Kubernetes & Docker",
-                category: "Cloud",
-                level: "Avanzado",
-                instructor: "Ing. Roberto Paz",
-                duration: "35 horas",
-                description: "Despliegue de microservicios, CI/CD con GitHub Actions y gestión de infraestructura como código.",
-                rating: 4.8,
-                reviews: 130,
-                icon: "fa-cloud",
-                enrolled: false,
-                price: "Gratis"
-            },
-            {
-                id: 7,
-                title: "Ciencia de Datos y Análisis Estadístico con Python",
-                category: "Matemáticas",
-                level: "Principiante",
-                instructor: "Lic. Fernanda Castro",
-                duration: "22 horas",
-                description: "Pandas, NumPy, visualización interactiva con Seaborn y pruebas de hipótesis estadísticas.",
-                rating: 4.9,
-                reviews: 165,
-                icon: "fa-chart-line",
-                enrolled: true,
-                price: "Gratis"
-            },
-            {
-                id: 8,
-                title: "Sistemas Embebidos e Internet de las Cosas (IoT)",
-                category: "Ingeniería",
-                level: "Intermedio",
-                instructor: "Ing. Javier Delgado",
-                duration: "26 horas",
-                description: "Diseño de sensores inteligentes, ESP32, comunicación MQTT y plataformas cloud para IoT.",
-                rating: 4.6,
-                reviews: 88,
-                icon: "fa-microchip",
-                enrolled: false,
-                price: "Gratis"
-            },
-            {
-                id: 9,
-                title: "Modelos de Lenguaje y Procesamiento de Lenguaje Natural (NLP)",
-                category: "IA",
-                level: "Avanzado",
-                instructor: "Dr. Víctor Salazar",
-                duration: "28 horas",
-                description: "Fine-tuning de LLMs, embeddings vectoriales, RAG (Retrieval Augmented Generation) y LangChain.",
-                rating: 4.9,
-                reviews: 142,
-                icon: "fa-brain",
-                enrolled: false,
-                price: "Gratis"
-            }
-        ];
-
         // Live Classes Dataset
         let liveClassesData = [
             {
@@ -1694,96 +1630,6 @@
                 platform: "meet.jit.si/UbuntuPeru_Siemens_Automation"
             }
         ];
-
-        let currentCategory = 'all';
-
-        // Render Courses
-        function renderCourses() {
-            const grid = document.getElementById('coursesGrid');
-            const myGrid = document.getElementById('myCoursesGrid');
-            const searchInput = document.getElementById('searchInput');
-            const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
-            
-            let filtered = coursesData.filter(c => {
-                const matchCategory = currentCategory === 'all' || c.category === currentCategory;
-                const matchSearch = c.title.toLowerCase().includes(searchQuery) || 
-                                    c.instructor.toLowerCase().includes(searchQuery) ||
-                                    c.category.toLowerCase().includes(searchQuery);
-                return matchCategory && matchSearch;
-            });
-
-            if (!grid) return;
-
-            if (filtered.length === 0) {
-                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
-                    <i class="fa-solid fa-search" style="font-size: 2rem; margin-bottom: 12px; display: block;"></i>
-                    No se encontraron cursos con los filtros seleccionados.
-                </div>`;
-            } else {
-                grid.innerHTML = filtered.map(course => `
-                    <div class="course-card" onclick="toggleEnroll(${course.id})">
-                        <div class="course-img-wrapper">
-                            <div class="course-icon-bg">
-                                <i class="fa-solid ${course.icon || 'fa-graduation-cap'}"></i>
-                            </div>
-                            <span class="course-badge">${course.category}</span>
-                            <span class="course-level-badge">${course.level}</span>
-                        </div>
-                        <div class="course-body">
-                            <div class="course-category">${course.category} • ${course.duration}</div>
-                            <h3 class="course-title">${course.title}</h3>
-                            <p class="course-desc">${course.description}</p>
-                            <div class="course-meta">
-                                <span><i class="fa-regular fa-user"></i> ${course.instructor}</span>
-                            </div>
-                            <div class="course-rating">
-                                <span class="stars">★★★★★</span>
-                                <span class="rating-num">${course.rating}</span>
-                                <span class="rating-count">(${course.reviews})</span>
-                            </div>
-                            <div class="course-footer">
-                                <span class="course-price">${course.price}</span>
-                                <button class="btn btn-sm ${course.enrolled ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleEnroll(${course.id})">
-                                    ${course.enrolled ? '<i class="fa-solid fa-check"></i> Inscrito' : '<i class="fa-solid fa-plus"></i> Inscribirme'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            // Render My Enrolled Courses
-            const myEnrolled = coursesData.filter(c => c.enrolled);
-            if (myGrid) {
-                if (myEnrolled.length === 0) {
-                    myGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
-                        No tienes cursos inscritos aún. ¡Explora el catálogo e inscríbete!
-                    </div>`;
-                } else {
-                    myGrid.innerHTML = myEnrolled.map(course => `
-                        <div class="course-card">
-                            <div class="course-img-wrapper">
-                                <div class="course-icon-bg" style="background: linear-gradient(135deg, #1E2225, var(--siemens-teal));">
-                                    <i class="fa-solid ${course.icon || 'fa-graduation-cap'}"></i>
-                                </div>
-                                <span class="course-badge">${course.category}</span>
-                            </div>
-                            <div class="course-body">
-                                <div class="course-category">En Progreso • 60% Completado</div>
-                                <h3 class="course-title">${course.title}</h3>
-                                <p class="course-desc">${course.description}</p>
-                                <div class="course-footer">
-                                    <button class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;" onclick="showToast('Continuando lección de ${course.title}...', 'success')">
-                                        <i class="fa-solid fa-play"></i> Continuar Aprendiendo
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            }
-        }
-        window.renderCourses = renderCourses;
 
         // Render Live Classes
         function renderLiveClasses() {
@@ -1852,7 +1698,6 @@
             const title = document.getElementById('instantLiveTitle').value.trim() || 'Clase en Vivo de Ubuntu Perú';
             const instructor = document.getElementById('instantLiveInstructor').value.trim() || userDisplayName;
             
-            // Generar nombre de sala único para Jitsi
             const cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '');
             const randomCode = Math.floor(100000 + Math.random() * 900000);
             const roomName = `UbuntuPeru_${cleanTitle.slice(0, 15)}_${randomCode}`;
@@ -1862,14 +1707,12 @@
             document.getElementById('generatedJitsiUrl').value = jitsiUrl;
             document.getElementById('instantResultBox').style.display = 'block';
 
-            // Configurar botón Entrar Clase
             const btnEnter = document.getElementById('btnEnterGeneratedClass');
             btnEnter.onclick = function() {
                 closeModal('instantLiveModal');
                 enterLiveRoom(title, instructor, roomName);
             };
 
-            // Agregar a la lista de clases en vivo activas de la plataforma
             liveClassesData.unshift({
                 id: Date.now(),
                 title: title,
@@ -1906,17 +1749,15 @@
         }
         window.openJitsiNewTab = openJitsiNewTab;
 
-        // Window Reference for Standalone Mode
         let liveAppWindow = null;
 
-        // ================= ENTER LIVE ROOM (HACK NATIVO POP-UP SIN LÍMITE DE 5 MIN) =================
+        // ================= ENTER LIVE ROOM (POP-UP ILIMITADO) =================
         function enterLiveRoom(title, instructor, roomName, mode = 'popup') {
             const finalRoomName = roomName || 'UbuntuPeru_Live_' + Math.floor(Math.random() * 100000);
             const userTag = currentUserRole === 'profesor' ? `${userDisplayName} (Profesor)` : `${userDisplayName} (Estudiante)`;
             const jitsiUrl = `https://meet.jit.si/${finalRoomName}#userInfo.displayName="${encodeURIComponent(userTag)}"&config.prejoinPageEnabled=false`;
 
             if (mode === 'popup') {
-                // Abrir como ventana Pop-up nativa independiente -> TIEMPO ILIMITADO Y GRATIS
                 const width = Math.min(1250, window.screen.availWidth - 50);
                 const height = Math.min(850, window.screen.availHeight - 50);
                 const left = (window.screen.availWidth - width) / 2;
@@ -1935,7 +1776,6 @@
                 showFloatingCallBar(title, finalRoomName);
                 showToast(`¡Clase iniciada en ventana dedicada! Sin límite de tiempo.`, 'success');
             } else {
-                // Modo Embebido (iframe)
                 document.getElementById('liveRoomTitle').innerHTML = `<i class="fa-solid fa-signal" style="color: #ef4444;"></i> ${title} — ${instructor}`;
                 const modal = document.getElementById('liveRoomModal');
                 modal.classList.remove('minimized');
@@ -2041,21 +1881,6 @@
         }
         window.closeLiveRoom = closeLiveRoom;
 
-        // Toggle Enrollment
-        function toggleEnroll(id) {
-            const course = coursesData.find(c => c.id === id);
-            if (course) {
-                course.enrolled = !course.enrolled;
-                renderCourses();
-                if (course.enrolled) {
-                    showToast(`¡Te has inscrito en "${course.title}" con éxito!`, 'success');
-                } else {
-                    showToast(`Has cancelado la inscripción de "${course.title}".`);
-                }
-            }
-        }
-        window.toggleEnroll = toggleEnroll;
-
         // Navigation Views
         function switchView(viewId, navEl) {
             document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
@@ -2075,21 +1900,6 @@
             }
         }
         window.switchView = switchView;
-
-        // Category Filter
-        function setCategoryFilter(category, btn) {
-            currentCategory = category;
-            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-            if (btn) btn.classList.add('active');
-            renderCourses();
-        }
-        window.setCategoryFilter = setCategoryFilter;
-
-        // Search Filter
-        function filterCourses() {
-            renderCourses();
-        }
-        window.filterCourses = filterCourses;
 
         // Sidebar Toggle
         function toggleSidebar() {
@@ -2122,40 +1932,6 @@
             if (modal) modal.classList.remove('active');
         }
         window.closeModal = closeModal;
-
-        // Handle Create Course
-        function handleCreateCourse(e) {
-            e.preventDefault();
-            const title = document.getElementById('courseTitle').value;
-            const category = document.getElementById('courseCategory').value;
-            const level = document.getElementById('courseLevel').value;
-            const instructor = document.getElementById('courseInstructor').value || userDisplayName;
-            const duration = document.getElementById('courseDuration').value || '20 horas';
-            const description = document.getElementById('courseDescription').value || 'Nuevo curso especializado.';
-            const icon = document.getElementById('courseIcon').value || 'fa-graduation-cap';
-
-            const newCourse = {
-                id: Date.now(),
-                title,
-                category,
-                level,
-                instructor,
-                duration,
-                description,
-                rating: 5.0,
-                reviews: 1,
-                icon,
-                enrolled: false,
-                price: "Gratis"
-            };
-
-            coursesData.unshift(newCourse);
-            closeModal('createCourseModal');
-            document.getElementById('createCourseForm').reset();
-            renderCourses();
-            showToast(`¡Curso "${title}" creado y publicado exitosamente!`, 'success');
-        }
-        window.handleCreateCourse = handleCreateCourse;
 
         // Handle Create Live Class (Scheduled)
         function handleCreateLive(e) {
@@ -2225,7 +2001,6 @@
 
         // Initial Initialization
         document.addEventListener('DOMContentLoaded', () => {
-            renderCourses();
             renderLiveClasses();
         });
     </script>
