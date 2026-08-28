@@ -117,6 +117,9 @@ function getEmbeddableDocumentUrl(url) {
         return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(cleanUrl)}`;
     }
 
+    return null;
+}
+
 // Convertir URL de Google Colab / GitHub / Miro a vista embebible
 function getEmbeddableResourceUrl(url) {
     if (!url) return null;
