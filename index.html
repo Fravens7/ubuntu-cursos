@@ -1963,9 +1963,9 @@
                     <button class="btn btn-primary btn-sm" onclick="if(liveAppWindow){liveAppWindow.focus();}else{enterLiveRoom('${title}', '${userDisplayName}', '${roomName}', 'popup');}" title="Traer ventana al frente">
                         <i class="fa-solid fa-window-restore"></i> Ver Clase
                     </button>
-                    <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('https://meet.jit.si/${roomName}'); showToast('¡Enlace de clase copiado!', 'success');" title="Copiar enlace">
-                        <i class="fa-regular fa-copy"></i>
-                    </button>
+                    <button type="button" onclick="copiarCodigoPython()" style="background: transparent; border: 0; color: #a1a1aa; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 2px 6px;">
+    <i class="fa-regular fa-copy"></i> Copiar Código
+</button>
                     <button class="btn btn-danger btn-sm" onclick="if(liveAppWindow){liveAppWindow.close();} document.getElementById('floatingLiveDock').remove(); showToast('Clase finalizada.');" title="Cerrar clase">
                         <i class="fa-solid fa-phone-slash"></i>
                     </button>
@@ -2124,6 +2124,29 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderLiveClasses();
         });
+
+
+
+        function copiarCodigoPython() {
+    const codigo = `sample = input(" introduce una muestra de números separados por comas: ")
+sample = sample.split(',')
+n = len(sample)
+for i in range(n):
+    sample[i] = int(sample[i])
+sum = 0
+sumsq = 0
+for i in sample:
+    sum += i
+mean = sum/n
+stdev = (sumsq/n - mean**2)**(1/2)
+print('La media es', mean, ', y la desviación típica', stdev)`;
+
+    navigator.clipboard.writeText(codigo).then(() => {
+        if(window.showToast) window.showToast('Código copiado al portapapeles', 'success');
+    }).catch(() => {
+        console.log("Error al copiar");
+    });
+}
     </script>
 </body>
 </html>
