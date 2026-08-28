@@ -129,23 +129,71 @@
         <div id="message" class="message"></div>
     </div>
 
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+    <!-- Firebase SDK Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAplMdumdxbNTm9ySnkgKINGLoUDtkuXY8",
+            authDomain: "ubuntu-cursos.firebaseapp.com",
+            projectId: "ubuntu-cursos",
+            storageBucket: "ubuntu-cursos.firebasestorage.app",
+            messagingSenderId: "427990859227",
+            appId: "1:427990859227:web:12fa3ccb9fe081fe41bbfe"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Si ya tiene sesión activa, redirigir automáticamente
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = 'index.html';
+            }
+        });
+
+        const form = document.getElementById('loginForm');
+        const messageEl = document.getElementById('message');
+        const submitBtn = document.querySelector('.btn-submit');
+
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-            const messageEl = document.getElementById('message');
             
-            if (email === 'test@' && password === '123') {
-                messageEl.textContent = '¡Éxito! Ingresando a la plataforma...';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Iniciando sesión...';
+            messageEl.style.display = 'none';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                messageEl.textContent = '¡Inicio de sesión exitoso! Redirigiendo...';
                 messageEl.className = 'message success';
+                messageEl.style.display = 'block';
                 setTimeout(() => {
                     window.location.href = 'index.html';
-                }, 800);
-            } else {
-                messageEl.textContent = 'datos incorrectos';
+                }, 700);
+            } catch (error) {
+                console.error("Error de autenticación:", error);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Ingresar';
+                
+                let errorMsg = 'Error al iniciar sesión. Verifica tus credenciales.';
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                    errorMsg = 'Correo o contraseña incorrectos.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg = 'El formato del correo electrónico no es válido.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMsg = 'Demasiados intentos. Por favor espera unos momentos.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMsg = 'Error de conexión. Revisa tu acceso a internet.';
+                }
+                
+                messageEl.textContent = errorMsg;
                 messageEl.className = 'message error';
+                messageEl.style.display = 'block';
             }
         });
     </script>
