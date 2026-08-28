@@ -127,6 +127,51 @@ function getYouTubeEmbedUrl(url) {
     return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
 }
 
+// Convertir URL de Google Slides, Google Drive PDF, Google Docs a URL embebible
+function getEmbeddableDocumentUrl(url) {
+    if (!url) return null;
+    const cleanUrl = url.trim();
+    
+    // Google Slides (Presentaciones de Google)
+    if (cleanUrl.includes('docs.google.com/presentation/d/')) {
+        const match = cleanUrl.match(/presentation\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://docs.google.com/presentation/d/${match[1]}/embed?start=false&loop=false&delayms=3000`;
+        }
+    }
+
+    // Google Drive File / PDF / Vista previa
+    if (cleanUrl.includes('drive.google.com/file/d/')) {
+        const match = cleanUrl.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://drive.google.com/file/d/${match[1]}/preview`;
+        }
+    }
+
+    // Google Docs (Documentos de texto)
+    if (cleanUrl.includes('docs.google.com/document/d/')) {
+        const match = cleanUrl.match(/document\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://docs.google.com/document/d/${match[1]}/preview`;
+        }
+    }
+
+    // Google Sheets (Hojas de cálculo)
+    if (cleanUrl.includes('docs.google.com/spreadsheets/d/')) {
+        const match = cleanUrl.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://docs.google.com/spreadsheets/d/${match[1]}/preview`;
+        }
+    }
+
+    // Archivo PDF directo en internet
+    if (cleanUrl.toLowerCase().endsWith('.pdf')) {
+        return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(cleanUrl)}`;
+    }
+
+    return null;
+}
+
 // Renderizar Cursos en el Catálogo
 export function renderCourses() {
     const grid = document.getElementById('coursesGrid');
@@ -232,6 +277,26 @@ export function toggleEnroll(id) {
     }
 }
 
+// Cambiar pestaña multimedia entre Video y Diapositivas
+window.switchMediaTab = function(tabName, btn) {
+    document.querySelectorAll('.media-tab-btn').forEach(b => {
+        b.classList.remove('active-tab');
+        b.style.background = 'var(--bg-body)';
+        b.style.color = 'var(--text-secondary)';
+        b.style.borderColor = 'var(--border-color)';
+    });
+    if (btn) {
+        btn.classList.add('active-tab');
+        btn.style.background = 'var(--siemens-teal)';
+        btn.style.color = '#fff';
+        btn.style.borderColor = 'var(--siemens-teal)';
+    }
+    const videoPane = document.getElementById('mediaPaneVideo');
+    const docPane = document.getElementById('mediaPaneDoc');
+    if (videoPane) videoPane.style.display = (tabName === 'video') ? 'block' : 'none';
+    if (docPane) docPane.style.display = (tabName === 'doc') ? 'block' : 'none';
+};
+
 // Abrir Aula Virtual / Detalle del Curso (Modal con Video YouTube, PDF y Recursos)
 export function openCourseDetail(id) {
     const course = coursesList.find(c => c.id === id);
@@ -245,17 +310,54 @@ export function openCourseDetail(id) {
     document.getElementById('detailCourseInstructor').innerHTML = `<i class="fa-regular fa-user"></i> Instructor: <strong>${course.instructor}</strong> • Duración: ${course.duration || '20 horas'}`;
     document.getElementById('detailCourseDesc').textContent = course.description || 'Sin descripción adicional.';
 
-    // Manejo de Video de YouTube (Embed)
     const videoContainer = document.getElementById('detailVideoContainer');
-    const embedUrl = getYouTubeEmbedUrl(course.videoUrl);
-    if (embedUrl) {
+    const videoEmbedUrl = getYouTubeEmbedUrl(course.videoUrl);
+    const docEmbedUrl = getEmbeddableDocumentUrl(course.pdfUrl);
+
+    // Contenido multimedia interactivo (Video y/o Diapositivas)
+    if (videoEmbedUrl && docEmbedUrl) {
+        // AMBOS PRESENTES: Renderizar pestañas para alternar entre video y diapositivas
         videoContainer.innerHTML = `
-            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md);">
-                <iframe src="${embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <button type="button" class="btn btn-sm media-tab-btn" onclick="switchMediaTab('video', this)" style="background: var(--siemens-teal); color: #fff; border: 1.5px solid var(--siemens-teal); border-radius: 20px;">
+                    <i class="fa-brands fa-youtube" style="color: #ff4d4d;"></i> Video de Clase
+                </button>
+                <button type="button" class="btn btn-sm media-tab-btn" onclick="switchMediaTab('doc', this)" style="background: var(--bg-body); color: var(--text-secondary); border: 1.5px solid var(--border-color); border-radius: 20px;">
+                    <i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Diapositivas / Material
+                </button>
+            </div>
+            <div id="mediaPaneVideo" style="display: block; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                <iframe src="${videoEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div id="mediaPaneDoc" style="display: none; position: relative; padding-bottom: 58%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                <iframe src="${docEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+            </div>
+        `;
+        videoContainer.style.display = 'block';
+    } else if (docEmbedUrl) {
+        // SOLO DIAPOSITIVAS / DOCUMENTO (Google Slides / Google Drive PDF)
+        videoContainer.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Diapositivas Interactivas
+                </span>
+                <a href="${course.pdfUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="Abrir en pestaña completa de Google Drive">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Pantalla Completa
+                </a>
+            </div>
+            <div style="position: relative; padding-bottom: 58%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                <iframe src="${docEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+            </div>`;
+        videoContainer.style.display = 'block';
+    } else if (videoEmbedUrl) {
+        // SOLO VIDEO DE YOUTUBE
+        videoContainer.innerHTML = `
+            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                <iframe src="${videoEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>`;
         videoContainer.style.display = 'block';
     } else if (course.videoUrl) {
-        // Enlace de video no embebible (ej: Google Drive directo)
+        // Enlace de video no embebible (ej: link crudo de Drive)
         videoContainer.innerHTML = `
             <div style="margin-bottom: 16px;">
                 <a href="${course.videoUrl}" target="_blank" class="btn btn-orange" style="width: 100%; justify-content: center;">
@@ -268,7 +370,7 @@ export function openCourseDetail(id) {
         videoContainer.style.display = 'none';
     }
 
-    // Botón PDF / Diapositivas
+    // Botón PDF / Diapositivas (Enlace externo)
     const btnPdf = document.getElementById('detailBtnPdf');
     if (btnPdf) {
         if (course.pdfUrl) {
