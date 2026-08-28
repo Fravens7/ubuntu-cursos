@@ -8,6 +8,7 @@ import {
     addDoc, 
     doc, 
     updateDoc, 
+    deleteDoc,
     arrayUnion, 
     arrayRemove, 
     onSnapshot 
@@ -470,13 +471,16 @@ export function renderCourses() {
                         
                         <div class="course-footer" style="flex-wrap: wrap; gap: 8px;">
                             ${isTeacher ? `
-                                <!-- ACCIONES DE PROFESOR: EDITAR Y OCULTAR -->
+                                <!-- ACCIONES DE PROFESOR: EDITAR, OCULTAR Y ELIMINAR -->
                                 <div style="display: flex; gap: 6px; width: 100%; justify-content: space-between; align-items: center;">
                                     <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditCourseModal('${course.id}')" title="Editar información y enlaces del curso">
                                         <i class="fa-solid fa-pen-to-square"></i> Editar
                                     </button>
                                     <button class="btn btn-sm ${isHidden ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleHideCourse('${course.id}')" title="${isHidden ? 'Volver a mostrar en el catálogo' : 'Ocultar curso del catálogo'}">
                                         <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'}"></i> ${isHidden ? 'Reactivar' : 'Ocultar'}
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteCourse('${course.id}')" title="Eliminar curso permanentemente">
+                                        <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </div>
                             ` : `
@@ -604,6 +608,39 @@ export async function toggleHideCourse(id) {
     } catch (error) {
         console.error("Error al cambiar estado del curso:", error);
         if (window.showToast) window.showToast("Error al modificar el estado del curso.");
+    }
+}
+
+// Eliminar Curso de Firestore y del Catálogo
+export async function deleteCourse(id) {
+    const course = coursesList.find(c => c.id === id);
+    if (!course) return;
+
+    const confirmed = confirm(`¿Estás seguro de que deseas eliminar permanentemente el curso "${course.title}"?\n\nEsta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
+    try {
+        if (dbInstance) {
+            const courseRef = doc(dbInstance, 'cursos', id);
+            await deleteDoc(courseRef);
+        } else {
+            coursesList = coursesList.filter(c => c.id !== id);
+            renderCourses();
+        }
+
+        if (window.closeModal) {
+            window.closeModal('editCourseModal');
+            window.closeModal('courseDetailModal');
+        }
+
+        if (window.showToast) {
+            window.showToast(`El curso "${course.title}" ha sido eliminado.`, 'normal');
+        }
+    } catch (error) {
+        console.error("Error al eliminar curso de Firestore:", error);
+        if (window.showToast) {
+            window.showToast("Error al eliminar el curso.");
+        }
     }
 }
 
@@ -837,6 +874,19 @@ export function openCourseDetail(id) {
 
     // Botón Inscribirse / Estado en Modal
     const btnEnroll = document.getElementById('detailBtnEnroll');
+    const btnDelete = document.getElementById('detailBtnDelete');
+
+    if (btnDelete) {
+        if (isTeacher) {
+            btnDelete.style.display = 'inline-flex';
+            btnDelete.onclick = () => {
+                deleteCourse(course.id);
+            };
+        } else {
+            btnDelete.style.display = 'none';
+        }
+    }
+
     if (btnEnroll) {
         if (isTeacher) {
             btnEnroll.className = 'btn btn-outline';
@@ -934,5 +984,6 @@ window.handleCreateCourse = handleCreateCourse;
 window.openEditCourseModal = openEditCourseModal;
 window.handleSaveEditCourse = handleSaveEditCourse;
 window.toggleHideCourse = toggleHideCourse;
+window.deleteCourse = deleteCourse;
 window.setCategoryFilter = setCategoryFilter;
 window.filterCourses = filterCourses;
