@@ -120,34 +120,50 @@ function getEmbeddableDocumentUrl(url) {
     return null;
 }
 
+// Convertir URL de GitHub / Colab a Raw URL de GitHub
+function getGitHubRawUrl(url) {
+    if (!url) return null;
+    const cleanUrl = url.trim();
+
+    // Caso 1: colab.research.google.com/github/USER/REPO/blob/BRANCH/FILE.ipynb
+    if (cleanUrl.includes('colab.research.google.com/github/')) {
+        const path = cleanUrl.split('colab.research.google.com/github/')[1];
+        if (path) {
+            const rawPath = path.replace('/blob/', '/');
+            return `https://raw.githubusercontent.com/${rawPath}`;
+        }
+    }
+
+    // Caso 2: github.com/USER/REPO/blob/BRANCH/FILE.ipynb
+    if (cleanUrl.includes('github.com/') && cleanUrl.toLowerCase().endsWith('.ipynb')) {
+        const path = cleanUrl.replace('https://github.com/', '').replace('http://github.com/', '');
+        const rawPath = path.replace('/blob/', '/');
+        return `https://raw.githubusercontent.com/${rawPath}`;
+    }
+
+    // Caso 3: raw.githubusercontent.com/...
+    if (cleanUrl.includes('raw.githubusercontent.com/')) {
+        return cleanUrl;
+    }
+
+    return null;
+}
+
 // Convertir URL de Google Colab / GitHub / Miro a vista embebible
 function getEmbeddableResourceUrl(url) {
     if (!url) return null;
     const cleanUrl = url.trim();
+    const rawNotebookUrl = getGitHubRawUrl(cleanUrl);
 
-    // 1. Google Colab / Jupyter Notebook (.ipynb) alojado en GitHub
-    if (cleanUrl.includes('colab.research.google.com/github/')) {
-        const githubPath = cleanUrl.split('colab.research.google.com/')[1];
-        if (githubPath) {
-            return {
-                type: 'colab',
-                title: 'Cuaderno Colab / Jupyter',
-                icon: 'fa-solid fa-code',
-                color: 'var(--siemens-teal)',
-                embedUrl: `https://nbviewer.org/${githubPath}`,
-                directUrl: cleanUrl,
-                actionLabel: 'Abrir y Ejecutar en Colab'
-            };
-        }
-    } else if (cleanUrl.includes('github.com/') && cleanUrl.toLowerCase().endsWith('.ipynb')) {
-        const githubPath = cleanUrl.replace('https://github.com/', 'github/').replace('http://github.com/', 'github/');
+    // 1. Google Colab / Jupyter Notebook (.ipynb) alojado en GitHub -> Renderizado Nativo Ultra Rápido (Cero errores 503)
+    if (rawNotebookUrl) {
         return {
-            type: 'colab',
+            type: 'notebook',
             title: 'Cuaderno Colab / Jupyter',
-            icon: 'fa-solid fa-code',
-            color: 'var(--siemens-teal)',
-            embedUrl: `https://nbviewer.org/${githubPath}`,
-            directUrl: `https://colab.research.google.com/${githubPath}`,
+            icon: 'fa-brands fa-python',
+            iconColor: '#38bdf8',
+            rawUrl: rawNotebookUrl,
+            directUrl: cleanUrl,
             actionLabel: 'Abrir y Ejecutar en Colab'
         };
     }
@@ -157,12 +173,13 @@ function getEmbeddableResourceUrl(url) {
         const match = cleanUrl.match(/board\/([a-zA-Z0-9_=-]+)/);
         if (match && match[1]) {
             return {
-                type: 'miro',
+                type: 'iframe',
                 title: 'Pizarra Interactiva Miro',
                 icon: 'fa-solid fa-chalkboard-user',
-                color: '#ffd02f',
+                iconColor: '#ffd02f',
                 embedUrl: `https://miro.com/app/live-embed/${match[1]}/`,
                 directUrl: cleanUrl,
+                aspectRatio: '65%',
                 actionLabel: 'Abrir en Miro'
             };
         }
@@ -171,17 +188,132 @@ function getEmbeddableResourceUrl(url) {
     // 3. Simulador Wokwi (Arduino / ESP32)
     if (cleanUrl.includes('wokwi.com/projects/')) {
         return {
-            type: 'wokwi',
+            type: 'iframe',
             title: 'Simulador Wokwi',
             icon: 'fa-solid fa-microchip',
-            color: '#10b981',
+            iconColor: '#10b981',
             embedUrl: cleanUrl.includes('?') ? cleanUrl : `${cleanUrl}?view=preview`,
             directUrl: cleanUrl,
+            aspectRatio: '65%',
             actionLabel: 'Abrir en Wokwi'
         };
     }
 
     return null;
+}
+
+// Cargar y renderizar cuaderno Jupyter (.ipynb) nativamente en el navegador sin depender de servidores lentos
+async function loadAndRenderNotebook(containerElement, rawUrl, directUrl) {
+    if (!containerElement) return;
+
+    containerElement.innerHTML = `
+        <div style="text-align: center; padding: 32px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--siemens-teal); margin-bottom: 12px; display: block;"></i>
+            <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Cargando cuaderno interactivo de Python...</span>
+        </div>
+    `;
+
+    try {
+        const res = await fetch(rawUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const notebook = await res.json();
+        
+        let notebookHtml = `
+            <div class="jupyter-notebook-viewer" style="background: #181a1b; border: 1px solid #2d3135; border-radius: 12px; overflow: hidden; margin-bottom: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+                <!-- Header del Cuaderno -->
+                <div style="background: #22252a; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2d3135; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-brands fa-python" style="color: #38bdf8; font-size: 1.3rem;"></i>
+                        <span style="font-weight: 700; font-size: 0.9rem; color: #f3f4f6;">Cuaderno de Ejercicios Python (.ipynb)</span>
+                    </div>
+                    <a href="${directUrl}" target="_blank" class="btn btn-sm" style="background: #e27d60; color: #fff; border: 0; font-size: 0.78rem; font-weight: 700; padding: 6px 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px; text-decoration: none;" title="Abrir en Google Colab para ejecutar con GPU/CPU">
+                        <i class="fa-solid fa-play"></i> Abrir y Ejecutar en Google Colab
+                    </a>
+                </div>
+                
+                <!-- Celdas del Cuaderno -->
+                <div style="padding: 20px; max-height: 520px; overflow-y: auto; color: #d4d4d4;">
+        `;
+
+        if (Array.isArray(notebook.cells)) {
+            notebook.cells.forEach((cell, idx) => {
+                const sourceText = Array.isArray(cell.source) ? cell.source.join('') : (cell.source || '');
+                
+                if (cell.cell_type === 'markdown') {
+                    // Renderizar Markdown limpio
+                    const escaped = sourceText
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/^### (.*$)/gim, '<h3 style="color: #60a5fa; font-size: 1.05rem; margin: 14px 0 6px 0;">$1</h3>')
+                        .replace(/^## (.*$)/gim, '<h2 style="color: #93c5fd; font-size: 1.18rem; margin: 16px 0 8px 0; font-weight: 700;">$1</h2>')
+                        .replace(/^# (.*$)/gim, '<h1 style="color: #bfdbfe; font-size: 1.35rem; margin: 18px 0 10px 0;">$1</h1>')
+                        .replace(/\*\*(.*?)\*\*/gim, '<strong style="color: #fff;">$1</strong>')
+                        .replace(/`([^`]+)`/gim, '<code style="background: #27272a; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">$1</code>')
+                        .replace(/\n/gim, '<br>');
+
+                    notebookHtml += `
+                        <div style="margin-bottom: 16px; line-height: 1.65; font-size: 0.92rem; color: #e5e7eb;">
+                            ${escaped}
+                        </div>
+                    `;
+                } else if (cell.cell_type === 'code') {
+                    // Renderizar Celda de Código
+                    const escapedCode = sourceText
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+
+                    // Renderizar Outputs si existen
+                    let outputHtml = '';
+                    if (Array.isArray(cell.outputs) && cell.outputs.length > 0) {
+                        cell.outputs.forEach(out => {
+                            if (out.text) {
+                                const outText = Array.isArray(out.text) ? out.text.join('') : out.text;
+                                outputHtml += `<pre style="margin: 0; padding: 10px 14px; background: #131416; color: #a1a1aa; font-family: 'Consolas', 'Fira Code', monospace; font-size: 0.82rem; border-left: 3px solid var(--siemens-teal); white-space: pre-wrap; line-height: 1.5;">${outText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                            }
+                        });
+                    }
+
+                    const copyData = sourceText.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+
+                    notebookHtml += `
+                        <div style="margin-bottom: 18px; border-radius: 8px; overflow: hidden; border: 1px solid #33383f; background: #111214;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: #1a1d21; padding: 6px 14px; border-bottom: 1px solid #272b30;">
+                                <span style="font-size: 0.72rem; font-family: monospace; color: #71717a; font-weight: 600;">[ ${cell.execution_count ? cell.execution_count : ' '} ] In Python:</span>
+                                <button type="button" onclick="navigator.clipboard.writeText(\`${copyData}\`); if(window.showToast) window.showToast('Código copiado al portapapeles', 'success');" style="background: transparent; border: 0; color: #a1a1aa; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 2px 6px;">
+                                    <i class="fa-regular fa-copy"></i> Copiar Código
+                                </button>
+                            </div>
+                            <pre style="margin: 0; padding: 14px; background: #111214; color: #38bdf8; font-family: 'Consolas', 'Fira Code', monospace; font-size: 0.88rem; line-height: 1.55; overflow-x: auto; white-space: pre;"><code>${escapedCode}</code></pre>
+                            ${outputHtml ? `<div style="border-top: 1px solid #272b30; background: #131416;">${outputHtml}</div>` : ''}
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        notebookHtml += `
+                </div>
+            </div>
+        `;
+
+        containerElement.innerHTML = notebookHtml;
+    } catch (err) {
+        console.warn("No se pudo cargar el cuaderno directamente, mostrando fallback:", err);
+        containerElement.innerHTML = `
+            <div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 28px 20px; text-align: center; margin-bottom: 20px;">
+                <i class="fa-brands fa-python" style="font-size: 2.8rem; color: #38bdf8; margin-bottom: 12px; display: block;"></i>
+                <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 8px;">Cuaderno de Google Colab / Jupyter</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; max-width: 440px; margin: 0 auto 16px auto;">
+                    Este laboratorio contiene ejercicios prácticos listos para ejecutarse en la nube con Google Colab.
+                </p>
+                <a href="${directUrl}" target="_blank" class="btn btn-orange" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 8px 20px; text-decoration: none;">
+                    <i class="fa-solid fa-play"></i> Abrir y Ejecutar en Google Colab
+                </a>
+            </div>
+        `;
+    }
 }
 
 // Cambiar pestaña multimedia activa en el Aula Virtual
@@ -499,6 +631,7 @@ export function openCourseDetail(id) {
     if (videoEmbedUrl) {
         mediaList.push({
             id: 'video',
+            type: 'iframe',
             title: 'Video de Clase',
             icon: 'fa-brands fa-youtube',
             iconColor: '#ff4d4d',
@@ -511,6 +644,7 @@ export function openCourseDetail(id) {
     if (docEmbedUrl) {
         mediaList.push({
             id: 'doc',
+            type: 'iframe',
             title: 'Diapositivas / PDF',
             icon: 'fa-solid fa-file-powerpoint',
             iconColor: 'var(--ubuntu-orange)',
@@ -523,12 +657,14 @@ export function openCourseDetail(id) {
     if (resourceInfo) {
         mediaList.push({
             id: 'resource',
+            type: resourceInfo.type,
             title: resourceInfo.title,
             icon: resourceInfo.icon,
-            iconColor: resourceInfo.color,
+            iconColor: resourceInfo.iconColor || 'var(--siemens-teal)',
+            rawUrl: resourceInfo.rawUrl,
             embedUrl: resourceInfo.embedUrl,
             directUrl: resourceInfo.directUrl,
-            aspectRatio: '68%',
+            aspectRatio: resourceInfo.aspectRatio || '68%',
             actionLabel: resourceInfo.actionLabel
         });
     }
@@ -545,35 +681,53 @@ export function openCourseDetail(id) {
             </div>
             ${mediaList.map((m, idx) => `
                 <div id="mediaPane_${m.id}" class="media-content-pane" style="display: ${idx === 0 ? 'block' : 'none'};">
-                    <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
-                        <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
-                        </a>
-                    </div>
-                    <div style="position: relative; padding-bottom: ${m.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                        <iframe src="${m.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
-                    </div>
+                    ${m.type === 'notebook' ? `
+                        <div id="notebookView_${m.id}"></div>
+                    ` : `
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
+                            <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
+                            </a>
+                        </div>
+                        <div style="position: relative; padding-bottom: ${m.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                            <iframe src="${m.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                        </div>
+                    `}
                 </div>
             `).join('')}
         `;
         videoContainer.style.display = 'block';
+
+        // Cargar cuadernos Jupyter asíncronamente
+        mediaList.forEach(m => {
+            if (m.type === 'notebook') {
+                const nbContainer = document.getElementById(`notebookView_${m.id}`);
+                if (nbContainer) loadAndRenderNotebook(nbContainer, m.rawUrl, m.directUrl);
+            }
+        });
     } else if (mediaList.length === 1) {
         // UN SOLO MATERIAL INTERACTIVO
         const item = mediaList[0];
-        videoContainer.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
-                    <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}
-                </span>
-                <a href="${item.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${item.actionLabel}">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.actionLabel}
-                </a>
-            </div>
-            <div style="position: relative; padding-bottom: ${item.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                <iframe src="${item.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
-            </div>
-        `;
-        videoContainer.style.display = 'block';
+        if (item.type === 'notebook') {
+            videoContainer.innerHTML = `<div id="notebookView_single"></div>`;
+            videoContainer.style.display = 'block';
+            loadAndRenderNotebook(document.getElementById('notebookView_single'), item.rawUrl, item.directUrl);
+        } else {
+            videoContainer.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
+                        <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}
+                    </span>
+                    <a href="${item.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${item.actionLabel}">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.actionLabel}
+                    </a>
+                </div>
+                <div style="position: relative; padding-bottom: ${item.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                    <iframe src="${item.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                </div>
+            `;
+            videoContainer.style.display = 'block';
+        }
     } else if (course.videoUrl) {
         // Video no embebible
         videoContainer.innerHTML = `
