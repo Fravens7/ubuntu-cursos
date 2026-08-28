@@ -899,6 +899,21 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Role Based Access Control UI */
+        .role-teacher-only {
+            display: none !important;
+        }
+        body.is-teacher .role-teacher-only {
+            display: inline-flex !important;
+        }
+        body.is-teacher div.role-teacher-only,
+        body.is-teacher .sidebar-nav .role-teacher-only {
+            display: flex !important;
+        }
+        body.is-teacher .nav-section-title.role-teacher-only {
+            display: block !important;
+        }
+
         /* Responsive */
         @media(max-width: 900px) {
             .sidebar {
@@ -945,16 +960,16 @@
                 <span>Mis Inscripciones</span>
             </div>
 
-            <div class="nav-section-title">Gestión Educativa</div>
-            <div class="nav-item" onclick="openInstantLiveModal()">
+            <div class="nav-section-title role-teacher-only">Gestión Docente</div>
+            <div class="nav-item role-teacher-only" onclick="openInstantLiveModal()">
                 <i class="fa-solid fa-bolt" style="color: #ef4444;"></i>
                 <span style="color: #fff; font-weight: 700;">Crear Clase en Vivo</span>
             </div>
-            <div class="nav-item" onclick="openCreateCourseModal()">
+            <div class="nav-item role-teacher-only" onclick="openCreateCourseModal()">
                 <i class="fa-solid fa-plus-circle"></i>
                 <span>Crear Nuevo Curso</span>
             </div>
-            <div class="nav-item" onclick="openCreateLiveModal()">
+            <div class="nav-item role-teacher-only" onclick="openCreateLiveModal()">
                 <i class="fa-solid fa-calendar-plus"></i>
                 <span>Programar Clase</span>
             </div>
@@ -972,15 +987,15 @@
 
         <div class="sidebar-footer">
             <div class="user-card">
-                <div class="user-avatar">TP</div>
+                <div class="user-avatar" id="sidebarUserAvatar">--</div>
                 <div class="user-info">
-                    <div class="user-name">test@</div>
-                    <div class="user-role">Estudiante / Instructor</div>
+                    <div class="user-name" id="sidebarUserName">Cargando...</div>
+                    <div class="user-role" id="sidebarUserRole">Estudiante</div>
                 </div>
             </div>
-            <a href="login.html" class="btn-logout" title="Cerrar Sesión">
+            <button class="btn-logout" title="Cerrar Sesión" onclick="logout()">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
-            </a>
+            </button>
         </div>
     </aside>
 
@@ -1006,11 +1021,11 @@
                     <i class="fa-regular fa-bell"></i>
                     <span class="badge-count">3</span>
                 </button>
-                <button class="btn btn-jitsi-live btn-sm" onclick="openInstantLiveModal()">
+                <button class="btn btn-jitsi-live btn-sm role-teacher-only" onclick="openInstantLiveModal()">
                     <i class="fa-solid fa-bolt"></i>
                     <span>Crear Clase en Vivo</span>
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="openCreateCourseModal()">
+                <button class="btn btn-primary btn-sm role-teacher-only" onclick="openCreateCourseModal()">
                     <i class="fa-solid fa-plus"></i>
                     <span>Crear Curso</span>
                 </button>
@@ -1025,14 +1040,14 @@
                 <!-- Welcome Banner -->
                 <div class="welcome-banner">
                     <div>
-                        <div class="welcome-greeting">¡Bienvenido de vuelta, test@!</div>
+                        <div class="welcome-greeting" id="welcomeGreeting">¡Bienvenido a la plataforma!</div>
                         <h1 class="welcome-title">Explora y Domina Nuevas Tecnologías</h1>
                         <p class="welcome-subtitle">Aprende con rutas certificadas por Ubuntu Perú y la red global Siemens. Inteligencia Artificial, Robótica, Desarrollo e Ingeniería aplicada.</p>
                         <div class="welcome-actions">
-                            <button class="btn btn-jitsi-live" onclick="openInstantLiveModal()">
+                            <button class="btn btn-jitsi-live role-teacher-only" onclick="openInstantLiveModal()">
                                 <i class="fa-solid fa-bolt"></i> Crear Clase en Vivo
                             </button>
-                            <button class="btn btn-primary" onclick="openCreateCourseModal()">
+                            <button class="btn btn-primary role-teacher-only" onclick="openCreateCourseModal()">
                                 <i class="fa-solid fa-circle-plus"></i> Crear Nuevo Curso
                             </button>
                             <button class="btn btn-orange" onclick="switchView('view-live', document.querySelectorAll('.nav-item')[1])">
@@ -1048,7 +1063,7 @@
                         <h2 class="section-title"><i class="fa-solid fa-layer-group" style="color: var(--siemens-teal);"></i> Catálogo de Cursos Disponibles</h2>
                         <p class="section-subtitle">Cursos interactivos, prácticos y con proyectos reales de la industria.</p>
                     </div>
-                    <button class="btn btn-outline btn-sm" onclick="openCreateCourseModal()">
+                    <button class="btn btn-outline btn-sm role-teacher-only" onclick="openCreateCourseModal()">
                         <i class="fa-solid fa-plus"></i> Publicar Curso
                     </button>
                 </div>
@@ -1079,7 +1094,7 @@
                         <h2 class="section-title"><i class="fa-solid fa-tower-broadcast" style="color: #ef4444;"></i> Clases y Talleres en Vivo</h2>
                         <p class="section-subtitle">Sesiones interactivas con profesores e ingenieros en tiempo real usando Jitsi Meet.</p>
                     </div>
-                    <div class="header-btn-group">
+                    <div class="header-btn-group role-teacher-only">
                         <button class="btn btn-jitsi-live" onclick="openInstantLiveModal()">
                             <i class="fa-solid fa-bolt"></i> Crear Clase en Vivo
                         </button>
@@ -1369,8 +1384,128 @@
     <div class="toast-container" id="toastContainer"></div>
 
 
-    <!-- ================= JAVASCRIPT LOGIC ================= -->
-    <script>
+    <!-- ================= JAVASCRIPT LOGIC (FIREBASE & PLATFORM) ================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAplMdumdxbNTm9ySnkgKINGLoUDtkuXY8",
+            authDomain: "ubuntu-cursos.firebaseapp.com",
+            projectId: "ubuntu-cursos",
+            storageBucket: "ubuntu-cursos.firebasestorage.app",
+            messagingSenderId: "427990859227",
+            appId: "1:427990859227:web:12fa3ccb9fe081fe41bbfe"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Estado del usuario activo
+        let currentUser = null;
+        let userDisplayName = 'Usuario';
+        let currentUserRole = 'estudiante';
+
+        // Escuchar estado de autenticación (Protección de ruta)
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                // No hay sesión -> Volver al Login
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentUser = user;
+            userDisplayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Usuario');
+            currentUserRole = 'estudiante'; // Rol por defecto
+
+            try {
+                // 1. Intentar cargar documento desde la nueva colección 'usuarios'
+                const userRef = doc(db, 'usuarios', user.uid);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    if (data.nombre) userDisplayName = data.nombre;
+                    if (data.rol) currentUserRole = data.rol.toLowerCase().trim();
+                } else {
+                    // Fallback a 'jugadores' o 'users'
+                    const playerRef = doc(db, 'jugadores', user.uid);
+                    const playerSnap = await getDoc(playerRef);
+                    if (playerSnap.exists()) {
+                        const pData = playerSnap.data();
+                        if (pData.nombre) userDisplayName = pData.nombre;
+                        if (pData.rol) currentUserRole = pData.rol.toLowerCase().trim();
+                    }
+                }
+            } catch (err) {
+                console.warn("Aviso: No se pudo leer el documento de Firestore, usando datos de sesión:", err);
+            }
+
+            applyUserRoleUI(userDisplayName, currentUserRole);
+        });
+
+        // Actualizar interfaz según el rol y nombre
+        function applyUserRoleUI(name, role) {
+            const isTeacher = (role === 'profesor' || role === 'docente' || role === 'instructor' || role === 'teacher' || role === 'admin');
+
+            if (isTeacher) {
+                document.body.classList.add('is-teacher');
+                document.body.classList.remove('is-student');
+            } else {
+                document.body.classList.add('is-student');
+                document.body.classList.remove('is-teacher');
+            }
+
+            // Avatar en Sidebar
+            const avatarEl = document.getElementById('sidebarUserAvatar');
+            if (avatarEl) {
+                avatarEl.textContent = (name || 'UP').substring(0, 2).toUpperCase();
+            }
+
+            // Nombre en Sidebar
+            const nameEl = document.getElementById('sidebarUserName');
+            if (nameEl) {
+                nameEl.textContent = name;
+            }
+
+            // Rol en Sidebar
+            const roleEl = document.getElementById('sidebarUserRole');
+            if (roleEl) {
+                roleEl.textContent = isTeacher ? 'Profesor / Docente' : 'Estudiante';
+            }
+
+            // Saludo en Banner
+            const greetingEl = document.getElementById('welcomeGreeting');
+            if (greetingEl) {
+                greetingEl.textContent = `¡Bienvenido de vuelta, ${name}! (${isTeacher ? 'Profesor' : 'Estudiante'})`;
+            }
+
+            // Auto-completar nombre de instructor en modales
+            const instantInstructor = document.getElementById('instantLiveInstructor');
+            if (instantInstructor) instantInstructor.value = name;
+
+            const liveInstructor = document.getElementById('liveInstructor');
+            if (liveInstructor) liveInstructor.value = name;
+
+            const courseInstructor = document.getElementById('courseInstructor');
+            if (courseInstructor) courseInstructor.value = name;
+        }
+
+        // Cerrar sesión
+        async function logout() {
+            try {
+                await signOut(auth);
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error("Error al cerrar sesión:", error);
+                window.location.href = 'login.html';
+            }
+        }
+        window.logout = logout;
+
         // Global Jitsi API Instance
         let currentJitsiApi = null;
         let lastCreatedRoomUrl = '';
@@ -1577,6 +1712,8 @@
                 return matchCategory && matchSearch;
             });
 
+            if (!grid) return;
+
             if (filtered.length === 0) {
                 grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
                     <i class="fa-solid fa-search" style="font-size: 2rem; margin-bottom: 12px; display: block;"></i>
@@ -1646,6 +1783,7 @@
                 }
             }
         }
+        window.renderCourses = renderCourses;
 
         // Render Live Classes
         function renderLiveClasses() {
@@ -1701,16 +1839,18 @@
                 `).join('');
             }
         }
+        window.renderLiveClasses = renderLiveClasses;
 
         // ================= JITSI INSTANT CREATION =================
         function openInstantLiveModal() {
             document.getElementById('instantResultBox').style.display = 'none';
             document.getElementById('instantLiveModal').classList.add('active');
         }
+        window.openInstantLiveModal = openInstantLiveModal;
 
         function generateInstantJitsiClass() {
             const title = document.getElementById('instantLiveTitle').value.trim() || 'Clase en Vivo de Ubuntu Perú';
-            const instructor = document.getElementById('instantLiveInstructor').value.trim() || 'test@';
+            const instructor = document.getElementById('instantLiveInstructor').value.trim() || userDisplayName;
             
             // Generar nombre de sala único para Jitsi
             const cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '');
@@ -1744,6 +1884,7 @@
             renderLiveClasses();
             showToast('¡Sala de Jitsi generada exitosamente!', 'success');
         }
+        window.generateInstantJitsiClass = generateInstantJitsiClass;
 
         function copyJitsiUrl() {
             const urlInput = document.getElementById('generatedJitsiUrl');
@@ -1756,12 +1897,14 @@
                 showToast('¡Enlace de Jitsi copiado!', 'success');
             });
         }
+        window.copyJitsiUrl = copyJitsiUrl;
 
         function openJitsiNewTab() {
             if (lastCreatedRoomUrl) {
                 window.open(lastCreatedRoomUrl, '_blank');
             }
         }
+        window.openJitsiNewTab = openJitsiNewTab;
 
         // Window Reference for Standalone Mode
         let liveAppWindow = null;
@@ -1769,10 +1912,11 @@
         // ================= ENTER LIVE ROOM (HACK NATIVO POP-UP SIN LÍMITE DE 5 MIN) =================
         function enterLiveRoom(title, instructor, roomName, mode = 'popup') {
             const finalRoomName = roomName || 'UbuntuPeru_Live_' + Math.floor(Math.random() * 100000);
-            const jitsiUrl = `https://meet.jit.si/${finalRoomName}#userInfo.displayName="${encodeURIComponent(instructor === 'test@' ? 'test@ (Profesor)' : 'test@')}"&config.prejoinPageEnabled=false`;
+            const userTag = currentUserRole === 'profesor' ? `${userDisplayName} (Profesor)` : `${userDisplayName} (Estudiante)`;
+            const jitsiUrl = `https://meet.jit.si/${finalRoomName}#userInfo.displayName="${encodeURIComponent(userTag)}"&config.prejoinPageEnabled=false`;
 
             if (mode === 'popup') {
-                // HACK: Abrir como ventana Pop-up nativa independiente (NO iframe) -> TIEMPO ILIMITADO Y GRATIS
+                // Abrir como ventana Pop-up nativa independiente -> TIEMPO ILIMITADO Y GRATIS
                 const width = Math.min(1250, window.screen.availWidth - 50);
                 const height = Math.min(850, window.screen.availHeight - 50);
                 const left = (window.screen.availWidth - width) / 2;
@@ -1788,9 +1932,8 @@
                     liveAppWindow.focus();
                 }
 
-                // Mostrar barra de control flotante en la plataforma web
                 showFloatingCallBar(title, finalRoomName);
-                showToast(`¡Clase iniciada en ventana dedicada! Sin límite de 5 minutos.`, 'success');
+                showToast(`¡Clase iniciada en ventana dedicada! Sin límite de tiempo.`, 'success');
             } else {
                 // Modo Embebido (iframe)
                 document.getElementById('liveRoomTitle').innerHTML = `<i class="fa-solid fa-signal" style="color: #ef4444;"></i> ${title} — ${instructor}`;
@@ -1809,7 +1952,7 @@
                         height: '100%',
                         parentNode: container,
                         userInfo: {
-                            displayName: instructor === 'test@' ? 'test@ (Profesor)' : 'test@ (Estudiante)'
+                            displayName: userTag
                         },
                         configOverwrite: {
                             startWithAudioMuted: false,
@@ -1821,6 +1964,7 @@
                 }
             }
         }
+        window.enterLiveRoom = enterLiveRoom;
 
         function showFloatingCallBar(title, roomName) {
             let dock = document.getElementById('floatingLiveDock');
@@ -1855,7 +1999,7 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn btn-primary btn-sm" onclick="if(liveAppWindow){liveAppWindow.focus();}else{enterLiveRoom('${title}', 'test@', '${roomName}', 'popup');}" title="Traer ventana al frente">
+                    <button class="btn btn-primary btn-sm" onclick="if(liveAppWindow){liveAppWindow.focus();}else{enterLiveRoom('${title}', '${userDisplayName}', '${roomName}', 'popup');}" title="Traer ventana al frente">
                         <i class="fa-solid fa-window-restore"></i> Ver Clase
                     </button>
                     <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('https://meet.jit.si/${roomName}'); showToast('¡Enlace de clase copiado!', 'success');" title="Copiar enlace">
@@ -1868,6 +2012,7 @@
             `;
             dock.style.display = 'flex';
         }
+        window.showFloatingCallBar = showFloatingCallBar;
 
         // ================= MINIMIZE / MAXIMIZE LIVE CALL =================
         function minimizeLiveRoom() {
@@ -1875,11 +2020,13 @@
             modal.classList.add('minimized');
             showToast('Clase minimizada. Sigues conectado en segundo plano.', 'success');
         }
+        window.minimizeLiveRoom = minimizeLiveRoom;
 
         function maximizeLiveRoom() {
             const modal = document.getElementById('liveRoomModal');
             modal.classList.remove('minimized');
         }
+        window.maximizeLiveRoom = maximizeLiveRoom;
 
         function closeLiveRoom() {
             if (currentJitsiApi) {
@@ -1892,6 +2039,7 @@
             document.getElementById('jitsi-iframe-container').innerHTML = '';
             showToast('Has salido de la clase en vivo.');
         }
+        window.closeLiveRoom = closeLiveRoom;
 
         // Toggle Enrollment
         function toggleEnroll(id) {
@@ -1906,6 +2054,7 @@
                 }
             }
         }
+        window.toggleEnroll = toggleEnroll;
 
         // Navigation Views
         function switchView(viewId, navEl) {
@@ -1925,6 +2074,7 @@
                 if (sidebar) sidebar.classList.remove('open');
             }
         }
+        window.switchView = switchView;
 
         // Category Filter
         function setCategoryFilter(category, btn) {
@@ -1933,23 +2083,28 @@
             if (btn) btn.classList.add('active');
             renderCourses();
         }
+        window.setCategoryFilter = setCategoryFilter;
 
         // Search Filter
         function filterCourses() {
             renderCourses();
         }
+        window.filterCourses = filterCourses;
 
         // Sidebar Toggle
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             if (sidebar) sidebar.classList.toggle('open');
         }
+        window.toggleSidebar = toggleSidebar;
 
         // Modal Controls
         function openCreateCourseModal() {
             const modal = document.getElementById('createCourseModal');
             if (modal) modal.classList.add('active');
         }
+        window.openCreateCourseModal = openCreateCourseModal;
+
         function openCreateLiveModal() {
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -1960,10 +2115,13 @@
             const modal = document.getElementById('createLiveModal');
             if (modal) modal.classList.add('active');
         }
+        window.openCreateLiveModal = openCreateLiveModal;
+
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
             if (modal) modal.classList.remove('active');
         }
+        window.closeModal = closeModal;
 
         // Handle Create Course
         function handleCreateCourse(e) {
@@ -1971,7 +2129,7 @@
             const title = document.getElementById('courseTitle').value;
             const category = document.getElementById('courseCategory').value;
             const level = document.getElementById('courseLevel').value;
-            const instructor = document.getElementById('courseInstructor').value;
+            const instructor = document.getElementById('courseInstructor').value || userDisplayName;
             const duration = document.getElementById('courseDuration').value || '20 horas';
             const description = document.getElementById('courseDescription').value || 'Nuevo curso especializado.';
             const icon = document.getElementById('courseIcon').value || 'fa-graduation-cap';
@@ -1997,12 +2155,13 @@
             renderCourses();
             showToast(`¡Curso "${title}" creado y publicado exitosamente!`, 'success');
         }
+        window.handleCreateCourse = handleCreateCourse;
 
         // Handle Create Live Class (Scheduled)
         function handleCreateLive(e) {
             e.preventDefault();
             const title = document.getElementById('liveTitle').value;
-            const instructor = document.getElementById('liveInstructor').value;
+            const instructor = document.getElementById('liveInstructor').value || userDisplayName;
             const status = document.getElementById('liveStatus').value;
             const liveDateVal = document.getElementById('liveDate').value;
             const link = document.getElementById('liveLink').value || `meet.jit.si/UbuntuPeru_${Math.floor(Math.random()*10000)}`;
@@ -2045,10 +2204,12 @@
             renderLiveClasses();
             switchView('view-live', document.querySelectorAll('.nav-item')[1]);
         }
+        window.handleCreateLive = handleCreateLive;
 
         // Toast Helper
         function showToast(message, type = 'normal') {
             const container = document.getElementById('toastContainer');
+            if (!container) return;
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> <span>${message}</span>`;
@@ -2060,6 +2221,7 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3500);
         }
+        window.showToast = showToast;
 
         // Initial Initialization
         document.addEventListener('DOMContentLoaded', () => {
