@@ -117,11 +117,72 @@ function getEmbeddableDocumentUrl(url) {
         return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(cleanUrl)}`;
     }
 
+// Convertir URL de Google Colab / GitHub / Miro a vista embebible
+function getEmbeddableResourceUrl(url) {
+    if (!url) return null;
+    const cleanUrl = url.trim();
+
+    // 1. Google Colab / Jupyter Notebook (.ipynb) alojado en GitHub
+    if (cleanUrl.includes('colab.research.google.com/github/')) {
+        const githubPath = cleanUrl.split('colab.research.google.com/')[1];
+        if (githubPath) {
+            return {
+                type: 'colab',
+                title: 'Cuaderno Colab / Jupyter',
+                icon: 'fa-solid fa-code',
+                color: 'var(--siemens-teal)',
+                embedUrl: `https://nbviewer.org/${githubPath}`,
+                directUrl: cleanUrl,
+                actionLabel: 'Abrir y Ejecutar en Colab'
+            };
+        }
+    } else if (cleanUrl.includes('github.com/') && cleanUrl.toLowerCase().endsWith('.ipynb')) {
+        const githubPath = cleanUrl.replace('https://github.com/', 'github/').replace('http://github.com/', 'github/');
+        return {
+            type: 'colab',
+            title: 'Cuaderno Colab / Jupyter',
+            icon: 'fa-solid fa-code',
+            color: 'var(--siemens-teal)',
+            embedUrl: `https://nbviewer.org/${githubPath}`,
+            directUrl: `https://colab.research.google.com/${githubPath}`,
+            actionLabel: 'Abrir y Ejecutar en Colab'
+        };
+    }
+
+    // 2. Tablero de Miro
+    if (cleanUrl.includes('miro.com/app/board/')) {
+        const match = cleanUrl.match(/board\/([a-zA-Z0-9_=-]+)/);
+        if (match && match[1]) {
+            return {
+                type: 'miro',
+                title: 'Pizarra Interactiva Miro',
+                icon: 'fa-solid fa-chalkboard-user',
+                color: '#ffd02f',
+                embedUrl: `https://miro.com/app/live-embed/${match[1]}/`,
+                directUrl: cleanUrl,
+                actionLabel: 'Abrir en Miro'
+            };
+        }
+    }
+
+    // 3. Simulador Wokwi (Arduino / ESP32)
+    if (cleanUrl.includes('wokwi.com/projects/')) {
+        return {
+            type: 'wokwi',
+            title: 'Simulador Wokwi',
+            icon: 'fa-solid fa-microchip',
+            color: '#10b981',
+            embedUrl: cleanUrl.includes('?') ? cleanUrl : `${cleanUrl}?view=preview`,
+            directUrl: cleanUrl,
+            actionLabel: 'Abrir en Wokwi'
+        };
+    }
+
     return null;
 }
 
-// Cambiar pestaña multimedia entre Video y Diapositivas
-window.switchMediaTab = function(tabName, btn) {
+// Cambiar pestaña multimedia activa en el Aula Virtual
+window.switchMediaTab = function(tabId, btn) {
     document.querySelectorAll('.media-tab-btn').forEach(b => {
         b.classList.remove('active-tab');
         b.style.background = 'var(--bg-body)';
@@ -134,10 +195,11 @@ window.switchMediaTab = function(tabName, btn) {
         btn.style.color = '#fff';
         btn.style.borderColor = 'var(--siemens-teal)';
     }
-    const videoPane = document.getElementById('mediaPaneVideo');
-    const docPane = document.getElementById('mediaPaneDoc');
-    if (videoPane) videoPane.style.display = (tabName === 'video') ? 'block' : 'none';
-    if (docPane) docPane.style.display = (tabName === 'doc') ? 'block' : 'none';
+    document.querySelectorAll('.media-content-pane').forEach(pane => {
+        pane.style.display = 'none';
+    });
+    const target = document.getElementById(`mediaPane_${tabId}`);
+    if (target) target.style.display = 'block';
 };
 
 // Renderizar Cursos en el Catálogo
@@ -428,51 +490,89 @@ export function openCourseDetail(id) {
     const videoContainer = document.getElementById('detailVideoContainer');
     const videoEmbedUrl = getYouTubeEmbedUrl(course.videoUrl);
     const docEmbedUrl = getEmbeddableDocumentUrl(course.pdfUrl);
+    const resourceInfo = getEmbeddableResourceUrl(course.resourceUrl);
 
-    // Contenido multimedia interactivo (Video y/o Diapositivas)
-    if (videoEmbedUrl && docEmbedUrl) {
-        // AMBOS PRESENTES: Pestañas interactivas
+    const mediaList = [];
+    if (videoEmbedUrl) {
+        mediaList.push({
+            id: 'video',
+            title: 'Video de Clase',
+            icon: 'fa-brands fa-youtube',
+            iconColor: '#ff4d4d',
+            embedUrl: videoEmbedUrl,
+            directUrl: course.videoUrl,
+            aspectRatio: '56.25%',
+            actionLabel: 'Ver en YouTube'
+        });
+    }
+    if (docEmbedUrl) {
+        mediaList.push({
+            id: 'doc',
+            title: 'Diapositivas / PDF',
+            icon: 'fa-solid fa-file-powerpoint',
+            iconColor: 'var(--ubuntu-orange)',
+            embedUrl: docEmbedUrl,
+            directUrl: course.pdfUrl,
+            aspectRatio: '58%',
+            actionLabel: 'Pantalla Completa'
+        });
+    }
+    if (resourceInfo) {
+        mediaList.push({
+            id: 'resource',
+            title: resourceInfo.title,
+            icon: resourceInfo.icon,
+            iconColor: resourceInfo.color,
+            embedUrl: resourceInfo.embedUrl,
+            directUrl: resourceInfo.directUrl,
+            aspectRatio: '68%',
+            actionLabel: resourceInfo.actionLabel
+        });
+    }
+
+    if (mediaList.length > 1) {
+        // MÚLTIPLES MATERIALES: Pestañas para alternar entre Video, Diapositivas y Colab
         videoContainer.innerHTML = `
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <button type="button" class="btn btn-sm media-tab-btn" onclick="switchMediaTab('video', this)" style="background: var(--siemens-teal); color: #fff; border: 1.5px solid var(--siemens-teal); border-radius: 20px;">
-                    <i class="fa-brands fa-youtube" style="color: #ff4d4d;"></i> Video de Clase
-                </button>
-                <button type="button" class="btn btn-sm media-tab-btn" onclick="switchMediaTab('doc', this)" style="background: var(--bg-body); color: var(--text-secondary); border: 1.5px solid var(--border-color); border-radius: 20px;">
-                    <i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Diapositivas / Material
-                </button>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                ${mediaList.map((m, idx) => `
+                    <button type="button" class="btn btn-sm media-tab-btn ${idx === 0 ? 'active-tab' : ''}" onclick="switchMediaTab('${m.id}', this)" style="background: ${idx === 0 ? 'var(--siemens-teal)' : 'var(--bg-body)'}; color: ${idx === 0 ? '#fff' : 'var(--text-secondary)'}; border: 1.5px solid ${idx === 0 ? 'var(--siemens-teal)' : 'var(--border-color)'}; border-radius: 20px;">
+                        <i class="${m.icon}" style="color: ${idx === 0 ? '#fff' : m.iconColor};"></i> ${m.title}
+                    </button>
+                `).join('')}
             </div>
-            <div id="mediaPaneVideo" style="display: block; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                <iframe src="${videoEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            ${mediaList.map((m, idx) => `
+                <div id="mediaPane_${m.id}" class="media-content-pane" style="display: ${idx === 0 ? 'block' : 'none'};">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
+                        <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
+                        </a>
+                    </div>
+                    <div style="position: relative; padding-bottom: ${m.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                        <iframe src="${m.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                    </div>
+                </div>
+            `).join('')}
+        `;
+        videoContainer.style.display = 'block';
+    } else if (mediaList.length === 1) {
+        // UN SOLO MATERIAL INTERACTIVO
+        const item = mediaList[0];
+        videoContainer.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
+                    <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}
+                </span>
+                <a href="${item.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${item.actionLabel}">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.actionLabel}
+                </a>
             </div>
-            <div id="mediaPaneDoc" style="display: none; position: relative; padding-bottom: 58%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                <iframe src="${docEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+            <div style="position: relative; padding-bottom: ${item.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                <iframe src="${item.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
             </div>
         `;
         videoContainer.style.display = 'block';
-    } else if (docEmbedUrl) {
-        // SOLO DIAPOSITIVAS / PRESENTACIÓN DE GOOGLE SLIDES / PDF
-        videoContainer.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Diapositivas Interactivas
-                </span>
-                <a href="${course.pdfUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="Abrir en pestaña completa">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Pantalla Completa
-                </a>
-            </div>
-            <div style="position: relative; padding-bottom: 58%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                <iframe src="${docEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
-            </div>`;
-        videoContainer.style.display = 'block';
-    } else if (videoEmbedUrl) {
-        // SOLO VIDEO DE YOUTUBE
-        videoContainer.innerHTML = `
-            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                <iframe src="${videoEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>`;
-        videoContainer.style.display = 'block';
     } else if (course.videoUrl) {
-        // Enlace no embebible
+        // Video no embebible
         videoContainer.innerHTML = `
             <div style="margin-bottom: 16px;">
                 <a href="${course.videoUrl}" target="_blank" class="btn btn-orange" style="width: 100%; justify-content: center;">
@@ -485,10 +585,10 @@ export function openCourseDetail(id) {
         videoContainer.style.display = 'none';
     }
 
-    // Botón PDF / Diapositivas (Enlace externo)
+    // Botón PDF / Diapositivas (Enlace externo inferior)
     const btnPdf = document.getElementById('detailBtnPdf');
     if (btnPdf) {
-        if (course.pdfUrl) {
+        if (course.pdfUrl && !docEmbedUrl) {
             btnPdf.href = course.pdfUrl;
             btnPdf.style.display = 'inline-flex';
         } else {
@@ -496,10 +596,10 @@ export function openCourseDetail(id) {
         }
     }
 
-    // Botón Recursos / Colab / GitHub
+    // Botón Recursos / Colab / GitHub (Enlace externo inferior)
     const btnResource = document.getElementById('detailBtnResource');
     if (btnResource) {
-        if (course.resourceUrl) {
+        if (course.resourceUrl && !resourceInfo) {
             btnResource.href = course.resourceUrl;
             btnResource.style.display = 'inline-flex';
         } else {
