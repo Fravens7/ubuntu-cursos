@@ -121,8 +121,9 @@
             color: rgba(255,255,255,0.65);
             font-size: 0.88rem;
             font-weight: 500;
-            transition: var(--transition);
+            transition: background 0.15s ease, color 0.15s ease;
             cursor: pointer;
+            touch-action: manipulation;
         }
         .nav-item i { width: 20px; text-align: center; font-size: 1rem; }
         .nav-item:hover { background: var(--siemens-slate-light); color: rgba(255,255,255,0.95); }
@@ -270,10 +271,11 @@
             font-size: 0.875rem;
             font-weight: 600;
             border-radius: var(--radius-md);
-            transition: var(--transition);
+            transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
             cursor: pointer;
             text-align: center;
             white-space: nowrap;
+            touch-action: manipulation;
         }
         .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
         .btn-primary {
@@ -397,9 +399,10 @@
             border: 1.5px solid var(--border-color);
             color: var(--text-secondary);
             background: var(--bg-card);
-            transition: var(--transition);
+            transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
             white-space: nowrap;
             cursor: pointer;
+            touch-action: manipulation;
         }
         .filter-chip:hover { border-color: var(--siemens-teal); color: var(--siemens-teal); }
         .filter-chip.active { background: var(--siemens-teal); color: #fff; border-color: var(--siemens-teal); box-shadow: 0 2px 8px rgba(0,153,153,0.25); }
@@ -418,10 +421,12 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            transition: var(--transition);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
             cursor: pointer;
             box-shadow: var(--shadow-sm);
             position: relative;
+            touch-action: manipulation;
+            will-change: transform;
         }
         .course-card:hover {
             box-shadow: var(--shadow-lg);
@@ -683,39 +688,48 @@
         .incoming-details { font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 14px; flex-wrap: wrap; }
         .incoming-details span { display: flex; align-items: center; gap: 5px; }
 
-        /* MODALS */
+        /* HIGH-PERFORMANCE MODALS (OPTIMIZADO PARA INP < 16ms) */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(4px);
-            display: none;
+            background: rgba(15, 23, 42, 0.72);
+            display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
             padding: 20px;
-            animation: fadeIn 0.25s ease;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.12s ease, visibility 0.12s ease;
+            will-change: opacity;
+            contain: strict;
         }
-        .modal-overlay.active { display: flex; }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
         .modal-box {
             background: #fff;
             width: 100%;
             max-width: 580px;
             border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
             overflow: hidden;
             display: flex;
             flex-direction: column;
             max-height: 90vh;
-            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: translateY(10px) scale(0.98);
+            transition: transform 0.12s cubic-bezier(0, 0, 0.2, 1);
+            will-change: transform;
+            contain: layout style;
         }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        .modal-overlay.active .modal-box {
+            transform: translateY(0) scale(1);
         }
         .modal-header {
-            padding: 20px 24px;
+            padding: 18px 24px;
             background: var(--siemens-slate);
             color: #fff;
             display: flex;
@@ -727,9 +741,9 @@
             color: rgba(255,255,255,0.7);
             font-size: 1.25rem;
             cursor: pointer;
-            transition: var(--transition);
+            transition: color 0.15s ease;
         }
-        .modal-close:hover { color: #fff; transform: scale(1.1); }
+        .modal-close:hover { color: #fff; }
         .modal-body {
             padding: 24px;
             overflow-y: auto;
@@ -751,7 +765,7 @@
             border-radius: var(--radius-md);
             font-size: 0.88rem;
             outline: none;
-            transition: var(--transition);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
             background: var(--bg-body);
         }
         .form-control:focus {
