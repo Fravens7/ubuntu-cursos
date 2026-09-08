@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Estilos Módulos y Semanas de Cursos -->
+    <link rel="stylesheet" href="cursos.css">
     <!-- Jitsi Meet API -->
     <script src="https://meet.jit.si/external_api.js"></script>
     
@@ -1548,6 +1550,12 @@
                 <button class="modal-close" onclick="closeModal('courseDetailModal')">&times;</button>
             </div>
             <div class="modal-body" style="padding: 24px;">
+                <!-- Navegación y Selector de Semanas -->
+                <div id="detailWeeksNav"></div>
+
+                <!-- Cabecera de la Semana Activa (Título, Meet y Acciones Profesor) -->
+                <div id="detailWeekHeader"></div>
+
                 <!-- Video Container -->
                 <div id="detailVideoContainer"></div>
 
@@ -1579,6 +1587,63 @@
                 </div>
                 <button type="button" id="detailBtnEnroll" class="btn btn-primary"></button>
             </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL 6: GESTIÓN DE SEMANA (PROFESOR) ================= -->
+    <div class="modal-overlay" id="weekEditModal">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--siemens-slate), var(--ubuntu-green));">
+                <div>
+                    <span style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ubuntu-green-light); font-weight: 700;">Contenido Semanal</span>
+                    <h3 id="weekModalTitle" style="margin-top: 2px;">Configurar Semana</h3>
+                </div>
+                <button class="modal-close" onclick="closeModal('weekEditModal')">&times;</button>
+            </div>
+            <form id="weekEditForm" onsubmit="window.saveWeekForm(event)">
+                <input type="hidden" id="weekEditCourseId">
+                <input type="hidden" id="weekEditWeekId">
+                <div class="modal-body" style="padding: 24px;">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="weekInputTitle" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">Título de la Semana *</label>
+                        <input type="text" id="weekInputTitle" class="form-control" placeholder="Ej. Semana 1: Introducción a Python" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="weekInputMeetUrl" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                            <i class="fa-solid fa-video" style="color: var(--ubuntu-green);"></i> Enlace de Clase en Vivo (Meet / Zoom / Jitsi)
+                        </label>
+                        <input type="url" id="weekInputMeetUrl" class="form-control" placeholder="https://meet.google.com/xyz-abcd-jkl" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                        <small style="color: var(--text-muted); font-size: 0.75rem;">Opcional. Los alumnos verán un botón destacado para entrar a la clase.</small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="weekInputVideoUrl" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                            <i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Video de la Semana (YouTube o Drive)
+                        </label>
+                        <input type="url" id="weekInputVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="weekInputMaterialUrl" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                            <i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Diapositivas, PDF o Colab (Google Drive / GitHub)
+                        </label>
+                        <input type="url" id="weekInputMaterialUrl" class="form-control" placeholder="https://docs.google.com/presentation/d/... o Drive PDF" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
+                            <input type="checkbox" id="weekInputVisible" checked style="width: 16px; height: 16px; accent-color: var(--ubuntu-green);">
+                            <span>Publicar esta semana (Visible para alumnos)</span>
+                        </label>
+                        <small style="color: var(--text-muted); font-size: 0.75rem; margin-left: 24px; display: block;">Si lo desmarcas, los alumnos no verán esta semana hasta que la publiques.</small>
+                    </div>
+                </div>
+                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 24px;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('weekEditModal')">Cancelar</button>
+                    <button type="submit" id="weekSaveBtn" class="btn btn-primary">Guardar Semana</button>
+                </div>
+            </form>
         </div>
     </div>
 
