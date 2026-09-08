@@ -713,27 +713,16 @@ export async function handleSaveEditCourse(e) {
     }
 }
 
-// Abrir Aula Virtual / Detalle del Curso (Modal con Video YouTube, PDF y Recursos)
-export function openCourseDetail(id) {
-    const course = coursesList.find(c => c.id === id);
-    if (!course) return;
+// Estado de semana activa por curso
+let activeWeekIdByCourse = {};
 
-    const modal = document.getElementById('courseDetailModal');
-    if (!modal) return;
+// Renderizador multimedia reusable (Video YouTube/Drive, Diapositivas/PDF y Colab)
+function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl) {
+    if (!videoContainer) return;
 
-    const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'admin');
-    const currentUserId = currentAuthUser ? currentAuthUser.uid : null;
-    const isEnrolled = currentUserId && Array.isArray(course.inscritos) && course.inscritos.includes(currentUserId);
-
-    document.getElementById('detailCourseTitle').textContent = course.title;
-    document.getElementById('detailCourseCategory').textContent = `${course.category || 'Curso'} • Nivel ${course.level || 'Principiante'}`;
-    document.getElementById('detailCourseInstructor').innerHTML = `<i class="fa-regular fa-user"></i> Instructor: <strong>${course.instructor}</strong> • Duración: ${course.duration || '20 horas'}`;
-    document.getElementById('detailCourseDesc').textContent = course.description || 'Sin descripción adicional.';
-
-    const videoContainer = document.getElementById('detailVideoContainer');
-    const videoEmbedUrl = getYouTubeEmbedUrl(course.videoUrl);
-    const docEmbedUrl = getEmbeddableDocumentUrl(course.pdfUrl);
-    const resourceInfo = getEmbeddableResourceUrl(course.resourceUrl);
+    const videoEmbedUrl = getYouTubeEmbedUrl(videoUrl);
+    const docEmbedUrl = getEmbeddableDocumentUrl(pdfUrl);
+    const resourceInfo = getEmbeddableResourceUrl(resourceUrl);
 
     const mediaList = [];
     if (videoEmbedUrl) {
@@ -744,7 +733,7 @@ export function openCourseDetail(id) {
             icon: 'fa-brands fa-youtube',
             iconColor: '#ff4d4d',
             embedUrl: videoEmbedUrl,
-            directUrl: course.videoUrl,
+            directUrl: videoUrl,
             aspectRatio: '56.25%',
             actionLabel: 'Ver en YouTube'
         });
@@ -757,7 +746,7 @@ export function openCourseDetail(id) {
             icon: 'fa-solid fa-file-powerpoint',
             iconColor: 'var(--ubuntu-orange)',
             embedUrl: docEmbedUrl,
-            directUrl: course.pdfUrl,
+            directUrl: pdfUrl,
             aspectRatio: '58%',
             actionLabel: 'Pantalla Completa'
         });
@@ -778,7 +767,6 @@ export function openCourseDetail(id) {
     }
 
     if (mediaList.length > 1) {
-        // MÚLTIPLES MATERIALES: Pestañas para alternar entre Video, Diapositivas y Colab
         videoContainer.innerHTML = `
             <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
                 ${mediaList.map((m, idx) => `
@@ -806,7 +794,6 @@ export function openCourseDetail(id) {
         `;
         videoContainer.style.display = 'block';
 
-        // Cargar cuadernos Jupyter asíncronamente
         mediaList.forEach(m => {
             if (m.type === 'notebook') {
                 const nbContainer = document.getElementById(`notebookView_${m.id}`);
@@ -814,7 +801,6 @@ export function openCourseDetail(id) {
             }
         });
     } else if (mediaList.length === 1) {
-        // UN SOLO MATERIAL INTERACTIVO
         const item = mediaList[0];
         if (item.type === 'notebook') {
             videoContainer.innerHTML = `<div id="notebookView_single"></div>`;
@@ -836,11 +822,10 @@ export function openCourseDetail(id) {
             `;
             videoContainer.style.display = 'block';
         }
-    } else if (course.videoUrl) {
-        // Video no embebible
+    } else if (videoUrl) {
         videoContainer.innerHTML = `
             <div style="margin-bottom: 16px;">
-                <a href="${course.videoUrl}" target="_blank" class="btn btn-orange" style="width: 100%; justify-content: center;">
+                <a href="${videoUrl}" target="_blank" class="btn btn-orange" style="width: 100%; justify-content: center;">
                     <i class="fa-solid fa-play"></i> Ver Grabación de Clase (Google Drive / Enlace)
                 </a>
             </div>`;
@@ -849,8 +834,13 @@ export function openCourseDetail(id) {
         videoContainer.innerHTML = '';
         videoContainer.style.display = 'none';
     }
+}
 
-    // Botón PDF / Diapositivas (Enlace externo inferior)
+// Configurar botones del pie del modal
+function setupModalButtons(course, isTeacher, isEnrolled) {
+    const docEmbedUrl = getEmbeddableDocumentUrl(course.pdfUrl);
+    const resourceInfo = getEmbeddableResourceUrl(course.resourceUrl);
+
     const btnPdf = document.getElementById('detailBtnPdf');
     if (btnPdf) {
         if (course.pdfUrl && !docEmbedUrl) {
@@ -861,7 +851,6 @@ export function openCourseDetail(id) {
         }
     }
 
-    // Botón Recursos / Colab / GitHub (Enlace externo inferior)
     const btnResource = document.getElementById('detailBtnResource');
     if (btnResource) {
         if (course.resourceUrl && !resourceInfo) {
@@ -872,7 +861,6 @@ export function openCourseDetail(id) {
         }
     }
 
-    // Botón Inscribirse / Estado en Modal
     const btnEnroll = document.getElementById('detailBtnEnroll');
     const btnDelete = document.getElementById('detailBtnDelete');
 
@@ -890,7 +878,7 @@ export function openCourseDetail(id) {
     if (btnEnroll) {
         if (isTeacher) {
             btnEnroll.className = 'btn btn-outline';
-            btnEnroll.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar este Curso';
+            btnEnroll.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Información General';
             btnEnroll.onclick = () => {
                 window.closeModal('courseDetailModal');
                 openEditCourseModal(course.id);
@@ -903,8 +891,360 @@ export function openCourseDetail(id) {
             };
         }
     }
+}
+
+// Abrir Aula Virtual / Detalle del Curso (Con soporte por Semanas)
+export function openCourseDetail(id) {
+    const course = coursesList.find(c => c.id === id);
+    if (!course) return;
+
+    const modal = document.getElementById('courseDetailModal');
+    if (!modal) return;
+
+    const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'admin');
+    const currentUserId = currentAuthUser ? currentAuthUser.uid : null;
+    const isEnrolled = currentUserId && Array.isArray(course.inscritos) && course.inscritos.includes(currentUserId);
+
+    document.getElementById('detailCourseTitle').textContent = course.title;
+    document.getElementById('detailCourseCategory').textContent = `${course.category || 'Curso'} • Nivel ${course.level || 'Principiante'}`;
+    document.getElementById('detailCourseInstructor').innerHTML = `<i class="fa-regular fa-user"></i> Instructor: <strong>${course.instructor}</strong> • Duración: ${course.duration || '20 horas'}`;
+    document.getElementById('detailCourseDesc').textContent = course.description || 'Sin descripción adicional.';
+
+    const weeksNavEl = document.getElementById('detailWeeksNav');
+    const weekHeaderEl = document.getElementById('detailWeekHeader');
+    const videoContainer = document.getElementById('detailVideoContainer');
+
+    const hasWeeks = Array.isArray(course.semanas) && course.semanas.length > 0;
+
+    if (hasWeeks) {
+        const allWeeks = course.semanas;
+        const availableWeeks = isTeacher ? allWeeks : allWeeks.filter(w => w.visible !== false);
+
+        if (availableWeeks.length === 0) {
+            if (weeksNavEl) weeksNavEl.innerHTML = '';
+            if (weekHeaderEl) weekHeaderEl.innerHTML = '';
+            videoContainer.style.display = 'block';
+            videoContainer.innerHTML = `
+                <div class="week-empty-state">
+                    <i class="fa-solid fa-clock"></i>
+                    <h4 style="color: var(--text-primary); margin-bottom: 6px;">Próximamente disponible</h4>
+                    <p style="font-size: 0.85rem; max-width: 400px; margin: 0 auto;">El profesor aún está preparando las semanas de este curso. ¡Vuelve pronto!</p>
+                </div>
+            `;
+            setupModalButtons(course, isTeacher, isEnrolled);
+            modal.classList.add('active');
+            return;
+        }
+
+        let activeWeekId = activeWeekIdByCourse[course.id];
+        let activeWeek = availableWeeks.find(w => w.id === activeWeekId);
+        if (!activeWeek) {
+            activeWeek = availableWeeks[0];
+            activeWeekIdByCourse[course.id] = activeWeek.id;
+        }
+
+        // Renderizar barra de navegación de semanas (Píldoras)
+        if (weeksNavEl) {
+            weeksNavEl.innerHTML = `
+                <div class="weeks-nav-container">
+                    ${availableWeeks.map((w, idx) => {
+                        const isActive = w.id === activeWeek.id;
+                        const isHidden = w.visible === false;
+                        return `
+                            <button type="button" class="week-tab-btn ${isActive ? 'active' : ''} ${isHidden ? 'is-hidden' : ''}" onclick="window.selectWeekTab('${course.id}', '${w.id}')">
+                                <i class="fa-solid ${isActive ? 'fa-folder-open' : 'fa-folder'}"></i>
+                                <span>Semana ${w.numero || (idx + 1)}</span>
+                                ${isTeacher && isHidden ? '<i class="fa-solid fa-eye-slash" title="Oculta para alumnos" style="font-size: 0.7rem; margin-left: 2px;"></i>' : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                    ${isTeacher ? `
+                        <button type="button" class="btn-add-week" onclick="window.openWeekModal('${course.id}')" title="Agregar nueva semana al curso">
+                            <i class="fa-solid fa-plus"></i> Nueva Semana
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Renderizar cabecera de la semana activa
+        if (weekHeaderEl) {
+            const isWeekHidden = activeWeek.visible === false;
+            weekHeaderEl.innerHTML = `
+                <div class="week-header-card">
+                    <div class="week-header-info">
+                        <span class="week-subtitle-text"><i class="fa-regular fa-calendar-check"></i> Semana ${activeWeek.numero || 1} del curso</span>
+                        <span class="week-title-text">${activeWeek.titulo || `Semana ${activeWeek.numero || 1}`}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        ${activeWeek.meetUrl ? `
+                            <a href="${activeWeek.meetUrl}" target="_blank" rel="noopener" class="btn-week-meet">
+                                <i class="fa-solid fa-video"></i> Entrar a Clase en Vivo
+                            </a>
+                        ` : ''}
+                        ${isTeacher ? `
+                            <div class="teacher-actions-bar">
+                                <button type="button" class="badge-visibility ${isWeekHidden ? 'hidden' : 'published'}" onclick="window.toggleWeekVisibility('${course.id}', '${activeWeek.id}')" title="${isWeekHidden ? 'Clic para publicar a los alumnos' : 'Clic para ocultar a los alumnos'}">
+                                    <i class="fa-solid ${isWeekHidden ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                                    <span>${isWeekHidden ? 'Oculta (Borrador)' : 'Publicada'}</span>
+                                </button>
+                                <button type="button" class="btn-icon-action" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')" title="Editar contenido de esta semana">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button type="button" class="btn-icon-action danger" onclick="window.deleteWeek('${course.id}', '${activeWeek.id}')" title="Eliminar esta semana">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Renderizar multimedia de la semana activa
+        const hasMedia = activeWeek.videoUrl || activeWeek.materialUrl;
+        if (hasMedia) {
+            renderCourseMedia(videoContainer, activeWeek.videoUrl, activeWeek.materialUrl, null);
+        } else {
+            videoContainer.style.display = 'block';
+            videoContainer.innerHTML = `
+                <div class="week-empty-state">
+                    <i class="fa-solid ${isTeacher ? 'fa-folder-plus' : 'fa-folder-open'}"></i>
+                    <h4 style="color: var(--text-primary); margin-bottom: 6px;">Sin materiales aún</h4>
+                    <p style="font-size: 0.85rem; max-width: 420px; margin: 0 auto 12px auto;">
+                        ${isTeacher ? 'Esta semana no tiene videos ni diapositivas cargadas. Haz clic en el botón para agregar el enlace de YouTube o Drive.' : 'El profesor aún no ha cargado los materiales de esta semana.'}
+                    </p>
+                    ${isTeacher ? `
+                        <button type="button" class="btn btn-sm btn-primary" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')">
+                            <i class="fa-solid fa-plus"></i> Cargar Materiales a esta Semana
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+    } else {
+        // Modo retrocompatibilidad (Cursos sin array de semanas)
+        if (weeksNavEl) {
+            if (isTeacher) {
+                weeksNavEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 153, 153, 0.08); border: 1.5px dashed var(--siemens-teal); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <strong style="color: var(--siemens-teal); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-layer-group"></i> Estructura por Semanas
+                            </strong>
+                            <span style="font-size: 0.78rem; color: var(--text-secondary);">Convierte este curso para organizarlo por Semana 1, Semana 2 y publicar progresivamente.</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="window.convertCourseToWeeks('${course.id}')">
+                            <i class="fa-solid fa-plus"></i> Activar Organización por Semanas
+                        </button>
+                    </div>
+                `;
+            } else {
+                weeksNavEl.innerHTML = '';
+            }
+        }
+        if (weekHeaderEl) weekHeaderEl.innerHTML = '';
+
+        renderCourseMedia(videoContainer, course.videoUrl, course.pdfUrl, course.resourceUrl);
+    }
+
+    setupModalButtons(course, isTeacher, isEnrolled);
+    modal.classList.add('active');
+}
+
+// Seleccionar pestaña de semana
+export function selectWeekTab(courseId, weekId) {
+    activeWeekIdByCourse[courseId] = weekId;
+    openCourseDetail(courseId);
+}
+
+// Abrir Modal para Crear o Editar Semana
+export function openWeekModal(courseId, weekId = null) {
+    const course = coursesList.find(c => c.id === courseId);
+    if (!course) return;
+
+    const modal = document.getElementById('weekEditModal');
+    if (!modal) return;
+
+    document.getElementById('weekEditCourseId').value = courseId;
+    document.getElementById('weekEditWeekId').value = weekId || '';
+
+    const currentWeeks = Array.isArray(course.semanas) ? course.semanas : [];
+
+    if (weekId) {
+        const week = currentWeeks.find(w => w.id === weekId);
+        if (week) {
+            document.getElementById('weekModalTitle').textContent = `Editar Semana ${week.numero || ''}`;
+            document.getElementById('weekInputTitle').value = week.titulo || '';
+            document.getElementById('weekInputMeetUrl').value = week.meetUrl || '';
+            document.getElementById('weekInputVideoUrl').value = week.videoUrl || '';
+            document.getElementById('weekInputMaterialUrl').value = week.materialUrl || '';
+            document.getElementById('weekInputVisible').checked = week.visible !== false;
+        }
+    } else {
+        const nextNum = currentWeeks.length + 1;
+        document.getElementById('weekModalTitle').textContent = `Nueva Semana (Semana ${nextNum})`;
+        document.getElementById('weekInputTitle').value = `Semana ${nextNum}: `;
+        document.getElementById('weekInputMeetUrl').value = '';
+        document.getElementById('weekInputVideoUrl').value = '';
+        document.getElementById('weekInputMaterialUrl').value = '';
+        document.getElementById('weekInputVisible').checked = true;
+    }
 
     modal.classList.add('active');
+}
+
+// Guardar Semana (Crear o Actualizar en Firestore con 1 sola escritura)
+export async function saveWeekForm(e) {
+    e.preventDefault();
+
+    const courseId = document.getElementById('weekEditCourseId').value;
+    const weekId = document.getElementById('weekEditWeekId').value;
+    const title = document.getElementById('weekInputTitle').value.trim();
+    const meetUrl = document.getElementById('weekInputMeetUrl').value.trim();
+    const videoUrl = document.getElementById('weekInputVideoUrl').value.trim();
+    const materialUrl = document.getElementById('weekInputMaterialUrl').value.trim();
+    const visible = document.getElementById('weekInputVisible').checked;
+
+    const course = coursesList.find(c => c.id === courseId);
+    if (!course) return;
+
+    let semanas = Array.isArray(course.semanas) ? [...course.semanas] : [];
+
+    if (weekId) {
+        const idx = semanas.findIndex(w => w.id === weekId);
+        if (idx !== -1) {
+            semanas[idx] = {
+                ...semanas[idx],
+                titulo: title,
+                meetUrl,
+                videoUrl,
+                materialUrl,
+                visible
+            };
+        }
+    } else {
+        const newWeek = {
+            id: 'sem_' + Date.now(),
+            numero: semanas.length + 1,
+            titulo: title,
+            meetUrl,
+            videoUrl,
+            materialUrl,
+            visible
+        };
+        semanas.push(newWeek);
+        activeWeekIdByCourse[courseId] = newWeek.id;
+    }
+
+    try {
+        if (dbInstance) {
+            const courseRef = doc(dbInstance, 'cursos', courseId);
+            await updateDoc(courseRef, { semanas });
+        } else {
+            course.semanas = semanas;
+        }
+
+        if (window.closeModal) window.closeModal('weekEditModal');
+        if (window.showToast) window.showToast(`¡Semana guardada con éxito!`, 'success');
+        openCourseDetail(courseId);
+    } catch (error) {
+        console.error("Error guardando semana en Firestore:", error);
+        if (window.showToast) window.showToast("Error al guardar la semana.");
+    }
+}
+
+// Alternar visibilidad de una semana (Publicada / Oculta)
+export async function toggleWeekVisibility(courseId, weekId) {
+    const course = coursesList.find(c => c.id === courseId);
+    if (!course || !Array.isArray(course.semanas)) return;
+
+    const semanas = [...course.semanas];
+    const week = semanas.find(w => w.id === weekId);
+    if (!week) return;
+
+    week.visible = !week.visible;
+
+    try {
+        if (dbInstance) {
+            const courseRef = doc(dbInstance, 'cursos', courseId);
+            await updateDoc(courseRef, { semanas });
+        }
+        if (window.showToast) {
+            window.showToast(week.visible ? `Semana publicada (visible para alumnos)` : `Semana oculta en borrador`, 'normal');
+        }
+        openCourseDetail(courseId);
+    } catch (error) {
+        console.error("Error al alternar visibilidad de semana:", error);
+        if (window.showToast) window.showToast("Error al cambiar visibilidad.");
+    }
+}
+
+// Eliminar semana
+export async function deleteWeek(courseId, weekId) {
+    const course = coursesList.find(c => c.id === courseId);
+    if (!course || !Array.isArray(course.semanas)) return;
+
+    const week = course.semanas.find(w => w.id === weekId);
+    if (!week) return;
+
+    const confirmed = confirm(`¿Eliminar la "${week.titulo || 'Semana'}" y sus materiales?`);
+    if (!confirmed) return;
+
+    const semanas = course.semanas.filter(w => w.id !== weekId);
+    semanas.forEach((w, idx) => { w.numero = idx + 1; });
+
+    if (activeWeekIdByCourse[courseId] === weekId) {
+        activeWeekIdByCourse[courseId] = semanas[0]?.id || null;
+    }
+
+    try {
+        if (dbInstance) {
+            const courseRef = doc(dbInstance, 'cursos', courseId);
+            await updateDoc(courseRef, { semanas });
+        } else {
+            course.semanas = semanas;
+        }
+
+        if (window.showToast) window.showToast(`Semana eliminada`, 'normal');
+        openCourseDetail(courseId);
+    } catch (error) {
+        console.error("Error al eliminar semana:", error);
+        if (window.showToast) window.showToast("Error al eliminar la semana.");
+    }
+}
+
+// Convertir curso antiguo a estructura de semanas
+export async function convertCourseToWeeks(courseId) {
+    const course = coursesList.find(c => c.id === courseId);
+    if (!course) return;
+
+    const initialWeek = {
+        id: 'sem_' + Date.now(),
+        numero: 1,
+        titulo: `Semana 1: Introducción a ${course.title || 'la materia'}`,
+        meetUrl: '',
+        videoUrl: course.videoUrl || '',
+        materialUrl: course.pdfUrl || course.resourceUrl || '',
+        visible: true
+    };
+
+    try {
+        if (dbInstance) {
+            const courseRef = doc(dbInstance, 'cursos', courseId);
+            await updateDoc(courseRef, { semanas: [initialWeek] });
+        } else {
+            course.semanas = [initialWeek];
+        }
+
+        activeWeekIdByCourse[courseId] = initialWeek.id;
+        if (window.showToast) window.showToast(`¡Curso organizado en semanas! Ahora puedes agregar más semanas.`, 'success');
+        openCourseDetail(courseId);
+    } catch (error) {
+        console.error("Error convirtiendo curso a semanas:", error);
+        if (window.showToast) window.showToast("Error al organizar el curso.");
+    }
 }
 
 // Guardar nuevo curso en Firestore (Cero consumo de Storage con Técnica del Enlace)
@@ -987,3 +1327,10 @@ window.toggleHideCourse = toggleHideCourse;
 window.deleteCourse = deleteCourse;
 window.setCategoryFilter = setCategoryFilter;
 window.filterCourses = filterCourses;
+window.selectWeekTab = selectWeekTab;
+window.openWeekModal = openWeekModal;
+window.saveWeekForm = saveWeekForm;
+window.toggleWeekVisibility = toggleWeekVisibility;
+window.deleteWeek = deleteWeek;
+window.convertCourseToWeeks = convertCourseToWeeks;
+
