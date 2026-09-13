@@ -1008,16 +1008,6 @@
                 <i class="fa-solid fa-calendar-plus"></i>
                 <span>Programar Clase</span>
             </div>
-
-            <div class="nav-section-title">Comunidad</div>
-            <div class="nav-item" onclick="showToast('Comunidad de estudiantes conectada', 'success')">
-                <i class="fa-solid fa-users"></i>
-                <span>Foro & Mentorías</span>
-            </div>
-            <div class="nav-item" onclick="showToast('Sección de certificaciones oficiales', 'success')">
-                <i class="fa-solid fa-award"></i>
-                <span>Certificados</span>
-            </div>
         </nav>
 
         <div class="sidebar-footer">
@@ -1048,14 +1038,6 @@
                 </div>
             </div>
             <div class="topbar-right">
-                <div class="alliance-badge">
-                    <i class="fa-solid fa-shield-halved"></i>
-                    <span>Ubuntu & Siemens Education</span>
-                </div>
-                <button class="topbar-btn" title="Notificaciones" onclick="showToast('Tienes 3 clases próximas programadas', 'success')">
-                    <i class="fa-regular fa-bell"></i>
-                    <span class="badge-count">3</span>
-                </button>
                 <button class="btn btn-jitsi-live btn-sm role-teacher-only" onclick="openInstantLiveModal()">
                     <i class="fa-solid fa-bolt"></i>
                     <span>Crear Clase en Vivo</span>
@@ -1288,13 +1270,6 @@
                                 <option value="Avanzado">Avanzado</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="courseInstructorDisplay"><i class="fa-solid fa-user-check" style="color: var(--siemens-teal);"></i> Docente / Autor</label>
-                            <input type="text" id="courseInstructorDisplay" class="form-control" readonly style="background: var(--bg-body); color: var(--text-secondary); cursor: not-allowed;" title="Asignado automáticamente a tu cuenta activa">
-                        </div>
                         <div class="form-group">
                             <label for="courseDuration">Duración estimada</label>
                             <input type="text" id="courseDuration" class="form-control" placeholder="Ej: 20 horas" value="20 horas">
@@ -1305,20 +1280,11 @@
                         <label for="courseDescription">Descripción del Curso</label>
                         <textarea id="courseDescription" class="form-control" placeholder="Describe brevemente los objetivos de aprendizaje y proyectos a realizar..." rows="3"></textarea>
                     </div>
-
-                    <!-- NOTA INFORMATIVA: ESTRUCTURA POR SEMANAS -->
-                    <div style="background: rgba(0, 153, 153, 0.07); border: 1px dashed var(--siemens-teal); border-radius: var(--radius-md); padding: 12px 14px; margin-top: 6px; display: flex; align-items: flex-start; gap: 10px;">
-                        <i class="fa-solid fa-lightbulb" style="color: var(--siemens-teal); font-size: 1.1rem; margin-top: 2px;"></i>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
-                            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">Estructura ágil por semanas</strong>
-                            Al publicar este curso, se creará automáticamente la <strong>Semana 1</strong>. Podrás cargar tus presentaciones (Google Slides/PPT), hojas de cálculo (Google Sheets) y videos directamente dentro de cada semana en el aula virtual.
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeModal('createCourseModal')">Cancelar</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fa-solid fa-check"></i> Publicar Curso
+                        <i class="fa-solid fa-circle-plus"></i> Crear Curso
                     </button>
                 </div>
             </form>
@@ -1359,13 +1325,6 @@
                                 <option value="Intermedio">Intermedio</option>
                                 <option value="Avanzado">Avanzado</option>
                             </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editCourseInstructor"><i class="fa-solid fa-user-check" style="color: var(--siemens-teal);"></i> Docente / Autor</label>
-                            <input type="text" id="editCourseInstructor" class="form-control" readonly style="background: var(--bg-body); color: var(--text-secondary); cursor: not-allowed;" title="Autor del curso">
                         </div>
                         <div class="form-group">
                             <label for="editCourseDuration">Duración estimada</label>
