@@ -29,6 +29,23 @@ export function setCursosUser(user, role, name) {
     renderCourses();
 }
 
+// Validar si el usuario activo tiene permisos para editar, gestionar o eliminar un curso
+export function canUserEditCourse(course) {
+    if (!currentAuthUser) return false;
+    if (currentUserRole === 'admin') return true;
+    const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher');
+    if (!isTeacher) return false;
+    
+    // Si el curso tiene autor asignado, verificar coincidencia con el UID del usuario
+    if (course && course.authorId) {
+        return course.authorId === currentAuthUser.uid;
+    }
+    
+    // Retrocompatibilidad con cursos preexistentes sin authorId (docentes pueden gestionarlos)
+    return true;
+}
+window.canUserEditCourse = canUserEditCourse;
+
 // Inicializador del módulo con Firestore
 export function initCursosModule(db) {
     dbInstance = db;
@@ -450,6 +467,7 @@ export function renderCourses() {
             grid.innerHTML = filtered.map(course => {
                 const isEnrolled = currentUserId && Array.isArray(course.inscritos) && course.inscritos.includes(currentUserId);
                 const isHidden = course.activo === false;
+                const canEdit = canUserEditCourse(course);
 
                 return `
                 <div class="course-card ${isHidden ? 'is-hidden-course' : ''}" onclick="openCourseDetail('${course.id}')" style="${isHidden ? 'opacity: 0.7; border: 1.5px dashed #ef4444;' : ''}">
@@ -470,10 +488,10 @@ export function renderCourses() {
                         </div>
                         
                         <div class="course-footer" style="flex-wrap: wrap; gap: 8px;">
-                            ${isTeacher ? `
-                                <!-- ACCIONES DE PROFESOR: EDITAR, OCULTAR Y ELIMINAR -->
+                            ${canEdit ? `
+                                <!-- ACCIONES DE AUTOR/PROFESOR: EDITAR, OCULTAR Y ELIMINAR -->
                                 <div style="display: flex; gap: 6px; width: 100%; justify-content: space-between; align-items: center;">
-                                    <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditCourseModal('${course.id}')" title="Editar información y enlaces del curso">
+                                    <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditCourseModal('${course.id}')" title="Editar información del curso">
                                         <i class="fa-solid fa-pen-to-square"></i> Editar
                                     </button>
                                     <button class="btn btn-sm ${isHidden ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleHideCourse('${course.id}')" title="${isHidden ? 'Volver a mostrar en el catálogo' : 'Ocultar curso del catálogo'}">
@@ -484,7 +502,7 @@ export function renderCourses() {
                                     </button>
                                 </div>
                             ` : `
-                                <!-- ACCIÓN DE ESTUDIANTE: INSCRIBIRME -->
+                                <!-- ACCIÓN DE ESTUDIANTE / OBSERVADOR: INSCRIBIRME -->
                                 <span class="course-price">${course.price || 'Gratis'}</span>
                                 <button class="btn btn-sm ${isEnrolled ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleEnroll('${course.id}')">
                                     ${isEnrolled ? '<i class="fa-solid fa-check"></i> Inscrito' : '<i class="fa-solid fa-plus"></i> Inscribirme'}
@@ -585,6 +603,11 @@ export async function toggleHideCourse(id) {
     const course = coursesList.find(c => c.id === id);
     if (!course) return;
 
+    if (!canUserEditCourse(course)) {
+        if (window.showToast) window.showToast("No tienes permisos para modificar el estado de este curso.");
+        return;
+    }
+
     const newActiveState = course.activo === false ? true : false;
 
     try {
@@ -615,6 +638,11 @@ export async function toggleHideCourse(id) {
 export async function deleteCourse(id) {
     const course = coursesList.find(c => c.id === id);
     if (!course) return;
+
+    if (!canUserEditCourse(course)) {
+        if (window.showToast) window.showToast("No tienes permisos para eliminar este curso.");
+        return;
+    }
 
     const confirmed = confirm(`¿Estás seguro de que deseas eliminar permanentemente el curso "${course.title}"?\n\nEsta acción no se puede deshacer.`);
     if (!confirmed) return;
@@ -649,6 +677,11 @@ export function openEditCourseModal(id) {
     const course = coursesList.find(c => c.id === id);
     if (!course) return;
 
+    if (!canUserEditCourse(course)) {
+        if (window.showToast) window.showToast('No tienes permisos para editar este curso.', 'normal');
+        return;
+    }
+
     document.getElementById('editCourseId').value = course.id;
     document.getElementById('editCourseTitle').value = course.title || '';
     document.getElementById('editCourseCategory').value = course.category || 'IA';
@@ -656,10 +689,6 @@ export function openEditCourseModal(id) {
     document.getElementById('editCourseInstructor').value = course.instructor || currentUserName;
     document.getElementById('editCourseDuration').value = course.duration || '20 horas';
     document.getElementById('editCourseDescription').value = course.description || '';
-    document.getElementById('editCourseIcon').value = course.icon || 'fa-graduation-cap';
-    document.getElementById('editCourseVideoUrl').value = course.videoUrl || '';
-    document.getElementById('editCoursePdfUrl').value = course.pdfUrl || '';
-    document.getElementById('editCourseResourceUrl').value = course.resourceUrl || '';
 
     const modal = document.getElementById('editCourseModal');
     if (modal) modal.classList.add('active');
@@ -670,28 +699,36 @@ export async function handleSaveEditCourse(e) {
     e.preventDefault();
 
     const id = document.getElementById('editCourseId').value;
+    const course = coursesList.find(c => c.id === id);
+    if (!course || !canUserEditCourse(course)) {
+        if (window.showToast) window.showToast("No tienes permisos para editar este curso.");
+        return;
+    }
+
     const title = document.getElementById('editCourseTitle').value.trim();
     const category = document.getElementById('editCourseCategory').value;
     const level = document.getElementById('editCourseLevel').value;
-    const instructor = document.getElementById('editCourseInstructor').value.trim();
     const duration = document.getElementById('editCourseDuration').value.trim() || '20 horas';
     const description = document.getElementById('editCourseDescription').value.trim();
-    const icon = document.getElementById('editCourseIcon').value || 'fa-graduation-cap';
-    const videoUrl = document.getElementById('editCourseVideoUrl').value.trim();
-    const pdfUrl = document.getElementById('editCoursePdfUrl').value.trim();
-    const resourceUrl = document.getElementById('editCourseResourceUrl').value.trim();
+
+    // Auto-asignar icono según categoría
+    const categoryIcons = {
+        'IA': 'fa-brain',
+        'Matemáticas': 'fa-calculator',
+        'Programación': 'fa-code',
+        'Ingeniería': 'fa-robot',
+        'Ciberseguridad': 'fa-shield-halved',
+        'Cloud': 'fa-cloud'
+    };
+    const icon = categoryIcons[category] || course.icon || 'fa-graduation-cap';
 
     const updatedData = {
         title,
         category,
         level,
-        instructor,
         duration,
         description,
         icon,
-        videoUrl,
-        pdfUrl,
-        resourceUrl,
         updatedAt: new Date().toISOString()
     };
 
@@ -700,8 +737,7 @@ export async function handleSaveEditCourse(e) {
             const courseRef = doc(dbInstance, 'cursos', id);
             await updateDoc(courseRef, updatedData);
         } else {
-            const course = coursesList.find(c => c.id === id);
-            if (course) Object.assign(course, updatedData);
+            Object.assign(course, updatedData);
             renderCourses();
         }
 
@@ -837,7 +873,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl) {
 }
 
 // Configurar botones del pie del modal
-function setupModalButtons(course, isTeacher, isEnrolled) {
+function setupModalButtons(course, isAuthor, isEnrolled) {
     const docEmbedUrl = getEmbeddableDocumentUrl(course.pdfUrl);
     const resourceInfo = getEmbeddableResourceUrl(course.resourceUrl);
 
@@ -865,7 +901,7 @@ function setupModalButtons(course, isTeacher, isEnrolled) {
     const btnDelete = document.getElementById('detailBtnDelete');
 
     if (btnDelete) {
-        if (isTeacher) {
+        if (isAuthor) {
             btnDelete.style.display = 'inline-flex';
             btnDelete.onclick = () => {
                 deleteCourse(course.id);
@@ -876,7 +912,7 @@ function setupModalButtons(course, isTeacher, isEnrolled) {
     }
 
     if (btnEnroll) {
-        if (isTeacher) {
+        if (isAuthor) {
             btnEnroll.className = 'btn btn-outline';
             btnEnroll.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Información General';
             btnEnroll.onclick = () => {
@@ -901,7 +937,7 @@ export function openCourseDetail(id) {
     const modal = document.getElementById('courseDetailModal');
     if (!modal) return;
 
-    const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'admin');
+    const isAuthor = canUserEditCourse(course);
     const currentUserId = currentAuthUser ? currentAuthUser.uid : null;
     const isEnrolled = currentUserId && Array.isArray(course.inscritos) && course.inscritos.includes(currentUserId);
 
@@ -918,7 +954,7 @@ export function openCourseDetail(id) {
 
     if (hasWeeks) {
         const allWeeks = course.semanas;
-        const availableWeeks = isTeacher ? allWeeks : allWeeks.filter(w => w.visible !== false);
+        const availableWeeks = isAuthor ? allWeeks : allWeeks.filter(w => w.visible !== false);
 
         if (availableWeeks.length === 0) {
             if (weeksNavEl) weeksNavEl.innerHTML = '';
@@ -931,7 +967,7 @@ export function openCourseDetail(id) {
                     <p style="font-size: 0.85rem; max-width: 400px; margin: 0 auto;">El profesor aún está preparando las semanas de este curso. ¡Vuelve pronto!</p>
                 </div>
             `;
-            setupModalButtons(course, isTeacher, isEnrolled);
+            setupModalButtons(course, isAuthor, isEnrolled);
             modal.classList.add('active');
             return;
         }
@@ -954,11 +990,11 @@ export function openCourseDetail(id) {
                             <button type="button" class="week-tab-btn ${isActive ? 'active' : ''} ${isHidden ? 'is-hidden' : ''}" onclick="window.selectWeekTab('${course.id}', '${w.id}')">
                                 <i class="fa-solid ${isActive ? 'fa-folder-open' : 'fa-folder'}"></i>
                                 <span>Semana ${w.numero || (idx + 1)}</span>
-                                ${isTeacher && isHidden ? '<i class="fa-solid fa-eye-slash" title="Oculta para alumnos" style="font-size: 0.7rem; margin-left: 2px;"></i>' : ''}
+                                ${isAuthor && isHidden ? '<i class="fa-solid fa-eye-slash" title="Oculta para alumnos" style="font-size: 0.7rem; margin-left: 2px;"></i>' : ''}
                             </button>
                         `;
                     }).join('')}
-                    ${isTeacher ? `
+                    ${isAuthor ? `
                         <button type="button" class="btn-add-week" onclick="window.openWeekModal('${course.id}')" title="Agregar nueva semana al curso">
                             <i class="fa-solid fa-plus"></i> Nueva Semana
                         </button>
@@ -982,7 +1018,7 @@ export function openCourseDetail(id) {
                                 <i class="fa-solid fa-video"></i> Entrar a Clase en Vivo
                             </a>
                         ` : ''}
-                        ${isTeacher ? `
+                        ${isAuthor ? `
                             <div class="teacher-actions-bar">
                                 <button type="button" class="badge-visibility ${isWeekHidden ? 'hidden' : 'published'}" onclick="window.toggleWeekVisibility('${course.id}', '${activeWeek.id}')" title="${isWeekHidden ? 'Clic para publicar a los alumnos' : 'Clic para ocultar a los alumnos'}">
                                     <i class="fa-solid ${isWeekHidden ? 'fa-eye-slash' : 'fa-eye'}"></i>
@@ -1009,12 +1045,12 @@ export function openCourseDetail(id) {
             videoContainer.style.display = 'block';
             videoContainer.innerHTML = `
                 <div class="week-empty-state">
-                    <i class="fa-solid ${isTeacher ? 'fa-folder-plus' : 'fa-folder-open'}"></i>
+                    <i class="fa-solid ${isAuthor ? 'fa-folder-plus' : 'fa-folder-open'}"></i>
                     <h4 style="color: var(--text-primary); margin-bottom: 6px;">Sin materiales aún</h4>
                     <p style="font-size: 0.85rem; max-width: 420px; margin: 0 auto 12px auto;">
-                        ${isTeacher ? 'Esta semana no tiene videos ni diapositivas cargadas. Haz clic en el botón para agregar el enlace de YouTube o Drive.' : 'El profesor aún no ha cargado los materiales de esta semana.'}
+                        ${isAuthor ? 'Esta semana no tiene videos ni diapositivas cargadas. Haz clic en el botón para agregar el enlace de YouTube o Drive.' : 'El profesor aún no ha cargado los materiales de esta semana.'}
                     </p>
-                    ${isTeacher ? `
+                    ${isAuthor ? `
                         <button type="button" class="btn btn-sm btn-primary" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')">
                             <i class="fa-solid fa-plus"></i> Cargar Materiales a esta Semana
                         </button>
@@ -1026,7 +1062,7 @@ export function openCourseDetail(id) {
     } else {
         // Modo retrocompatibilidad (Cursos sin array de semanas)
         if (weeksNavEl) {
-            if (isTeacher) {
+            if (isAuthor) {
                 weeksNavEl.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 153, 153, 0.08); border: 1.5px dashed var(--siemens-teal); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                         <div>
@@ -1049,7 +1085,7 @@ export function openCourseDetail(id) {
         renderCourseMedia(videoContainer, course.videoUrl, course.pdfUrl, course.resourceUrl);
     }
 
-    setupModalButtons(course, isTeacher, isEnrolled);
+    setupModalButtons(course, isAuthor, isEnrolled);
     modal.classList.add('active');
 }
 
@@ -1063,6 +1099,11 @@ export function selectWeekTab(courseId, weekId) {
 export function openWeekModal(courseId, weekId = null) {
     const course = coursesList.find(c => c.id === courseId);
     if (!course) return;
+
+    if (!canUserEditCourse(course)) {
+        if (window.showToast) window.showToast('No tienes permisos para modificar las semanas de este curso.', 'normal');
+        return;
+    }
 
     const modal = document.getElementById('weekEditModal');
     if (!modal) return;
@@ -1100,15 +1141,18 @@ export async function saveWeekForm(e) {
     e.preventDefault();
 
     const courseId = document.getElementById('weekEditCourseId').value;
+    const course = coursesList.find(c => c.id === courseId);
+    if (!course || !canUserEditCourse(course)) {
+        if (window.showToast) window.showToast("No tienes permisos para guardar semanas en este curso.");
+        return;
+    }
+
     const weekId = document.getElementById('weekEditWeekId').value;
     const title = document.getElementById('weekInputTitle').value.trim();
     const meetUrl = document.getElementById('weekInputMeetUrl').value.trim();
     const videoUrl = document.getElementById('weekInputVideoUrl').value.trim();
     const materialUrl = document.getElementById('weekInputMaterialUrl').value.trim();
     const visible = document.getElementById('weekInputVisible').checked;
-
-    const course = coursesList.find(c => c.id === courseId);
-    if (!course) return;
 
     let semanas = Array.isArray(course.semanas) ? [...course.semanas] : [];
 
@@ -1158,7 +1202,10 @@ export async function saveWeekForm(e) {
 // Alternar visibilidad de una semana (Publicada / Oculta)
 export async function toggleWeekVisibility(courseId, weekId) {
     const course = coursesList.find(c => c.id === courseId);
-    if (!course || !Array.isArray(course.semanas)) return;
+    if (!course || !Array.isArray(course.semanas) || !canUserEditCourse(course)) {
+        if (window.showToast) window.showToast("No tienes permisos para modificar esta semana.");
+        return;
+    }
 
     const semanas = [...course.semanas];
     const week = semanas.find(w => w.id === weekId);
@@ -1184,7 +1231,10 @@ export async function toggleWeekVisibility(courseId, weekId) {
 // Eliminar semana
 export async function deleteWeek(courseId, weekId) {
     const course = coursesList.find(c => c.id === courseId);
-    if (!course || !Array.isArray(course.semanas)) return;
+    if (!course || !Array.isArray(course.semanas) || !canUserEditCourse(course)) {
+        if (window.showToast) window.showToast("No tienes permisos para eliminar semanas de este curso.");
+        return;
+    }
 
     const week = course.semanas.find(w => w.id === weekId);
     if (!week) return;
@@ -1218,7 +1268,10 @@ export async function deleteWeek(courseId, weekId) {
 // Convertir curso antiguo a estructura de semanas
 export async function convertCourseToWeeks(courseId) {
     const course = coursesList.find(c => c.id === courseId);
-    if (!course) return;
+    if (!course || !canUserEditCourse(course)) {
+        if (window.showToast) window.showToast("No tienes permisos para modificar este curso.");
+        return;
+    }
 
     const initialWeek = {
         id: 'sem_' + Date.now(),
@@ -1247,34 +1300,54 @@ export async function convertCourseToWeeks(courseId) {
     }
 }
 
-// Guardar nuevo curso en Firestore (Cero consumo de Storage con Técnica del Enlace)
+// Guardar nuevo curso en Firestore (Cero consumo de Storage con Técnica del Enlace y Autoría Automática)
 export async function handleCreateCourse(e) {
     e.preventDefault();
 
     const title = document.getElementById('courseTitle').value.trim();
     const category = document.getElementById('courseCategory').value;
     const level = document.getElementById('courseLevel').value;
-    const instructor = (document.getElementById('courseInstructor') && document.getElementById('courseInstructor').value.trim()) || currentUserName;
-    const duration = document.getElementById('courseDuration').value.trim() || '20 horas';
-    const description = document.getElementById('courseDescription').value.trim();
-    const icon = document.getElementById('courseIcon').value || 'fa-graduation-cap';
+    const duration = (document.getElementById('courseDuration') && document.getElementById('courseDuration').value.trim()) || '20 horas';
+    const description = (document.getElementById('courseDescription') && document.getElementById('courseDescription').value.trim()) || '';
     
-    // Enlaces de la Técnica del Enlace
-    const videoUrl = document.getElementById('courseVideoUrl') ? document.getElementById('courseVideoUrl').value.trim() : '';
-    const pdfUrl = document.getElementById('coursePdfUrl') ? document.getElementById('coursePdfUrl').value.trim() : '';
-    const resourceUrl = document.getElementById('courseResourceUrl') ? document.getElementById('courseResourceUrl').value.trim() : '';
+    // Autoría real vinculada a la cuenta activa
+    const instructor = currentUserName || 'Docente';
+    const authorId = currentAuthUser ? currentAuthUser.uid : null;
+    const authorEmail = currentAuthUser ? currentAuthUser.email : null;
+
+    // Asignación automática de icono temático según categoría
+    const categoryIcons = {
+        'IA': 'fa-brain',
+        'Matemáticas': 'fa-calculator',
+        'Programación': 'fa-code',
+        'Ingeniería': 'fa-robot',
+        'Ciberseguridad': 'fa-shield-halved',
+        'Cloud': 'fa-cloud'
+    };
+    const icon = categoryIcons[category] || 'fa-graduation-cap';
+
+    // Inicializar con la primera semana lista
+    const initialWeek = {
+        id: 'sem_' + Date.now(),
+        numero: 1,
+        titulo: `Semana 1: Introducción`,
+        meetUrl: '',
+        videoUrl: '',
+        materialUrl: '',
+        visible: true
+    };
 
     const newCourseData = {
         title,
         category,
         level,
         instructor,
+        authorId,
+        authorEmail,
         duration,
         description,
         icon,
-        videoUrl,
-        pdfUrl,
-        resourceUrl,
+        semanas: [initialWeek],
         rating: 5.0,
         reviews: 1,
         inscritos: [],
@@ -1296,7 +1369,7 @@ export async function handleCreateCourse(e) {
         document.getElementById('createCourseForm').reset();
 
         if (window.showToast) {
-            window.showToast(`¡Curso "${title}" publicado con sus materiales!`, 'success');
+            window.showToast(`¡Curso "${title}" creado con éxito! Puedes añadir materiales en la Semana 1.`, 'success');
         }
     } catch (error) {
         console.error("Error guardando curso en Firestore:", error);
