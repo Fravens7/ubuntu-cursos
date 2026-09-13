@@ -1292,51 +1292,26 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="courseInstructor">Instructor / Docente *</label>
-                            <input type="text" id="courseInstructor" class="form-control" placeholder="Ej: Dr. Manuel Rojas" required>
+                            <label for="courseInstructorDisplay"><i class="fa-solid fa-user-check" style="color: var(--siemens-teal);"></i> Docente / Autor</label>
+                            <input type="text" id="courseInstructorDisplay" class="form-control" readonly style="background: var(--bg-body); color: var(--text-secondary); cursor: not-allowed;" title="Asignado automáticamente a tu cuenta activa">
                         </div>
                         <div class="form-group">
                             <label for="courseDuration">Duración estimada</label>
-                            <input type="text" id="courseDuration" class="form-control" placeholder="Ej: 24 horas (8 módulos)" value="20 horas">
+                            <input type="text" id="courseDuration" class="form-control" placeholder="Ej: 20 horas" value="20 horas">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="courseDescription">Descripción del Curso</label>
-                        <textarea id="courseDescription" class="form-control" placeholder="Describe brevemente los objetivos de aprendizaje y proyectos a realizar..."></textarea>
+                        <textarea id="courseDescription" class="form-control" placeholder="Describe brevemente los objetivos de aprendizaje y proyectos a realizar..." rows="3"></textarea>
                     </div>
 
-                    <div class="form-group">
-                        <label for="courseIcon">Icono Temático</label>
-                        <select id="courseIcon" class="form-control">
-                            <option value="fa-brain">🧠 Cerebro / IA</option>
-                            <option value="fa-calculator">📐 Calculadora / Matemáticas</option>
-                            <option value="fa-code">💻 Código / Desarrollo</option>
-                            <option value="fa-robot">🤖 Robot / Automatización</option>
-                            <option value="fa-shield-halved">🛡️ Seguridad / Redes</option>
-                            <option value="fa-cloud">☁️ Nube / Servidores</option>
-                        </select>
-                    </div>
-
-                    <!-- MATERIALES Y ENLACES (TÉCNICA DEL ENLACE - CERO COSTO FIREBASE) -->
-                    <div style="background: var(--bg-body); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px; border: 1px dashed var(--border-color);">
-                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); margin-bottom: 10px;">
-                            <i class="fa-solid fa-link"></i> Materiales del Curso (Técnica del Enlace)
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="courseVideoUrl"><i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Enlace de Video (YouTube o Google Drive)</label>
-                            <input type="url" id="courseVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=... o drive.google.com/...">
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="coursePdfUrl"><i class="fa-solid fa-file-pdf" style="color: var(--ubuntu-orange);"></i> Enlace a Diapositivas / Guía PDF (Google Drive / OneDrive)</label>
-                            <input type="url" id="coursePdfUrl" class="form-control" placeholder="https://drive.google.com/file/d/.../view">
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="courseResourceUrl"><i class="fa-solid fa-code" style="color: var(--siemens-teal);"></i> Enlace a Laboratorio / GitHub / Colab / Miro</label>
-                            <input type="url" id="courseResourceUrl" class="form-control" placeholder="https://colab.research.google.com/... o github.com/...">
+                    <!-- NOTA INFORMATIVA: ESTRUCTURA POR SEMANAS -->
+                    <div style="background: rgba(0, 153, 153, 0.07); border: 1px dashed var(--siemens-teal); border-radius: var(--radius-md); padding: 12px 14px; margin-top: 6px; display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fa-solid fa-lightbulb" style="color: var(--siemens-teal); font-size: 1.1rem; margin-top: 2px;"></i>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
+                            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">Estructura ágil por semanas</strong>
+                            Al publicar este curso, se creará automáticamente la <strong>Semana 1</strong>. Podrás cargar tus presentaciones (Google Slides/PPT), hojas de cálculo (Google Sheets) y videos directamente dentro de cada semana en el aula virtual.
                         </div>
                     </div>
                 </div>
@@ -1389,8 +1364,8 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="editCourseInstructor">Instructor / Docente *</label>
-                            <input type="text" id="editCourseInstructor" class="form-control" required>
+                            <label for="editCourseInstructor"><i class="fa-solid fa-user-check" style="color: var(--siemens-teal);"></i> Docente / Autor</label>
+                            <input type="text" id="editCourseInstructor" class="form-control" readonly style="background: var(--bg-body); color: var(--text-secondary); cursor: not-allowed;" title="Autor del curso">
                         </div>
                         <div class="form-group">
                             <label for="editCourseDuration">Duración estimada</label>
@@ -1400,41 +1375,7 @@
 
                     <div class="form-group">
                         <label for="editCourseDescription">Descripción del Curso</label>
-                        <textarea id="editCourseDescription" class="form-control"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="editCourseIcon">Icono Temático</label>
-                        <select id="editCourseIcon" class="form-control">
-                            <option value="fa-brain">🧠 Cerebro / IA</option>
-                            <option value="fa-calculator">📐 Calculadora / Matemáticas</option>
-                            <option value="fa-code">💻 Código / Desarrollo</option>
-                            <option value="fa-robot">🤖 Robot / Automatización</option>
-                            <option value="fa-shield-halved">🛡️ Seguridad / Redes</option>
-                            <option value="fa-cloud">☁️ Nube / Servidores</option>
-                        </select>
-                    </div>
-
-                    <!-- MATERIALES Y ENLACES (TÉCNICA DEL ENLACE) -->
-                    <div style="background: var(--bg-body); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px; border: 1px dashed var(--border-color);">
-                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); margin-bottom: 10px;">
-                            <i class="fa-solid fa-link"></i> Materiales del Curso (Técnica del Enlace)
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="editCourseVideoUrl"><i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Enlace de Video (YouTube o Google Drive)</label>
-                            <input type="url" id="editCourseVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=...">
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="editCoursePdfUrl"><i class="fa-solid fa-file-pdf" style="color: var(--ubuntu-orange);"></i> Enlace a Diapositivas / Guía PDF (Google Drive / OneDrive)</label>
-                            <input type="url" id="editCoursePdfUrl" class="form-control" placeholder="https://docs.google.com/presentation/d/... o drive.google.com/...">
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="editCourseResourceUrl"><i class="fa-solid fa-code" style="color: var(--siemens-teal);"></i> Enlace a Laboratorio / GitHub / Colab / Miro</label>
-                            <input type="url" id="editCourseResourceUrl" class="form-control" placeholder="https://colab.research.google.com/... o github.com/...">
-                        </div>
+                        <textarea id="editCourseDescription" class="form-control" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
@@ -1762,7 +1703,7 @@
             const liveInstructor = document.getElementById('liveInstructor');
             if (liveInstructor) liveInstructor.value = name;
 
-            const courseInstructor = document.getElementById('courseInstructor');
+            const courseInstructor = document.getElementById('courseInstructorDisplay');
             if (courseInstructor) courseInstructor.value = name;
         }
 
@@ -2116,6 +2057,10 @@
 
         // Modal Controls
         function openCreateCourseModal() {
+            const instructorDisplay = document.getElementById('courseInstructorDisplay');
+            if (instructorDisplay && typeof userDisplayName !== 'undefined') {
+                instructorDisplay.value = userDisplayName || 'Docente';
+            }
             const modal = document.getElementById('createCourseModal');
             if (modal) modal.classList.add('active');
         }
