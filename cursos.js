@@ -1309,6 +1309,10 @@ export async function handleCreateCourse(e) {
     const duration = (document.getElementById('courseDuration') && document.getElementById('courseDuration').value.trim()) || '20 horas';
     const description = (document.getElementById('courseDescription') && document.getElementById('courseDescription').value.trim()) || '';
     
+    // Materiales directos de la Semana 1
+    const weekVideoUrl = document.getElementById('courseWeekVideoUrl') ? document.getElementById('courseWeekVideoUrl').value.trim() : '';
+    const weekMaterialUrl = document.getElementById('courseWeekMaterialUrl') ? document.getElementById('courseWeekMaterialUrl').value.trim() : '';
+
     // Autoría real vinculada a la cuenta activa
     const instructor = currentUserName || 'Docente';
     const authorId = currentAuthUser ? currentAuthUser.uid : null;
@@ -1325,14 +1329,14 @@ export async function handleCreateCourse(e) {
     };
     const icon = categoryIcons[category] || 'fa-graduation-cap';
 
-    // Inicializar con la primera semana lista
+    // Inicializar con la primera semana ya equipada con sus materiales
     const initialWeek = {
         id: 'sem_' + Date.now(),
         numero: 1,
-        titulo: `Semana 1: Introducción`,
+        titulo: `Semana 1: Introducción a ${title}`,
         meetUrl: '',
-        videoUrl: '',
-        materialUrl: '',
+        videoUrl: weekVideoUrl,
+        materialUrl: weekMaterialUrl,
         visible: true
     };
 
@@ -1356,19 +1360,35 @@ export async function handleCreateCourse(e) {
     };
 
     try {
+        let createdCourseId = null;
+
         if (dbInstance) {
-            await addDoc(collection(dbInstance, 'cursos'), newCourseData);
+            const docRef = await addDoc(collection(dbInstance, 'cursos'), newCourseData);
+            createdCourseId = docRef.id;
+            newCourseData.id = createdCourseId;
+            if (!coursesList.some(c => c.id === createdCourseId)) {
+                coursesList.unshift(newCourseData);
+            }
         } else {
-            newCourseData.id = 'local-' + Date.now();
+            createdCourseId = 'local-' + Date.now();
+            newCourseData.id = createdCourseId;
             coursesList.unshift(newCourseData);
-            renderCourses();
         }
+
+        renderCourses();
 
         if (window.closeModal) window.closeModal('createCourseModal');
         document.getElementById('createCourseForm').reset();
 
         if (window.showToast) {
-            window.showToast(`¡Curso "${title}" creado con éxito! Puedes añadir materiales en la Semana 1.`, 'success');
+            window.showToast(`¡Curso "${title}" creado con éxito! Abriendo aula virtual...`, 'success');
+        }
+
+        // Apertura inmediata del Aula Virtual del curso creado sin tener que buscarlo
+        if (createdCourseId) {
+            setTimeout(() => {
+                openCourseDetail(createdCourseId);
+            }, 250);
         }
     } catch (error) {
         console.error("Error guardando curso en Firestore:", error);
