@@ -686,7 +686,6 @@ export function openEditCourseModal(id) {
     document.getElementById('editCourseTitle').value = course.title || '';
     document.getElementById('editCourseCategory').value = course.category || 'IA';
     document.getElementById('editCourseLevel').value = course.level || 'Principiante';
-    document.getElementById('editCourseInstructor').value = course.instructor || currentUserName;
     document.getElementById('editCourseDuration').value = course.duration || '20 horas';
     document.getElementById('editCourseDescription').value = course.description || '';
 
