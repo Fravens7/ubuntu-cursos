@@ -1276,9 +1276,17 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="courseDescription">Descripción del Curso</label>
-                        <textarea id="courseDescription" class="form-control" placeholder="Describe brevemente los objetivos de aprendizaje y proyectos a realizar..." rows="2"></textarea>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                            <label for="courseDescription" style="margin-bottom: 0; font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">Descripción del Curso</label>
+                            <button type="button" id="btnToggleDesc" onclick="toggleCourseDesc()" style="background: rgba(0, 153, 153, 0.08); color: var(--siemens-teal); border: 1px solid rgba(0, 153, 153, 0.3); border-radius: 999px; padding: 2px 10px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                                <i class="fa-solid fa-plus" id="iconToggleDesc" style="font-size: 0.7rem;"></i>
+                                <span id="textToggleDesc">Agregar descripción (opcional)</span>
+                            </button>
+                        </div>
+                        <div id="courseDescContainer" style="display: none; margin-top: 6px;">
+                            <textarea id="courseDescription" class="form-control" placeholder="Describe brevemente los objetivos de aprendizaje y proyectos a realizar..." rows="2"></textarea>
+                        </div>
                     </div>
 
                     <!-- MATERIALES DE LA SEMANA 1 (UNIFICADO) -->
@@ -1523,8 +1531,8 @@
                 <input type="hidden" id="weekEditWeekId">
                 <div class="modal-body" style="padding: 24px;">
                     <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="weekInputTitle" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">Título de la Semana *</label>
-                        <input type="text" id="weekInputTitle" class="form-control" placeholder="Ej. Semana 1: Introducción a Python" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                        <label for="weekInputTitle" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">Tema o Título de la Semana *</label>
+                        <input type="text" id="weekInputTitle" class="form-control" placeholder="Ej: Introducción a Python o Práctica guiada" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
                     </div>
 
                     <div class="form-group" style="margin-bottom: 16px;">
@@ -2032,11 +2040,43 @@
         }
         window.toggleSidebar = toggleSidebar;
 
+        // Toggle para la pastilla de descripción opcional
+        function toggleCourseDesc(forceState) {
+            const container = document.getElementById('courseDescContainer');
+            const btn = document.getElementById('btnToggleDesc');
+            const icon = document.getElementById('iconToggleDesc');
+            const text = document.getElementById('textToggleDesc');
+            const textarea = document.getElementById('courseDescription');
+            if (!container) return;
+
+            const isCurrentlyHidden = container.style.display === 'none' || !container.style.display;
+            const shouldShow = typeof forceState === 'boolean' ? forceState : isCurrentlyHidden;
+
+            if (shouldShow) {
+                container.style.display = 'block';
+                if (btn) {
+                    btn.style.background = 'var(--siemens-teal)';
+                    btn.style.color = '#ffffff';
+                }
+                if (icon) icon.className = 'fa-solid fa-minus';
+                if (text) text.textContent = 'Ocultar descripción';
+                if (textarea) textarea.focus();
+            } else {
+                container.style.display = 'none';
+                if (btn) {
+                    btn.style.background = 'rgba(0, 153, 153, 0.08)';
+                    btn.style.color = 'var(--siemens-teal)';
+                }
+                if (icon) icon.className = 'fa-solid fa-plus';
+                if (text) text.textContent = 'Agregar descripción (opcional)';
+            }
+        }
+        window.toggleCourseDesc = toggleCourseDesc;
+
         // Modal Controls
         function openCreateCourseModal() {
-            const instructorDisplay = document.getElementById('courseInstructorDisplay');
-            if (instructorDisplay && typeof userDisplayName !== 'undefined') {
-                instructorDisplay.value = userDisplayName || 'Docente';
+            if (window.toggleCourseDesc) {
+                window.toggleCourseDesc(false);
             }
             const modal = document.getElementById('createCourseModal');
             if (modal) modal.classList.add('active');
