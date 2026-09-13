@@ -1005,11 +1005,18 @@ export function openCourseDetail(id) {
         // Renderizar cabecera de la semana activa
         if (weekHeaderEl) {
             const isWeekHidden = activeWeek.visible === false;
+            // Limpiar redundancia si el título guardado incluye "Semana X:" para no duplicar con el subtítulo
+            let cleanWeekTitle = (activeWeek.titulo || '').trim();
+            cleanWeekTitle = cleanWeekTitle.replace(/^Semana\s*\d+\s*[:\-–—]?\s*/i, '');
+            if (!cleanWeekTitle) {
+                cleanWeekTitle = activeWeek.titulo || `Tema de la Semana ${activeWeek.numero || 1}`;
+            }
+
             weekHeaderEl.innerHTML = `
                 <div class="week-header-card">
                     <div class="week-header-info">
                         <span class="week-subtitle-text"><i class="fa-regular fa-calendar-check"></i> Semana ${activeWeek.numero || 1} del curso</span>
-                        <span class="week-title-text">${activeWeek.titulo || `Semana ${activeWeek.numero || 1}`}</span>
+                        <span class="week-title-text">${cleanWeekTitle}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         ${activeWeek.meetUrl ? `
@@ -1125,7 +1132,8 @@ export function openWeekModal(courseId, weekId = null) {
     } else {
         const nextNum = currentWeeks.length + 1;
         document.getElementById('weekModalTitle').textContent = `Nueva Semana (Semana ${nextNum})`;
-        document.getElementById('weekInputTitle').value = `Semana ${nextNum}: `;
+        document.getElementById('weekInputTitle').value = '';
+        document.getElementById('weekInputTitle').placeholder = 'Ej: Introducción o tema principal';
         document.getElementById('weekInputMeetUrl').value = '';
         document.getElementById('weekInputVideoUrl').value = '';
         document.getElementById('weekInputMaterialUrl').value = '';
@@ -1275,7 +1283,7 @@ export async function convertCourseToWeeks(courseId) {
     const initialWeek = {
         id: 'sem_' + Date.now(),
         numero: 1,
-        titulo: `Semana 1: Introducción a ${course.title || 'la materia'}`,
+        titulo: `Introducción a ${course.title || 'la materia'}`,
         meetUrl: '',
         videoUrl: course.videoUrl || '',
         materialUrl: course.pdfUrl || course.resourceUrl || '',
@@ -1333,7 +1341,7 @@ export async function handleCreateCourse(e) {
     const initialWeek = {
         id: 'sem_' + Date.now(),
         numero: 1,
-        titulo: `Semana 1: Introducción a ${title}`,
+        titulo: `Introducción a ${title}`,
         meetUrl: '',
         videoUrl: weekVideoUrl,
         materialUrl: weekMaterialUrl,
@@ -1379,6 +1387,7 @@ export async function handleCreateCourse(e) {
 
         if (window.closeModal) window.closeModal('createCourseModal');
         document.getElementById('createCourseForm').reset();
+        if (window.toggleCourseDesc) window.toggleCourseDesc(false);
 
         if (window.showToast) {
             window.showToast(`¡Curso "${title}" creado con éxito! Abriendo aula virtual...`, 'success');
