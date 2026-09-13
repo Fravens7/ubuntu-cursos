@@ -1278,13 +1278,31 @@
 
                     <div class="form-group">
                         <label for="courseDescription">Descripción del Curso</label>
-                        <textarea id="courseDescription" class="form-control" placeholder="Describe brevemente los objetivos de aprendizaje y proyectos a realizar..." rows="3"></textarea>
+                        <textarea id="courseDescription" class="form-control" placeholder="Describe brevemente los objetivos de aprendizaje y proyectos a realizar..." rows="2"></textarea>
+                    </div>
+
+                    <!-- MATERIALES DE LA SEMANA 1 (UNIFICADO) -->
+                    <div style="background: var(--bg-body); border-radius: var(--radius-md); padding: 14px; margin-top: 10px; border: 1px dashed var(--border-color);">
+                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                            <span><i class="fa-solid fa-folder-open"></i> Materiales de la Semana 1</span>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;">(Opcional)</span>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 10px;">
+                            <label for="courseWeekVideoUrl"><i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Video de Clase (YouTube o Google Drive)</label>
+                            <input type="url" id="courseWeekVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=... o drive.google.com/...">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="courseWeekMaterialUrl"><i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Presentación, PDF o Excel (Google Slides, Sheets o Drive)</label>
+                            <input type="url" id="courseWeekMaterialUrl" class="form-control" placeholder="https://docs.google.com/presentation/d/... o docs.google.com/spreadsheets/d/...">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeModal('createCourseModal')">Cancelar</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fa-solid fa-circle-plus"></i> Crear Curso
+                        <i class="fa-solid fa-bolt"></i> Crear Curso y Abrir Aula
                     </button>
                 </div>
             </form>
