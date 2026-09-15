@@ -36,13 +36,16 @@ export function canUserEditCourse(course) {
     const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher');
     if (!isTeacher) return false;
     
-    // Si el curso tiene autor asignado, verificar coincidencia con el UID del usuario
+    // Si el curso tiene autor asignado, verificar coincidencia con el UID o correo del usuario
     if (course && course.authorId) {
         return course.authorId === currentAuthUser.uid;
     }
+    if (course && course.authorEmail && currentAuthUser.email) {
+        return course.authorEmail === currentAuthUser.email;
+    }
     
-    // Retrocompatibilidad con cursos preexistentes sin authorId (docentes pueden gestionarlos)
-    return true;
+    // Cursos preexistentes sin autor solo pueden ser gestionados por admin
+    return currentUserRole === 'admin';
 }
 window.canUserEditCourse = canUserEditCourse;
 
@@ -435,16 +438,24 @@ export function renderCourses() {
     const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'admin');
     const currentUserId = currentAuthUser ? currentAuthUser.uid : null;
 
-    // Filtrar cursos para el catálogo:
-    // Si es estudiante: solo cursos con activo !== false
-    // Si es profesor: ve todos (los ocultos llevan etiqueta)
+    // Filtrar cursos:
+    // Si es profesor: solo sus propios cursos (impartidos por él)
+    // Si es estudiante: cursos activos del catálogo general
     let filtered = coursesList.filter(c => {
-        const isVisible = isTeacher ? true : (c.activo !== false);
+        if (isTeacher) {
+            // Solo cursos creados por el profesor autenticado
+            const isOwnCourse = (currentUserId && c.authorId === currentUserId) ||
+                                (currentAuthUser && currentAuthUser.email && c.authorEmail === currentAuthUser.email);
+            if (!isOwnCourse) return false;
+        } else {
+            if (c.activo === false) return false;
+        }
+
         const matchCategory = currentCategory === 'all' || c.category === currentCategory;
         const matchSearch = (c.title || '').toLowerCase().includes(searchQuery) ||
                             (c.instructor || '').toLowerCase().includes(searchQuery) ||
                             (c.category || '').toLowerCase().includes(searchQuery);
-        return isVisible && matchCategory && matchSearch;
+        return matchCategory && matchSearch;
     });
 
     if (grid) {
@@ -503,7 +514,6 @@ export function renderCourses() {
                                 </div>
                             ` : `
                                 <!-- ACCIÓN DE ESTUDIANTE / OBSERVADOR: INSCRIBIRME -->
-                                <span class="course-price">${course.price || 'Gratis'}</span>
                                 <button class="btn btn-sm ${isEnrolled ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleEnroll('${course.id}')">
                                     ${isEnrolled ? '<i class="fa-solid fa-check"></i> Inscrito' : '<i class="fa-solid fa-plus"></i> Inscribirme'}
                                 </button>
