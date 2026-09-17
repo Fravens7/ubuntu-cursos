@@ -956,6 +956,12 @@
         body.is-teacher .nav-section-title.role-teacher-only {
             display: block !important;
         }
+        .role-student-only {
+            display: flex !important;
+        }
+        body.is-teacher .role-student-only {
+            display: none !important;
+        }
 
         /* Responsive */
         @media(max-width: 900px) {
@@ -998,7 +1004,7 @@
                 <span>Clases en Vivo</span>
                 <span class="live-dot-badge" id="sidebarLiveBadge" style="display: none;">LIVE</span>
             </div>
-            <div class="nav-item" onclick="switchView('view-my-courses', this)">
+            <div class="nav-item role-student-only" onclick="switchView('view-my-courses', this)">
                 <i class="fa-solid fa-book-bookmark"></i>
                 <span>Mis Inscripciones</span>
             </div>
@@ -2008,6 +2014,7 @@
         window.openJitsiNewTab = openJitsiNewTab;
 
         let liveAppWindow = null;
+        window.liveAppWindow = null;
 
         // Carga bajo demanda de la API de Jitsi (cero costo de rendimiento en arranque)
         function loadJitsiApi() {
@@ -2022,7 +2029,7 @@
             });
         }
 
-        // ================= ENTER LIVE ROOM (POP-UP ILIMITADO) =================
+        // ================= ENTER LIVE ROOM (POP-UP ILIMITADO O MODAL) =================
         async function enterLiveRoom(title, instructor, roomName, mode = 'popup') {
             const finalRoomName = roomName || 'UbuntuPeru_Live_' + Math.floor(Math.random() * 100000);
             const userTag = currentUserRole === 'profesor' ? `${userDisplayName} (Profesor)` : `${userDisplayName} (Estudiante)`;
@@ -2039,9 +2046,10 @@
                     'JitsiLiveClassWindow',
                     `popup=yes,width=${width},height=${height},top=${top},left=${left},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=no`
                 );
+                window.liveAppWindow = liveAppWindow;
 
                 if (liveAppWindow) {
-                    liveAppWindow.focus();
+                    try { liveAppWindow.focus(); } catch(e) {}
                 }
 
                 showFloatingCallBar(title, finalRoomName);
@@ -2083,6 +2091,46 @@
         }
         window.enterLiveRoom = enterLiveRoom;
 
+        // Traer clase al frente / maximizar
+        function focusLiveClass(title, instructor, roomName) {
+            // 1. Si el modal interno de la página está abierto o minimizado
+            const modal = document.getElementById('liveRoomModal');
+            if (modal && modal.classList.contains('active')) {
+                modal.classList.remove('minimized');
+                showToast('Clase en vivo maximizada a pantalla completa.', 'normal');
+                return;
+            }
+
+            // 2. Si la ventana emergente dedicada está abierta
+            if (window.liveAppWindow && !window.liveAppWindow.closed) {
+                try {
+                    window.liveAppWindow.focus();
+                    showToast('Ventana de clase traída al frente.', 'normal');
+                    return;
+                } catch(e) {}
+            }
+
+            // 3. Si la ventana se cerró o se perdió la referencia, volver a abrirla
+            enterLiveRoom(title || 'Clase en Vivo', instructor || userDisplayName, roomName, 'popup');
+        }
+        window.focusLiveClass = focusLiveClass;
+
+        // Colgar / finalizar clase activa
+        function hangupLiveClass() {
+            if (window.liveAppWindow && !window.liveAppWindow.closed) {
+                try { window.liveAppWindow.close(); } catch(e) {}
+            }
+            window.liveAppWindow = null;
+
+            closeLiveRoom();
+
+            const dock = document.getElementById('floatingLiveDock');
+            if (dock) dock.remove();
+
+            showToast('Clase finalizada.');
+        }
+        window.hangupLiveClass = hangupLiveClass;
+
         function showFloatingCallBar(title, roomName) {
             let dock = document.getElementById('floatingLiveDock');
             if (!dock) {
@@ -2111,19 +2159,34 @@
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="live-dot"></span>
                     <div>
-                        <div style="font-weight: 700; font-size: 0.88rem; color: #fff;">${title}</div>
+                        <div style="font-weight: 700; font-size: 0.88rem; color: #fff;">${escapeHtml(title)}</div>
                         <div style="font-size: 0.75rem; color: #94a3b8;"><i class="fa-solid fa-bolt" style="color: var(--siemens-teal);"></i> Transmisión Ilimitada Activa</div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn btn-primary btn-sm" onclick="if(liveAppWindow){liveAppWindow.focus();}else{enterLiveRoom('${title}', '${userDisplayName}', '${roomName}', 'popup');}" title="Traer ventana al frente">
+                    <button class="btn btn-primary btn-sm" id="btnDockFocusLive" title="Traer clase al frente / maximizar">
                         <i class="fa-solid fa-window-restore"></i> Ver Clase
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="if(liveAppWindow){liveAppWindow.close();} document.getElementById('floatingLiveDock').remove(); showToast('Clase finalizada.');" title="Cerrar clase">
+                    <button class="btn btn-danger btn-sm" id="btnDockHangupLive" title="Cerrar clase">
                         <i class="fa-solid fa-phone-slash"></i>
                     </button>
                 </div>
             `;
+
+            const btnFocus = dock.querySelector('#btnDockFocusLive');
+            if (btnFocus) {
+                btnFocus.onclick = function() {
+                    focusLiveClass(title, userDisplayName, roomName);
+                };
+            }
+
+            const btnHangup = dock.querySelector('#btnDockHangupLive');
+            if (btnHangup) {
+                btnHangup.onclick = function() {
+                    hangupLiveClass();
+                };
+            }
+
             dock.style.display = 'flex';
         }
         window.showFloatingCallBar = showFloatingCallBar;
@@ -2147,10 +2210,22 @@
                 currentJitsiApi.dispose();
                 currentJitsiApi = null;
             }
+            if (window.liveAppWindow && !window.liveAppWindow.closed) {
+                try { window.liveAppWindow.close(); } catch(e) {}
+            }
+            window.liveAppWindow = null;
+
             const modal = document.getElementById('liveRoomModal');
-            modal.classList.remove('minimized');
-            modal.classList.remove('active');
-            document.getElementById('jitsi-iframe-container').innerHTML = '';
+            if (modal) {
+                modal.classList.remove('minimized');
+                modal.classList.remove('active');
+            }
+            const container = document.getElementById('jitsi-iframe-container');
+            if (container) container.innerHTML = '';
+            
+            const dock = document.getElementById('floatingLiveDock');
+            if (dock) dock.remove();
+
             showToast('Has salido de la clase en vivo.');
         }
         window.closeLiveRoom = closeLiveRoom;
