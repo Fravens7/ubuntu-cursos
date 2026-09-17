@@ -341,14 +341,14 @@
             color: #dc2626;
         }
         .btn-jitsi-live {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: linear-gradient(135deg, #e95420, #d34010);
             color: #fff;
-            box-shadow: 0 4px 14px rgba(239,68,68,0.35);
+            box-shadow: 0 4px 14px rgba(233, 84, 32, 0.25);
             font-weight: 700;
         }
         .btn-jitsi-live:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(239,68,68,0.5);
+            box-shadow: 0 6px 20px rgba(233, 84, 32, 0.4);
         }
 
         /* Banner Hero */
@@ -624,7 +624,19 @@
             transform: translateY(-3px);
         }
         .live-card.active-now {
-            border: 2px solid #ef4444;
+            border: 1.5px solid rgba(0, 153, 153, 0.4);
+            position: relative;
+            box-shadow: 0 6px 20px rgba(0, 153, 153, 0.08);
+        }
+        .live-card.active-now::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--siemens-teal);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         }
         .live-card-body {
             padding: 20px;
@@ -1135,8 +1147,7 @@
                     </div>
                 </div>
 
-                <!-- LIVE NOW BANNER (RENDERIZADO DINÁMICAMENTE) -->
-                <div id="liveNowBannerContainer" style="display: none;"></div>
+
 
                 <!-- Live Now Grid -->
                 <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: var(--siemens-slate);">
@@ -1221,7 +1232,7 @@
                     </div>
 
                     <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-danger" id="btnEnterGeneratedClass" style="flex: 1; justify-content: center;">
+                        <button type="button" class="btn btn-primary" id="btnEnterGeneratedClass" style="flex: 1; justify-content: center;">
                             <i class="fa-solid fa-door-open"></i> Entrar a la Clase
                         </button>
                         <button type="button" class="btn btn-outline" onclick="openJitsiNewTab()" title="Abrir en pestaña completa">
@@ -1748,7 +1759,7 @@
         // Limpieza de datos dummy antiguos de localStorage si existieran
         try {
             const rawLive = localStorage.getItem('ubuntu_live_classes');
-            if (rawLive && (rawLive.includes('Schmidt') || rawLive.includes('MindSphere') || rawLive.includes('Manuel Rojas'))) {
+            if (rawLive && (rawLive.includes('Schmidt') || rawLive.includes('MindSphere') || rawLive.includes('Manuel Rojas') || rawLive.includes('asasdasdasd'))) {
                 localStorage.removeItem('ubuntu_live_classes');
             }
             const rawInc = localStorage.getItem('ubuntu_incoming_classes');
@@ -1778,11 +1789,32 @@
             } catch (e) {}
         }
 
+        let currentLiveSessionId = null;
+
         function endLiveClass(id) {
             liveClassesData = liveClassesData.filter(c => String(c.id) !== String(id));
+            if (currentLiveSessionId === id) {
+                currentLiveSessionId = null;
+            }
             saveLiveState();
+
+            // Si la ventana o dock estaban abiertos, cerrarlos
+            if (window.liveWindowMonitor) {
+                clearInterval(window.liveWindowMonitor);
+                window.liveWindowMonitor = null;
+            }
+            if (window.liveAppWindow && !window.liveAppWindow.closed) {
+                try { window.liveAppWindow.close(); } catch(e) {}
+            }
+            window.liveAppWindow = null;
+
+            closeLiveRoom();
+
+            const dock = document.getElementById('floatingLiveDock');
+            if (dock) dock.remove();
+
             renderLiveClasses();
-            showToast('Transmisión finalizada.', 'normal');
+            showToast('Clase finalizada con éxito.', 'normal');
         }
         window.endLiveClass = endLiveClass;
 
@@ -1796,7 +1828,6 @@
 
         // Render Live Classes
         function renderLiveClasses() {
-            const bannerContainer = document.getElementById('liveNowBannerContainer');
             const activeGrid = document.getElementById('liveActiveGrid');
             const incomingList = document.getElementById('incomingList');
             const sidebarBadge = document.getElementById('sidebarLiveBadge');
@@ -1808,41 +1839,7 @@
                 sidebarBadge.style.display = (liveClassesData && liveClassesData.length > 0) ? 'inline-block' : 'none';
             }
 
-            // 2. Banner superior EN TRANSMISIÓN AHORA (dinámico, sin basura dummy)
-            if (bannerContainer) {
-                if (liveClassesData && liveClassesData.length > 0) {
-                    const topLive = liveClassesData[0];
-                    bannerContainer.innerHTML = `
-                        <div class="live-banner-alert">
-                            <div style="display: flex; align-items: center; gap: 16px;">
-                                <span class="live-badge-now">
-                                    <span class="live-dot"></span> EN TRANSMISIÓN AHORA
-                                </span>
-                                <div>
-                                    <h3 style="font-size: 1.1rem; font-weight: 700;">${escapeHtml(topLive.title)}</h3>
-                                    <p style="font-size: 0.85rem; color: #cbd5e1;">Instructor: ${escapeHtml(topLive.instructor)} • Sala Jitsi activa</p>
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                <button class="btn btn-danger" onclick="enterLiveRoom('${escapeAttr(topLive.title)}', '${escapeAttr(topLive.instructor)}', '${escapeAttr(topLive.roomName)}')">
-                                    <i class="fa-solid fa-door-open"></i> Entrar a la Clase
-                                </button>
-                                ${isTeacher ? `
-                                    <button class="btn btn-outline-danger btn-sm" onclick="endLiveClass('${topLive.id}')" title="Finalizar esta transmisión">
-                                        <i class="fa-solid fa-stop"></i> Finalizar
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `;
-                    bannerContainer.style.display = 'block';
-                } else {
-                    bannerContainer.innerHTML = '';
-                    bannerContainer.style.display = 'none';
-                }
-            }
-
-            // 3. Grid de Sesiones Activas
+            // 2. Grid de Sesiones Activas (Diseño limpio y profesional sin duplicados)
             if (activeGrid) {
                 if (!liveClassesData || liveClassesData.length === 0) {
                     activeGrid.innerHTML = `
@@ -1883,13 +1880,13 @@
                                     <i class="fa-regular fa-clock"></i>
                                     <span>${escapeHtml(live.time || 'En curso')}</span>
                                 </div>
-                                <div style="display: flex; gap: 8px; margin-top: 10px;">
-                                    <button class="btn btn-danger btn-sm" style="flex: 1; justify-content: center;" onclick="enterLiveRoom('${escapeAttr(live.title)}', '${escapeAttr(live.instructor)}', '${escapeAttr(live.roomName)}')">
+                                <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center;">
+                                    <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="enterLiveRoom('${escapeAttr(live.title)}', '${escapeAttr(live.instructor)}', '${escapeAttr(live.roomName)}')">
                                         <i class="fa-solid fa-video"></i> Entrar a la Clase
                                     </button>
                                     ${isTeacher ? `
-                                        <button class="btn btn-outline-danger btn-sm" onclick="endLiveClass('${live.id}')" title="Finalizar transmisión">
-                                            <i class="fa-solid fa-trash-can"></i>
+                                        <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 7px 12px; font-weight: 600;" onclick="endLiveClass('${live.id}')" title="Finalizar clase y cerrar transmisión">
+                                            <i class="fa-solid fa-power-off"></i> Finalizar
                                         </button>
                                     ` : ''}
                                 </div>
@@ -1976,7 +1973,7 @@
                 enterLiveRoom(title, instructor, roomName);
             };
 
-            liveClassesData.unshift({
+            const newLive = {
                 id: String(Date.now()),
                 title: title,
                 instructor: instructor,
@@ -1985,7 +1982,9 @@
                 category: "En Vivo",
                 status: "now",
                 time: "Iniciada Ahora (Jitsi Activo)"
-            });
+            };
+            liveClassesData.unshift(newLive);
+            currentLiveSessionId = newLive.id;
 
             saveLiveState();
             renderLiveClasses();
@@ -2052,10 +2051,20 @@
                     try { liveAppWindow.focus(); } catch(e) {}
                 }
 
+                // Detectar automáticamente cuando la ventana de Jitsi se cierra para finalizar la clase
+                if (window.liveWindowMonitor) clearInterval(window.liveWindowMonitor);
+                window.liveWindowMonitor = setInterval(() => {
+                    if (window.liveAppWindow && window.liveAppWindow.closed) {
+                        clearInterval(window.liveWindowMonitor);
+                        window.liveWindowMonitor = null;
+                        hangupLiveClass();
+                    }
+                }, 1500);
+
                 showFloatingCallBar(title, finalRoomName);
                 showToast(`¡Clase iniciada en ventana dedicada! Sin límite de tiempo.`, 'success');
             } else {
-                document.getElementById('liveRoomTitle').innerHTML = `<i class="fa-solid fa-signal" style="color: #ef4444;"></i> ${title} — ${instructor}`;
+                document.getElementById('liveRoomTitle').innerHTML = `<i class="fa-solid fa-signal" style="color: var(--siemens-teal);"></i> ${title} — ${instructor}`;
                 const modal = document.getElementById('liveRoomModal');
                 modal.classList.remove('minimized');
                 modal.classList.add('active');
@@ -2117,6 +2126,11 @@
 
         // Colgar / finalizar clase activa
         function hangupLiveClass() {
+            if (window.liveWindowMonitor) {
+                clearInterval(window.liveWindowMonitor);
+                window.liveWindowMonitor = null;
+            }
+
             if (window.liveAppWindow && !window.liveAppWindow.closed) {
                 try { window.liveAppWindow.close(); } catch(e) {}
             }
@@ -2124,10 +2138,21 @@
 
             closeLiveRoom();
 
+            // Finalizar y remover la clase activa del listado
+            if (currentLiveSessionId) {
+                liveClassesData = liveClassesData.filter(c => String(c.id) !== String(currentLiveSessionId));
+            } else if (liveClassesData.length > 0) {
+                liveClassesData.shift();
+            }
+            currentLiveSessionId = null;
+
+            saveLiveState();
+            renderLiveClasses();
+
             const dock = document.getElementById('floatingLiveDock');
             if (dock) dock.remove();
 
-            showToast('Clase finalizada.');
+            showToast('Clase finalizada.', 'normal');
         }
         window.hangupLiveClass = hangupLiveClass;
 
@@ -2336,7 +2361,7 @@
 
             if (status === 'now') {
                 const roomName = `UbuntuPeru_${Date.now()}`;
-                liveClassesData.unshift({
+                const newLive = {
                     id: String(Date.now()),
                     title,
                     instructor,
@@ -2345,7 +2370,9 @@
                     category: "En Vivo",
                     status: "now",
                     time: `Inició a las ${hours}:${mins}`
-                });
+                };
+                liveClassesData.unshift(newLive);
+                currentLiveSessionId = newLive.id;
                 saveLiveState();
                 showToast(`¡Transmisión "${title}" iniciada en vivo!`, 'success');
             } else {
