@@ -996,7 +996,7 @@
             <div class="nav-item" onclick="switchView('view-live', this)">
                 <i class="fa-solid fa-tower-broadcast"></i>
                 <span>Clases en Vivo</span>
-                <span class="live-dot-badge">LIVE</span>
+                <span class="live-dot-badge" id="sidebarLiveBadge" style="display: none;">LIVE</span>
             </div>
             <div class="nav-item" onclick="switchView('view-my-courses', this)">
                 <i class="fa-solid fa-book-bookmark"></i>
@@ -1129,21 +1129,8 @@
                     </div>
                 </div>
 
-                <!-- LIVE NOW BANNER -->
-                <div class="live-banner-alert">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <span class="live-badge-now">
-                            <span class="live-dot"></span> EN TRANSMISIÓN AHORA
-                        </span>
-                        <div>
-                            <h3 style="font-size: 1.1rem; font-weight: 700;">Workshop: Creación de Agentes con IA y LLMs Autónomos</h3>
-                            <p style="font-size: 0.85rem; color: #cbd5e1;">Instructor: Ing. Carlos Morales • Sala Jitsi activa</p>
-                        </div>
-                    </div>
-                    <button class="btn btn-danger" onclick="enterLiveRoom('Workshop: Creación de Agentes con IA', 'Ing. Carlos Morales', 'UbuntuPeru_AgentesIA_Live')">
-                        <i class="fa-solid fa-door-open"></i> Entrar a la Clase
-                    </button>
-                </div>
+                <!-- LIVE NOW BANNER (RENDERIZADO DINÁMICAMENTE) -->
+                <div id="liveNowBannerContainer" style="display: none;"></div>
 
                 <!-- Live Now Grid -->
                 <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: var(--siemens-slate);">
@@ -1201,12 +1188,12 @@
 
                 <div class="form-group">
                     <label for="instantLiveTitle">Tema o Título de la Clase *</label>
-                    <input type="text" id="instantLiveTitle" class="form-control" placeholder="Ej: Clase en Vivo: Programación React & AI" value="Clase en Vivo de Ubuntu Perú">
+                    <input type="text" id="instantLiveTitle" class="form-control" placeholder="Ej: Workshop: Creación de Agentes con IA" value="">
                 </div>
 
                 <div class="form-group">
                     <label for="instantLiveInstructor">Instructor / Presentador *</label>
-                    <input type="text" id="instantLiveInstructor" class="form-control" placeholder="Tu nombre o correo" value="test@">
+                    <input type="text" id="instantLiveInstructor" class="form-control" placeholder="Nombre del docente / instructor" value="">
                 </div>
 
                 <button type="button" class="btn btn-jitsi-live" style="width: 100%; justify-content: center; margin-top: 4px;" onclick="generateInstantJitsiClass()">
@@ -1650,6 +1637,7 @@
 
             applyUserRoleUI(userDisplayName, currentUserRole);
             setCursosUser(user, currentUserRole, userDisplayName);
+            renderLiveClasses();
         });
 
         // Actualizar interfaz según el rol y nombre
@@ -1732,113 +1720,226 @@
         let currentJitsiApi = null;
         let lastCreatedRoomUrl = '';
 
-        // Live Classes Dataset
-        let liveClassesData = [
-            {
-                id: 1,
-                title: "Taller Práctico: Conexión de Sensores IoT a Siemens MindSphere",
-                instructor: "Ing. Klaus Schmidt",
-                viewers: 94,
-                roomName: "UbuntuPeru_IoT_Siemens",
-                category: "Ingeniería",
-                status: "now",
-                time: "En curso (Jitsi Activo)"
-            },
-            {
-                id: 2,
-                title: "Resolución en Vivo: Ejercicios de Optimización Matemática",
-                instructor: "Dr. Manuel Rojas",
-                roomName: "UbuntuPeru_Matematicas_Live",
-                viewers: 58,
-                category: "Matemáticas",
-                status: "now",
-                time: "En curso (Jitsi Activo)"
-            }
-        ];
+        // Helper escaping
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
 
-        // Incoming Classes Dataset
-        let incomingClassesData = [
-            {
-                id: 101,
-                title: "Masterclass: Estrategias de Ciberdefensa contra Ransomware",
-                instructor: "Mg. Andrea Prado",
-                day: "28",
-                month: "Ago",
-                time: "18:00 - 19:30 GMT-5",
-                platform: "meet.jit.si/UbuntuPeru_Ciberdefensa"
-            },
-            {
-                id: 102,
-                title: "Implementación de RAG y Bases Vectoriales con Python",
-                instructor: "Dr. Víctor Salazar",
-                day: "30",
-                month: "Ago",
-                time: "19:00 - 20:30 GMT-5",
-                platform: "meet.jit.si/UbuntuPeru_RAG_Python"
-            },
-            {
-                id: 103,
-                title: "Programación de Líneas de Ensamblaje Automatizadas",
-                instructor: "Ing. Carlos Mendoza",
-                day: "02",
-                month: "Sep",
-                time: "17:00 - 18:30 GMT-5",
-                platform: "meet.jit.si/UbuntuPeru_Siemens_Automation"
+        function escapeAttr(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;');
+        }
+
+        // Limpieza de datos dummy antiguos de localStorage si existieran
+        try {
+            const rawLive = localStorage.getItem('ubuntu_live_classes');
+            if (rawLive && (rawLive.includes('Schmidt') || rawLive.includes('MindSphere') || rawLive.includes('Manuel Rojas'))) {
+                localStorage.removeItem('ubuntu_live_classes');
             }
-        ];
+            const rawInc = localStorage.getItem('ubuntu_incoming_classes');
+            if (rawInc && (rawInc.includes('Andrea Prado') || rawInc.includes('Ransomware') || rawInc.includes('Víctor Salazar') || rawInc.includes('Carlos Mendoza'))) {
+                localStorage.removeItem('ubuntu_incoming_classes');
+            }
+        } catch (e) {}
+
+        // Clases en Vivo Dataset (Sin datos dummy)
+        let liveClassesData = [];
+        let incomingClassesData = [];
+
+        try {
+            const savedLive = localStorage.getItem('ubuntu_live_classes');
+            if (savedLive) liveClassesData = JSON.parse(savedLive);
+            const savedInc = localStorage.getItem('ubuntu_incoming_classes');
+            if (savedInc) incomingClassesData = JSON.parse(savedInc);
+        } catch (e) {
+            liveClassesData = [];
+            incomingClassesData = [];
+        }
+
+        function saveLiveState() {
+            try {
+                localStorage.setItem('ubuntu_live_classes', JSON.stringify(liveClassesData));
+                localStorage.setItem('ubuntu_incoming_classes', JSON.stringify(incomingClassesData));
+            } catch (e) {}
+        }
+
+        function endLiveClass(id) {
+            liveClassesData = liveClassesData.filter(c => String(c.id) !== String(id));
+            saveLiveState();
+            renderLiveClasses();
+            showToast('Transmisión finalizada.', 'normal');
+        }
+        window.endLiveClass = endLiveClass;
+
+        function deleteIncomingClass(id) {
+            incomingClassesData = incomingClassesData.filter(c => String(c.id) !== String(id));
+            saveLiveState();
+            renderLiveClasses();
+            showToast('Clase programada eliminada.', 'normal');
+        }
+        window.deleteIncomingClass = deleteIncomingClass;
 
         // Render Live Classes
         function renderLiveClasses() {
+            const bannerContainer = document.getElementById('liveNowBannerContainer');
             const activeGrid = document.getElementById('liveActiveGrid');
             const incomingList = document.getElementById('incomingList');
+            const sidebarBadge = document.getElementById('sidebarLiveBadge');
 
-            if (activeGrid) {
-                activeGrid.innerHTML = liveClassesData.map(live => `
-                    <div class="live-card active-now">
-                        <div class="live-card-body">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span class="live-badge-now"><span class="live-dot"></span> EN VIVO</span>
-                                <span class="live-viewers-count"><i class="fa-solid fa-video"></i> Jitsi Meet</span>
-                            </div>
-                            <h4 class="live-topic">${live.title}</h4>
-                            <div class="live-instructor">
-                                <i class="fa-solid fa-user-tie" style="color: var(--siemens-teal);"></i>
-                                <span>${live.instructor}</span>
-                            </div>
-                            <div class="live-time-info">
-                                <i class="fa-regular fa-clock"></i>
-                                <span>${live.time}</span>
-                            </div>
-                            <button class="btn btn-danger btn-sm" style="width: 100%; justify-content: center;" onclick="enterLiveRoom('${live.title}', '${live.instructor}', '${live.roomName}')">
-                                <i class="fa-solid fa-video"></i> Entrar a la Clase
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
+            const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'admin');
+
+            // 1. Badge "LIVE" en Sidebar (solo si hay transmisiones activas)
+            if (sidebarBadge) {
+                sidebarBadge.style.display = (liveClassesData && liveClassesData.length > 0) ? 'inline-block' : 'none';
             }
 
-            if (incomingList) {
-                incomingList.innerHTML = incomingClassesData.map(item => `
-                    <div class="incoming-item">
-                        <div style="display: flex; align-items: center; gap: 16px;">
-                            <div class="incoming-date-box">
-                                <span class="day">${item.day}</span>
-                                <span class="month">${item.month}</span>
+            // 2. Banner superior EN TRANSMISIÓN AHORA (dinámico, sin basura dummy)
+            if (bannerContainer) {
+                if (liveClassesData && liveClassesData.length > 0) {
+                    const topLive = liveClassesData[0];
+                    bannerContainer.innerHTML = `
+                        <div class="live-banner-alert">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <span class="live-badge-now">
+                                    <span class="live-dot"></span> EN TRANSMISIÓN AHORA
+                                </span>
+                                <div>
+                                    <h3 style="font-size: 1.1rem; font-weight: 700;">${escapeHtml(topLive.title)}</h3>
+                                    <p style="font-size: 0.85rem; color: #cbd5e1;">Instructor: ${escapeHtml(topLive.instructor)} • Sala Jitsi activa</p>
+                                </div>
                             </div>
-                            <div class="incoming-info">
-                                <h4 class="incoming-title">${item.title}</h4>
-                                <div class="incoming-details">
-                                    <span><i class="fa-regular fa-user"></i> ${item.instructor}</span>
-                                    <span><i class="fa-regular fa-clock"></i> ${item.time}</span>
-                                    <span><i class="fa-solid fa-link"></i> ${item.platform}</span>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <button class="btn btn-danger" onclick="enterLiveRoom('${escapeAttr(topLive.title)}', '${escapeAttr(topLive.instructor)}', '${escapeAttr(topLive.roomName)}')">
+                                    <i class="fa-solid fa-door-open"></i> Entrar a la Clase
+                                </button>
+                                ${isTeacher ? `
+                                    <button class="btn btn-outline-danger btn-sm" onclick="endLiveClass('${topLive.id}')" title="Finalizar esta transmisión">
+                                        <i class="fa-solid fa-stop"></i> Finalizar
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    bannerContainer.style.display = 'block';
+                } else {
+                    bannerContainer.innerHTML = '';
+                    bannerContainer.style.display = 'none';
+                }
+            }
+
+            // 3. Grid de Sesiones Activas
+            if (activeGrid) {
+                if (!liveClassesData || liveClassesData.length === 0) {
+                    activeGrid.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color);">
+                            <i class="fa-solid fa-tower-broadcast" style="font-size: 2.4rem; margin-bottom: 12px; display: block; color: var(--siemens-teal); opacity: 0.6;"></i>
+                            <h4 style="font-size: 1.05rem; color: var(--text-primary); margin-bottom: 6px;">No hay transmisiones en vivo en este momento</h4>
+                            <p style="font-size: 0.85rem; max-width: 460px; margin: 0 auto 16px auto; color: var(--text-secondary);">
+                                ${isTeacher 
+                                    ? 'Inicia una sesión instantánea con Jitsi Meet o programa una clase para tus alumnos.' 
+                                    : 'Las sesiones en vivo y talleres prácticos aparecerán aquí en tiempo real cuando un profesor inicie una transmisión.'}
+                            </p>
+                            ${isTeacher ? `
+                                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                    <button class="btn btn-jitsi-live btn-sm" onclick="openInstantLiveModal()">
+                                        <i class="fa-solid fa-bolt"></i> Iniciar Clase Instantánea
+                                    </button>
+                                    <button class="btn btn-primary btn-sm" onclick="openCreateLiveModal()">
+                                        <i class="fa-solid fa-calendar-plus"></i> Programar Sesión
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    activeGrid.innerHTML = liveClassesData.map(live => `
+                        <div class="live-card active-now">
+                            <div class="live-card-body">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span class="live-badge-now"><span class="live-dot"></span> EN VIVO</span>
+                                    <span class="live-viewers-count"><i class="fa-solid fa-video"></i> Jitsi Meet</span>
+                                </div>
+                                <h4 class="live-topic">${escapeHtml(live.title)}</h4>
+                                <div class="live-instructor">
+                                    <i class="fa-solid fa-user-tie" style="color: var(--siemens-teal);"></i>
+                                    <span>${escapeHtml(live.instructor)}</span>
+                                </div>
+                                <div class="live-time-info">
+                                    <i class="fa-regular fa-clock"></i>
+                                    <span>${escapeHtml(live.time || 'En curso')}</span>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                    <button class="btn btn-danger btn-sm" style="flex: 1; justify-content: center;" onclick="enterLiveRoom('${escapeAttr(live.title)}', '${escapeAttr(live.instructor)}', '${escapeAttr(live.roomName)}')">
+                                        <i class="fa-solid fa-video"></i> Entrar a la Clase
+                                    </button>
+                                    ${isTeacher ? `
+                                        <button class="btn btn-outline-danger btn-sm" onclick="endLiveClass('${live.id}')" title="Finalizar transmisión">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </div>
                         </div>
-                        <button class="btn btn-outline btn-sm" onclick="showToast('¡Recordatorio configurado para ${item.title}!', 'success')">
-                            <i class="fa-regular fa-bell"></i> Agendar
-                        </button>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
+            }
+
+            // 4. Lista de Clases Programadas (Incoming)
+            if (incomingList) {
+                if (!incomingClassesData || incomingClassesData.length === 0) {
+                    incomingList.innerHTML = `
+                        <div style="text-align: center; padding: 36px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-md); border: 1.5px dashed var(--border-color);">
+                            <i class="fa-regular fa-calendar-xmark" style="font-size: 2rem; margin-bottom: 10px; display: block; color: var(--siemens-teal); opacity: 0.5;"></i>
+                            <h4 style="font-size: 0.95rem; color: var(--text-primary); margin-bottom: 4px;">No hay clases programadas por ahora</h4>
+                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 auto 12px auto; max-width: 420px;">
+                                ${isTeacher ? 'Puedes programar la próxima fecha de clase para tus alumnos usando el botón superior.' : 'Pronto se publicarán nuevas fechas para talleres y masterclasses.'}
+                            </p>
+                            ${isTeacher ? `
+                                <button class="btn btn-primary btn-sm" onclick="openCreateLiveModal()">
+                                    <i class="fa-solid fa-calendar-plus"></i> Programar una Clase
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    incomingList.innerHTML = incomingClassesData.map(item => `
+                        <div class="incoming-item">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div class="incoming-date-box">
+                                    <span class="day">${escapeHtml(item.day || '')}</span>
+                                    <span class="month">${escapeHtml(item.month || '')}</span>
+                                </div>
+                                <div class="incoming-info">
+                                    <h4 class="incoming-title">${escapeHtml(item.title)}</h4>
+                                    <div class="incoming-details">
+                                        <span><i class="fa-regular fa-user"></i> ${escapeHtml(item.instructor)}</span>
+                                        <span><i class="fa-regular fa-clock"></i> ${escapeHtml(item.time || '')}</span>
+                                        <span><i class="fa-solid fa-link"></i> ${escapeHtml(item.platform || 'Jitsi Meet')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button class="btn btn-outline btn-sm" onclick="showToast('¡Recordatorio configurado para ${escapeAttr(item.title)}!', 'success')">
+                                    <i class="fa-regular fa-bell"></i> Agendar
+                                </button>
+                                ${isTeacher ? `
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteIncomingClass('${item.id}')" title="Eliminar clase programada">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
             }
         }
         window.renderLiveClasses = renderLiveClasses;
@@ -1870,7 +1971,7 @@
             };
 
             liveClassesData.unshift({
-                id: Date.now(),
+                id: String(Date.now()),
                 title: title,
                 instructor: instructor,
                 roomName: roomName,
@@ -1880,6 +1981,7 @@
                 time: "Iniciada Ahora (Jitsi Activo)"
             });
 
+            saveLiveState();
             renderLiveClasses();
             showToast('¡Sala de Jitsi generada exitosamente!', 'success');
         }
@@ -2017,9 +2119,6 @@
                     <button class="btn btn-primary btn-sm" onclick="if(liveAppWindow){liveAppWindow.focus();}else{enterLiveRoom('${title}', '${userDisplayName}', '${roomName}', 'popup');}" title="Traer ventana al frente">
                         <i class="fa-solid fa-window-restore"></i> Ver Clase
                     </button>
-                    <button type="button" onclick="copiarCodigoPython()" style="background: transparent; border: 0; color: #a1a1aa; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 2px 6px;">
-    <i class="fa-regular fa-copy"></i> Copiar Código
-</button>
                     <button class="btn btn-danger btn-sm" onclick="if(liveAppWindow){liveAppWindow.close();} document.getElementById('floatingLiveDock').remove(); showToast('Clase finalizada.');" title="Cerrar clase">
                         <i class="fa-solid fa-phone-slash"></i>
                     </button>
@@ -2163,7 +2262,7 @@
             if (status === 'now') {
                 const roomName = `UbuntuPeru_${Date.now()}`;
                 liveClassesData.unshift({
-                    id: Date.now(),
+                    id: String(Date.now()),
                     title,
                     instructor,
                     roomName: roomName,
@@ -2172,17 +2271,19 @@
                     status: "now",
                     time: `Inició a las ${hours}:${mins}`
                 });
+                saveLiveState();
                 showToast(`¡Transmisión "${title}" iniciada en vivo!`, 'success');
             } else {
                 incomingClassesData.unshift({
-                    id: Date.now(),
+                    id: String(Date.now()),
                     title,
                     instructor,
-                    day: day || '30',
-                    month: month || 'Ago',
+                    day: day || '01',
+                    month: month || 'Mes',
                     time: `${hours}:${mins} GMT-5`,
                     platform: link
                 });
+                saveLiveState();
                 showToast(`¡Clase en vivo "${title}" programada para el ${day} de ${month}!`, 'success');
             }
 
@@ -2214,29 +2315,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderLiveClasses();
         });
-
-
-
-        function copiarCodigoPython() {
-    const codigo = `sample = input(" introduce una muestra de números separados por comas: ")
-sample = sample.split(',')
-n = len(sample)
-for i in range(n):
-    sample[i] = int(sample[i])
-sum = 0
-sumsq = 0
-for i in sample:
-    sum += i
-mean = sum/n
-stdev = (sumsq/n - mean**2)**(1/2)
-print('La media es', mean, ', y la desviación típica', stdev)`;
-
-    navigator.clipboard.writeText(codigo).then(() => {
-        if(window.showToast) window.showToast('Código copiado al portapapeles', 'success');
-    }).catch(() => {
-        console.log("Error al copiar");
-    });
-}
     </script>
 </body>
 </html>
