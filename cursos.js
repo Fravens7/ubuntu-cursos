@@ -493,7 +493,7 @@ export function renderCourses() {
                     <div class="course-body">
                         <div class="course-category">${course.category || ''} • ${course.duration || '20 horas'}</div>
                         <h3 class="course-title">${course.title}</h3>
-                        <p class="course-desc">${course.description || 'Sin descripción disponible.'}</p>
+                        ${course.description ? `<p class="course-desc">${course.description}</p>` : ''}
                         <div class="course-meta">
                             <span><i class="fa-regular fa-user"></i> ${course.instructor || 'Profesor'}</span>
                         </div>
@@ -629,14 +629,6 @@ export async function toggleHideCourse(id) {
         } else {
             course.activo = newActiveState;
             renderCourses();
-        }
-
-        if (window.showToast) {
-            if (newActiveState) {
-                window.showToast(`El curso "${course.title}" ahora es visible en el catálogo.`, 'success');
-            } else {
-                window.showToast(`El curso "${course.title}" ha sido ocultado del catálogo.`);
-            }
         }
     } catch (error) {
         console.error("Error al cambiar estado del curso:", error);
@@ -953,7 +945,7 @@ export function openCourseDetail(id) {
     document.getElementById('detailCourseTitle').textContent = course.title;
     document.getElementById('detailCourseCategory').textContent = `${course.category || 'Curso'} • Nivel ${course.level || 'Principiante'}`;
     document.getElementById('detailCourseInstructor').innerHTML = `<i class="fa-regular fa-user"></i> Instructor: <strong>${course.instructor}</strong> • Duración: ${course.duration || '20 horas'}`;
-    document.getElementById('detailCourseDesc').textContent = course.description || 'Sin descripción adicional.';
+    document.getElementById('detailCourseDesc').textContent = course.description || '';
 
     const weeksNavEl = document.getElementById('detailWeeksNav');
     const weekHeaderEl = document.getElementById('detailWeekHeader');
