@@ -28,7 +28,7 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-            <img src="logo.png" alt="Ubuntu Perú" class="sidebar-logo-img" width="38" height="38" onerror="this.src='https://via.placeholder.com/40x40/009999/ffffff?text=UP'">
+            <img src="logo.png" alt="Ubuntu Perú" class="sidebar-logo-img" width="38" height="38" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'38\' height=\'38\' viewBox=\'0 0 38 38\'><rect width=\'38\' height=\'38\' rx=\'8\' fill=\'%23009999\'/><text x=\'50%25\' y=\'55%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'white\' font-family=\'sans-serif\' font-weight=\'bold\' font-size=\'14\'>UP</text></svg>';">
             <div class="sidebar-logo-text">
                 <span class="brand-ubuntu">Ubuntu Perú</span>
                 <span class="brand-alliance">Alliance with Siemens</span>
@@ -616,6 +616,9 @@
         }
 
         async function endLiveClass(id) {
+            const ok = confirm('¿Estás seguro de que deseas dar por finalizada esta clase en vivo para todos los alumnos? La transmisión se cerrará en la plataforma.');
+            if (!ok) return;
+
             try {
                 if (db && id) {
                     await deleteDoc(doc(db, 'clases_en_vivo', String(id)));
@@ -702,10 +705,10 @@
                                 </div>
                                 <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center;">
                                     <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="enterLiveRoom('${escapeAttr(live.title)}', '${escapeAttr(live.instructor)}', '${escapeAttr(live.roomName)}')">
-                                        <i class="fa-solid fa-video"></i> Entrar a la Clase
+                                        <i class="fa-solid fa-video"></i> ${isTeacher ? 'Entrar / Reingresar' : 'Entrar a la Clase'}
                                     </button>
                                     ${isTeacher ? `
-                                        <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 7px 12px; font-weight: 600;" onclick="endLiveClass('${live.id}')" title="Finalizar clase y cerrar transmisión">
+                                        <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 7px 12px; font-weight: 600;" onclick="endLiveClass('${live.id}')" title="Finalizar clase y cerrar transmisión para todos">
                                             <i class="fa-solid fa-power-off"></i> Finalizar
                                         </button>
                                     ` : ''}
@@ -990,13 +993,15 @@
                     try { liveAppWindow.focus(); } catch(e) {}
                 }
 
-                // Detectar automáticamente cuando la ventana de Jitsi se cierra para finalizar la clase
+                // Detectar si la ventana emergente se cierra (no borramos la transmisión)
                 if (window.liveWindowMonitor) clearInterval(window.liveWindowMonitor);
                 window.liveWindowMonitor = setInterval(() => {
                     if (window.liveAppWindow && window.liveAppWindow.closed) {
                         clearInterval(window.liveWindowMonitor);
                         window.liveWindowMonitor = null;
-                        hangupLiveClass();
+                        const dock = document.getElementById('floatingLiveDock');
+                        if (dock) dock.remove();
+                        showToast('Ventana de clase cerrada. La transmisión sigue activa si deseas reingresar.', 'normal');
                     }
                 }, 1500);
 
@@ -1063,7 +1068,7 @@
         }
         window.focusLiveClass = focusLiveClass;
 
-        // Colgar / salir de la llamada en vivo
+        // Colgar / salir de la llamada en vivo localmente (sin borrar la clase de Firestore)
         function hangupLiveClass() {
             if (window.liveWindowMonitor) {
                 clearInterval(window.liveWindowMonitor);
@@ -1077,16 +1082,9 @@
 
             closeLiveRoom();
 
-            const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher' || currentUserRole === 'admin');
-            
-            // Si es el profesor que inició la clase, finalizarla también en Firestore y para todos
-            if (isTeacher && currentLiveSessionId) {
-                endLiveClass(currentLiveSessionId);
-            } else {
-                const dock = document.getElementById('floatingLiveDock');
-                if (dock) dock.remove();
-                showToast('Has salido de la clase.', 'normal');
-            }
+            const dock = document.getElementById('floatingLiveDock');
+            if (dock) dock.remove();
+            showToast('Has salido de la llamada. La transmisión sigue activa en el catálogo si deseas reingresar.', 'normal');
         }
         window.hangupLiveClass = hangupLiveClass;
 
