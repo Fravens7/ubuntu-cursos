@@ -546,7 +546,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { initCursosModule, setCursosUser, deleteCourse } from "./cursos.js";
 
         // Configuración de Firebase
@@ -565,6 +565,193 @@
 
         // Inicializar módulo de Cursos con Firestore
         initCursosModule(db);
+
+        // Global Jitsi API Instance
+        let currentJitsiApi = null;
+        let lastCreatedRoomUrl = '';
+        let liveAppWindow = null;
+        let currentLiveSessionId = null;
+
+        // Helper escaping
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeAttr(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;');
+        }
+
+        // Limpieza de datos antiguos de localStorage si existieran
+        try {
+            const rawLive = localStorage.getItem('ubuntu_live_classes');
+            if (rawLive && (rawLive.includes('Schmidt') || rawLive.includes('MindSphere') || rawLive.includes('Manuel Rojas') || rawLive.includes('asasdasdasd'))) {
+                localStorage.removeItem('ubuntu_live_classes');
+            }
+            localStorage.removeItem('ubuntu_incoming_classes');
+        } catch (e) {}
+
+        // Clases en Vivo Dataset (Sincronizado con Firestore y localStorage)
+        let liveClassesData = [];
+        try {
+            const savedLive = localStorage.getItem('ubuntu_live_classes');
+            if (savedLive) liveClassesData = JSON.parse(savedLive);
+        } catch (e) {
+            liveClassesData = [];
+        }
+
+        function saveLiveState() {
+            try {
+                localStorage.setItem('ubuntu_live_classes', JSON.stringify(liveClassesData));
+            } catch (e) {}
+        }
+
+        async function endLiveClass(id) {
+            try {
+                if (db && id) {
+                    await deleteDoc(doc(db, 'clases_en_vivo', String(id)));
+                }
+            } catch (err) {
+                console.warn("Aviso Firestore al finalizar clase:", err);
+            }
+
+            liveClassesData = liveClassesData.filter(c => String(c.id) !== String(id));
+            if (currentLiveSessionId === id) {
+                currentLiveSessionId = null;
+            }
+            saveLiveState();
+
+            // Si la ventana o dock estaban abiertos, cerrarlos
+            if (window.liveWindowMonitor) {
+                clearInterval(window.liveWindowMonitor);
+                window.liveWindowMonitor = null;
+            }
+            if (window.liveAppWindow && !window.liveAppWindow.closed) {
+                try { window.liveAppWindow.close(); } catch(e) {}
+            }
+            window.liveAppWindow = null;
+
+            closeLiveRoom();
+
+            const dock = document.getElementById('floatingLiveDock');
+            if (dock) dock.remove();
+
+            renderLiveClasses();
+            showToast('Clase finalizada con éxito.', 'normal');
+        }
+        window.endLiveClass = endLiveClass;
+
+        // Render Live Classes
+        function renderLiveClasses() {
+            const activeGrid = document.getElementById('liveActiveGrid');
+            const sidebarBadge = document.getElementById('sidebarLiveBadge');
+
+            const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher' || currentUserRole === 'admin');
+
+            // 1. Badge "LIVE" en Sidebar (solo si hay transmisiones activas)
+            if (sidebarBadge) {
+                sidebarBadge.style.display = (liveClassesData && liveClassesData.length > 0) ? 'inline-block' : 'none';
+            }
+
+            // 2. Grid de Sesiones Activas
+            if (activeGrid) {
+                if (!liveClassesData || liveClassesData.length === 0) {
+                    activeGrid.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color);">
+                            <i class="fa-solid fa-tower-broadcast" style="font-size: 2.4rem; margin-bottom: 12px; display: block; color: var(--siemens-teal); opacity: 0.6;"></i>
+                            <h4 style="font-size: 1.05rem; color: var(--text-primary); margin-bottom: 6px;">No hay transmisiones en vivo en este momento</h4>
+                            <p style="font-size: 0.85rem; max-width: 460px; margin: 0 auto 16px auto; color: var(--text-secondary);">
+                                ${isTeacher 
+                                    ? 'Inicia una sesión en vivo con Jitsi Meet para tus alumnos cuando lo requieras.' 
+                                    : 'Las sesiones en vivo y talleres prácticos aparecerán aquí en tiempo real cuando un profesor inicie una transmisión.'}
+                            </p>
+                            ${isTeacher ? `
+                                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                    <button class="btn btn-jitsi-live btn-sm" onclick="openInstantLiveModal()">
+                                        <i class="fa-solid fa-bolt"></i> Iniciar Clase Instantánea
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    activeGrid.innerHTML = liveClassesData.map(live => `
+                        <div class="live-card active-now">
+                            <div class="live-card-body">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span class="live-badge-now"><span class="live-dot"></span> EN VIVO</span>
+                                    <span class="live-viewers-count"><i class="fa-solid fa-video"></i> Jitsi Meet</span>
+                                </div>
+                                <h4 class="live-topic">${escapeHtml(live.title)}</h4>
+                                <div class="live-instructor">
+                                    <i class="fa-solid fa-user-tie" style="color: var(--siemens-teal);"></i>
+                                    <span>${escapeHtml(live.instructor)}</span>
+                                </div>
+                                <div class="live-time-info">
+                                    <i class="fa-regular fa-clock"></i>
+                                    <span>${escapeHtml(live.time || 'En curso')}</span>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center;">
+                                    <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="enterLiveRoom('${escapeAttr(live.title)}', '${escapeAttr(live.instructor)}', '${escapeAttr(live.roomName)}')">
+                                        <i class="fa-solid fa-video"></i> Entrar a la Clase
+                                    </button>
+                                    ${isTeacher ? `
+                                        <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 7px 12px; font-weight: 600;" onclick="endLiveClass('${live.id}')" title="Finalizar clase y cerrar transmisión">
+                                            <i class="fa-solid fa-power-off"></i> Finalizar
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+        window.renderLiveClasses = renderLiveClasses;
+
+        // Escuchar Clases en Vivo en tiempo real con Firestore
+        try {
+            const liveRef = collection(db, 'clases_en_vivo');
+            onSnapshot(liveRef, (snapshot) => {
+                const list = [];
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (data.activo !== false) {
+                        list.push({
+                            id: docSnap.id,
+                            ...data
+                        });
+                    }
+                });
+                liveClassesData = list;
+                saveLiveState();
+                renderLiveClasses();
+            }, (err) => {
+                console.warn("Aviso de Firestore (Clases en Vivo):", err);
+                renderLiveClasses();
+            });
+        } catch (err) {
+            console.warn("No se pudo conectar a 'clases_en_vivo':", err);
+        }
+
+        // Sincronización entre pestañas en el mismo navegador
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'ubuntu_live_classes') {
+                try {
+                    liveClassesData = e.newValue ? JSON.parse(e.newValue) : [];
+                    renderLiveClasses();
+                } catch(err) {}
+            }
+        });
 
         // Estado del usuario activo
         let currentUser = null;
@@ -684,151 +871,7 @@
         }
         window.logout = logout;
 
-        // Global Jitsi API Instance
-        let currentJitsiApi = null;
-        let lastCreatedRoomUrl = '';
 
-        // Helper escaping
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        function escapeAttr(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/\\/g, '\\\\')
-                .replace(/'/g, "\\'")
-                .replace(/"/g, '&quot;');
-        }
-
-        // Limpieza de datos antiguos de localStorage si existieran
-        try {
-            const rawLive = localStorage.getItem('ubuntu_live_classes');
-            if (rawLive && (rawLive.includes('Schmidt') || rawLive.includes('MindSphere') || rawLive.includes('Manuel Rojas') || rawLive.includes('asasdasdasd'))) {
-                localStorage.removeItem('ubuntu_live_classes');
-            }
-            localStorage.removeItem('ubuntu_incoming_classes');
-        } catch (e) {}
-
-        // Clases en Vivo Dataset (Solo sesiones instantáneas Jitsi)
-        let liveClassesData = [];
-
-        try {
-            const savedLive = localStorage.getItem('ubuntu_live_classes');
-            if (savedLive) liveClassesData = JSON.parse(savedLive);
-        } catch (e) {
-            liveClassesData = [];
-        }
-
-        function saveLiveState() {
-            try {
-                localStorage.setItem('ubuntu_live_classes', JSON.stringify(liveClassesData));
-            } catch (e) {}
-        }
-
-        let currentLiveSessionId = null;
-
-        function endLiveClass(id) {
-            liveClassesData = liveClassesData.filter(c => String(c.id) !== String(id));
-            if (currentLiveSessionId === id) {
-                currentLiveSessionId = null;
-            }
-            saveLiveState();
-
-            // Si la ventana o dock estaban abiertos, cerrarlos
-            if (window.liveWindowMonitor) {
-                clearInterval(window.liveWindowMonitor);
-                window.liveWindowMonitor = null;
-            }
-            if (window.liveAppWindow && !window.liveAppWindow.closed) {
-                try { window.liveAppWindow.close(); } catch(e) {}
-            }
-            window.liveAppWindow = null;
-
-            closeLiveRoom();
-
-            const dock = document.getElementById('floatingLiveDock');
-            if (dock) dock.remove();
-
-            renderLiveClasses();
-            showToast('Clase finalizada con éxito.', 'normal');
-        }
-        window.endLiveClass = endLiveClass;
-
-        // Render Live Classes
-        function renderLiveClasses() {
-            const activeGrid = document.getElementById('liveActiveGrid');
-            const sidebarBadge = document.getElementById('sidebarLiveBadge');
-
-            const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'admin');
-
-            // 1. Badge "LIVE" en Sidebar (solo si hay transmisiones activas)
-            if (sidebarBadge) {
-                sidebarBadge.style.display = (liveClassesData && liveClassesData.length > 0) ? 'inline-block' : 'none';
-            }
-
-            // 2. Grid de Sesiones Activas
-            if (activeGrid) {
-                if (!liveClassesData || liveClassesData.length === 0) {
-                    activeGrid.innerHTML = `
-                        <div style="grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color);">
-                            <i class="fa-solid fa-tower-broadcast" style="font-size: 2.4rem; margin-bottom: 12px; display: block; color: var(--siemens-teal); opacity: 0.6;"></i>
-                            <h4 style="font-size: 1.05rem; color: var(--text-primary); margin-bottom: 6px;">No hay transmisiones en vivo en este momento</h4>
-                            <p style="font-size: 0.85rem; max-width: 460px; margin: 0 auto 16px auto; color: var(--text-secondary);">
-                                ${isTeacher 
-                                    ? 'Inicia una sesión en vivo con Jitsi Meet para tus alumnos cuando lo requieras.' 
-                                    : 'Las sesiones en vivo y talleres prácticos aparecerán aquí en tiempo real cuando un profesor inicie una transmisión.'}
-                            </p>
-                            ${isTeacher ? `
-                                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                                    <button class="btn btn-jitsi-live btn-sm" onclick="openInstantLiveModal()">
-                                        <i class="fa-solid fa-bolt"></i> Iniciar Clase Instantánea
-                                    </button>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                } else {
-                    activeGrid.innerHTML = liveClassesData.map(live => `
-                        <div class="live-card active-now">
-                            <div class="live-card-body">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span class="live-badge-now"><span class="live-dot"></span> EN VIVO</span>
-                                    <span class="live-viewers-count"><i class="fa-solid fa-video"></i> Jitsi Meet</span>
-                                </div>
-                                <h4 class="live-topic">${escapeHtml(live.title)}</h4>
-                                <div class="live-instructor">
-                                    <i class="fa-solid fa-user-tie" style="color: var(--siemens-teal);"></i>
-                                    <span>${escapeHtml(live.instructor)}</span>
-                                </div>
-                                <div class="live-time-info">
-                                    <i class="fa-regular fa-clock"></i>
-                                    <span>${escapeHtml(live.time || 'En curso')}</span>
-                                </div>
-                                <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center;">
-                                    <button class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;" onclick="enterLiveRoom('${escapeAttr(live.title)}', '${escapeAttr(live.instructor)}', '${escapeAttr(live.roomName)}')">
-                                        <i class="fa-solid fa-video"></i> Entrar a la Clase
-                                    </button>
-                                    ${isTeacher ? `
-                                        <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 7px 12px; font-weight: 600;" onclick="endLiveClass('${live.id}')" title="Finalizar clase y cerrar transmisión">
-                                            <i class="fa-solid fa-power-off"></i> Finalizar
-                                        </button>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            }
-        }
-        }
-        window.renderLiveClasses = renderLiveClasses;
 
         // ================= JITSI INSTANT CREATION =================
         function openInstantLiveModal() {
@@ -837,7 +880,7 @@
         }
         window.openInstantLiveModal = openInstantLiveModal;
 
-        function generateInstantJitsiClass() {
+        async function generateInstantJitsiClass() {
             const title = document.getElementById('instantLiveTitle').value.trim() || 'Clase en Vivo de Ubuntu Perú';
             const instructor = document.getElementById('instantLiveInstructor').value.trim() || userDisplayName;
             
@@ -856,19 +899,34 @@
                 enterLiveRoom(title, instructor, roomName);
             };
 
+            const classId = `live_${Date.now()}`;
             const newLive = {
-                id: String(Date.now()),
+                id: classId,
                 title: title,
                 instructor: instructor,
+                instructorId: currentUser ? currentUser.uid : null,
                 roomName: roomName,
                 viewers: 1,
                 category: "En Vivo",
-                status: "now",
+                activo: true,
                 time: "Iniciada Ahora (Jitsi Activo)"
             };
-            liveClassesData.unshift(newLive);
-            currentLiveSessionId = newLive.id;
 
+            currentLiveSessionId = classId;
+
+            // 1. Guardar en Firestore para sincronizar en tiempo real con TODOS los estudiantes
+            try {
+                if (db) {
+                    await setDoc(doc(db, 'clases_en_vivo', classId), newLive);
+                }
+            } catch (err) {
+                console.warn("Aviso Firestore al crear clase en vivo:", err);
+            }
+
+            // 2. Respaldo local y renderizado inmediato
+            if (!liveClassesData.some(c => c.id === classId)) {
+                liveClassesData.unshift(newLive);
+            }
             saveLiveState();
             renderLiveClasses();
             showToast('¡Sala de Jitsi generada exitosamente!', 'success');
@@ -894,8 +952,6 @@
             }
         }
         window.openJitsiNewTab = openJitsiNewTab;
-
-        let liveAppWindow = null;
         window.liveAppWindow = null;
 
         // Carga bajo demanda de la API de Jitsi (cero costo de rendimiento en arranque)
@@ -1007,7 +1063,7 @@
         }
         window.focusLiveClass = focusLiveClass;
 
-        // Colgar / finalizar clase activa
+        // Colgar / salir de la llamada en vivo
         function hangupLiveClass() {
             if (window.liveWindowMonitor) {
                 clearInterval(window.liveWindowMonitor);
@@ -1021,21 +1077,16 @@
 
             closeLiveRoom();
 
-            // Finalizar y remover la clase activa del listado
-            if (currentLiveSessionId) {
-                liveClassesData = liveClassesData.filter(c => String(c.id) !== String(currentLiveSessionId));
-            } else if (liveClassesData.length > 0) {
-                liveClassesData.shift();
+            const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher' || currentUserRole === 'admin');
+            
+            // Si es el profesor que inició la clase, finalizarla también en Firestore y para todos
+            if (isTeacher && currentLiveSessionId) {
+                endLiveClass(currentLiveSessionId);
+            } else {
+                const dock = document.getElementById('floatingLiveDock');
+                if (dock) dock.remove();
+                showToast('Has salido de la clase.', 'normal');
             }
-            currentLiveSessionId = null;
-
-            saveLiveState();
-            renderLiveClasses();
-
-            const dock = document.getElementById('floatingLiveDock');
-            if (dock) dock.remove();
-
-            showToast('Clase finalizada.', 'normal');
         }
         window.hangupLiveClass = hangupLiveClass;
 
@@ -1149,6 +1200,10 @@
             if (navEl) {
                 document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
                 navEl.classList.add('active');
+            }
+
+            if (viewId === 'view-live') {
+                renderLiveClasses();
             }
 
             if (window.innerWidth <= 900) {
