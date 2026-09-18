@@ -60,10 +60,6 @@
                 <i class="fa-solid fa-plus-circle"></i>
                 <span>Crear Nuevo Curso</span>
             </div>
-            <div class="nav-item role-teacher-only" onclick="openCreateLiveModal()">
-                <i class="fa-solid fa-calendar-plus"></i>
-                <span>Programar Clase</span>
-            </div>
         </nav>
 
         <div class="sidebar-footer">
@@ -171,9 +167,6 @@
                         <button class="btn btn-jitsi-live" onclick="openInstantLiveModal()">
                             <i class="fa-solid fa-bolt"></i> Crear Clase en Vivo
                         </button>
-                        <button class="btn btn-primary" onclick="openCreateLiveModal()">
-                            <i class="fa-solid fa-calendar-plus"></i> + Programar Clase
-                        </button>
                     </div>
                 </div>
 
@@ -185,20 +178,6 @@
                 </h3>
                 <div class="live-grid" id="liveActiveGrid">
                     <!-- Tarjetas de clases en vivo activas -->
-                </div>
-
-                <!-- Incoming / Scheduled Classes -->
-                <div class="section-header" style="margin-top: 36px;">
-                    <div>
-                        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--siemens-slate);">
-                            <i class="fa-solid fa-calendar-days" style="color: var(--ubuntu-orange);"></i> Clases Programadas (Incoming)
-                        </h3>
-                        <p class="section-subtitle">Reserva tu cupo para las próximas sesiones de la semana.</p>
-                    </div>
-                </div>
-
-                <div class="incoming-list" id="incomingList">
-                    <!-- Clases programadas renderizadas dinámicamente -->
                 </div>
             </section>
 
@@ -420,62 +399,7 @@
     </div>
 
 
-    <!-- ================= MODAL 3: PROGRAMAR CLASE EN VIVO (FUTURA) ================= -->
-    <div class="modal-overlay" id="createLiveModal">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-calendar-plus"></i> Programar Clase en Vivo</h3>
-                <button class="modal-close" onclick="closeModal('createLiveModal')">&times;</button>
-            </div>
-            <form id="createLiveForm" onsubmit="handleCreateLive(event)">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="liveTitle">Título de la Sesión *</label>
-                        <input type="text" id="liveTitle" class="form-control" placeholder="Ej: Masterclass: Visión Computacional con OpenCV" required>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="liveInstructor">Instructor / Presentador *</label>
-                            <input type="text" id="liveInstructor" class="form-control" placeholder="Ej: Ing. Sofia Vargas" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="liveStatus">Modalidad *</label>
-                            <select id="liveStatus" class="form-control">
-                                <option value="incoming">Programada (Fecha Futura)</option>
-                                <option value="now">Transmitir Ahora Mismo (EN VIVO)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="liveDate">Fecha y Hora *</label>
-                            <input type="datetime-local" id="liveDate" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="liveDuration">Duración estimada</label>
-                            <input type="text" id="liveDuration" class="form-control" placeholder="Ej: 90 minutos" value="90 minutos">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="liveLink">Plataforma / Enlace Jitsi</label>
-                        <input type="text" id="liveLink" class="form-control" placeholder="meet.jit.si/UbuntuPeru_Clase_Personalizada (Opcional)">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" onclick="closeModal('createLiveModal')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fa-solid fa-calendar-check"></i> Guardar y Programar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-
-    <!-- ================= MODAL 4: SALA DE CLASE EN VIVO CON JITSI (CON MINIMIZAR / PICTURE-IN-PICTURE) ================= -->
+    <!-- ================= MODAL: SALA DE CLASE EN VIVO CON JITSI (CON MINIMIZAR / PICTURE-IN-PICTURE) ================= -->
     <div class="modal-overlay" id="liveRoomModal">
         <div class="modal-box live-room-modal">
             <div class="modal-header">
@@ -744,9 +668,6 @@
             const instantInstructor = document.getElementById('instantLiveInstructor');
             if (instantInstructor) instantInstructor.value = name;
 
-            const liveInstructor = document.getElementById('liveInstructor');
-            if (liveInstructor) liveInstructor.value = name;
-
             const courseInstructor = document.getElementById('courseInstructorDisplay');
             if (courseInstructor) courseInstructor.value = name;
         }
@@ -786,36 +707,28 @@
                 .replace(/"/g, '&quot;');
         }
 
-        // Limpieza de datos dummy antiguos de localStorage si existieran
+        // Limpieza de datos antiguos de localStorage si existieran
         try {
             const rawLive = localStorage.getItem('ubuntu_live_classes');
             if (rawLive && (rawLive.includes('Schmidt') || rawLive.includes('MindSphere') || rawLive.includes('Manuel Rojas') || rawLive.includes('asasdasdasd'))) {
                 localStorage.removeItem('ubuntu_live_classes');
             }
-            const rawInc = localStorage.getItem('ubuntu_incoming_classes');
-            if (rawInc && (rawInc.includes('Andrea Prado') || rawInc.includes('Ransomware') || rawInc.includes('Víctor Salazar') || rawInc.includes('Carlos Mendoza'))) {
-                localStorage.removeItem('ubuntu_incoming_classes');
-            }
+            localStorage.removeItem('ubuntu_incoming_classes');
         } catch (e) {}
 
-        // Clases en Vivo Dataset (Sin datos dummy)
+        // Clases en Vivo Dataset (Solo sesiones instantáneas Jitsi)
         let liveClassesData = [];
-        let incomingClassesData = [];
 
         try {
             const savedLive = localStorage.getItem('ubuntu_live_classes');
             if (savedLive) liveClassesData = JSON.parse(savedLive);
-            const savedInc = localStorage.getItem('ubuntu_incoming_classes');
-            if (savedInc) incomingClassesData = JSON.parse(savedInc);
         } catch (e) {
             liveClassesData = [];
-            incomingClassesData = [];
         }
 
         function saveLiveState() {
             try {
                 localStorage.setItem('ubuntu_live_classes', JSON.stringify(liveClassesData));
-                localStorage.setItem('ubuntu_incoming_classes', JSON.stringify(incomingClassesData));
             } catch (e) {}
         }
 
@@ -848,18 +761,9 @@
         }
         window.endLiveClass = endLiveClass;
 
-        function deleteIncomingClass(id) {
-            incomingClassesData = incomingClassesData.filter(c => String(c.id) !== String(id));
-            saveLiveState();
-            renderLiveClasses();
-            showToast('Clase programada eliminada.', 'normal');
-        }
-        window.deleteIncomingClass = deleteIncomingClass;
-
         // Render Live Classes
         function renderLiveClasses() {
             const activeGrid = document.getElementById('liveActiveGrid');
-            const incomingList = document.getElementById('incomingList');
             const sidebarBadge = document.getElementById('sidebarLiveBadge');
 
             const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'admin');
@@ -869,7 +773,7 @@
                 sidebarBadge.style.display = (liveClassesData && liveClassesData.length > 0) ? 'inline-block' : 'none';
             }
 
-            // 2. Grid de Sesiones Activas (Diseño limpio y profesional sin duplicados)
+            // 2. Grid de Sesiones Activas
             if (activeGrid) {
                 if (!liveClassesData || liveClassesData.length === 0) {
                     activeGrid.innerHTML = `
@@ -878,16 +782,13 @@
                             <h4 style="font-size: 1.05rem; color: var(--text-primary); margin-bottom: 6px;">No hay transmisiones en vivo en este momento</h4>
                             <p style="font-size: 0.85rem; max-width: 460px; margin: 0 auto 16px auto; color: var(--text-secondary);">
                                 ${isTeacher 
-                                    ? 'Inicia una sesión instantánea con Jitsi Meet o programa una clase para tus alumnos.' 
+                                    ? 'Inicia una sesión en vivo con Jitsi Meet para tus alumnos cuando lo requieras.' 
                                     : 'Las sesiones en vivo y talleres prácticos aparecerán aquí en tiempo real cuando un profesor inicie una transmisión.'}
                             </p>
                             ${isTeacher ? `
                                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                                     <button class="btn btn-jitsi-live btn-sm" onclick="openInstantLiveModal()">
                                         <i class="fa-solid fa-bolt"></i> Iniciar Clase Instantánea
-                                    </button>
-                                    <button class="btn btn-primary btn-sm" onclick="openCreateLiveModal()">
-                                        <i class="fa-solid fa-calendar-plus"></i> Programar Sesión
                                     </button>
                                 </div>
                             ` : ''}
@@ -925,55 +826,7 @@
                     `).join('');
                 }
             }
-
-            // 4. Lista de Clases Programadas (Incoming)
-            if (incomingList) {
-                if (!incomingClassesData || incomingClassesData.length === 0) {
-                    incomingList.innerHTML = `
-                        <div style="text-align: center; padding: 36px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-md); border: 1.5px dashed var(--border-color);">
-                            <i class="fa-regular fa-calendar-xmark" style="font-size: 2rem; margin-bottom: 10px; display: block; color: var(--siemens-teal); opacity: 0.5;"></i>
-                            <h4 style="font-size: 0.95rem; color: var(--text-primary); margin-bottom: 4px;">No hay clases programadas por ahora</h4>
-                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 auto 12px auto; max-width: 420px;">
-                                ${isTeacher ? 'Puedes programar la próxima fecha de clase para tus alumnos usando el botón superior.' : 'Pronto se publicarán nuevas fechas para talleres y masterclasses.'}
-                            </p>
-                            ${isTeacher ? `
-                                <button class="btn btn-primary btn-sm" onclick="openCreateLiveModal()">
-                                    <i class="fa-solid fa-calendar-plus"></i> Programar una Clase
-                                </button>
-                            ` : ''}
-                        </div>
-                    `;
-                } else {
-                    incomingList.innerHTML = incomingClassesData.map(item => `
-                        <div class="incoming-item">
-                            <div style="display: flex; align-items: center; gap: 16px;">
-                                <div class="incoming-date-box">
-                                    <span class="day">${escapeHtml(item.day || '')}</span>
-                                    <span class="month">${escapeHtml(item.month || '')}</span>
-                                </div>
-                                <div class="incoming-info">
-                                    <h4 class="incoming-title">${escapeHtml(item.title)}</h4>
-                                    <div class="incoming-details">
-                                        <span><i class="fa-regular fa-user"></i> ${escapeHtml(item.instructor)}</span>
-                                        <span><i class="fa-regular fa-clock"></i> ${escapeHtml(item.time || '')}</span>
-                                        <span><i class="fa-solid fa-link"></i> ${escapeHtml(item.platform || 'Jitsi Meet')}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <button class="btn btn-outline btn-sm" onclick="showToast('¡Recordatorio configurado para ${escapeAttr(item.title)}!', 'success')">
-                                    <i class="fa-regular fa-bell"></i> Agendar
-                                </button>
-                                ${isTeacher ? `
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteIncomingClass('${item.id}')" title="Eliminar clase programada">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            }
+        }
         }
         window.renderLiveClasses = renderLiveClasses;
 
@@ -1355,76 +1208,11 @@
         }
         window.openCreateCourseModal = openCreateCourseModal;
 
-        function openCreateLiveModal() {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            const liveDateInput = document.getElementById('liveDate');
-            if (liveDateInput) {
-                liveDateInput.value = now.toISOString().slice(0, 16);
-            }
-            const modal = document.getElementById('createLiveModal');
-            if (modal) modal.classList.add('active');
-        }
-        window.openCreateLiveModal = openCreateLiveModal;
-
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
             if (modal) modal.classList.remove('active');
         }
         window.closeModal = closeModal;
-
-        // Handle Create Live Class (Scheduled)
-        function handleCreateLive(e) {
-            e.preventDefault();
-            const title = document.getElementById('liveTitle').value;
-            const instructor = document.getElementById('liveInstructor').value || userDisplayName;
-            const status = document.getElementById('liveStatus').value;
-            const liveDateVal = document.getElementById('liveDate').value;
-            const link = document.getElementById('liveLink').value || `meet.jit.si/UbuntuPeru_${Math.floor(Math.random()*10000)}`;
-
-            const dateObj = new Date(liveDateVal);
-            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-            const day = dateObj.getDate().toString().padStart(2, '0');
-            const month = months[dateObj.getMonth()];
-            const hours = dateObj.getHours().toString().padStart(2, '0');
-            const mins = dateObj.getMinutes().toString().padStart(2, '0');
-
-            if (status === 'now') {
-                const roomName = `UbuntuPeru_${Date.now()}`;
-                const newLive = {
-                    id: String(Date.now()),
-                    title,
-                    instructor,
-                    roomName: roomName,
-                    viewers: 1,
-                    category: "En Vivo",
-                    status: "now",
-                    time: `Inició a las ${hours}:${mins}`
-                };
-                liveClassesData.unshift(newLive);
-                currentLiveSessionId = newLive.id;
-                saveLiveState();
-                showToast(`¡Transmisión "${title}" iniciada en vivo!`, 'success');
-            } else {
-                incomingClassesData.unshift({
-                    id: String(Date.now()),
-                    title,
-                    instructor,
-                    day: day || '01',
-                    month: month || 'Mes',
-                    time: `${hours}:${mins} GMT-5`,
-                    platform: link
-                });
-                saveLiveState();
-                showToast(`¡Clase en vivo "${title}" programada para el ${day} de ${month}!`, 'success');
-            }
-
-            closeModal('createLiveModal');
-            document.getElementById('createLiveForm').reset();
-            renderLiveClasses();
-            switchView('view-live', document.querySelectorAll('.nav-item')[1]);
-        }
-        window.handleCreateLive = handleCreateLive;
 
         // Toast Helper
         function showToast(message, type = 'normal') {
