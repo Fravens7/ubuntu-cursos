@@ -53,7 +53,7 @@
 
             <div class="nav-section-title role-teacher-only">Gestión Docente</div>
             <div class="nav-item role-teacher-only" onclick="openInstantLiveModal()">
-                <i class="fa-solid fa-bolt" style="color: #ef4444;"></i>
+                <i class="fa-solid fa-chalkboard-user" style="color: var(--siemens-teal);"></i>
                 <span style="color: #fff; font-weight: 700;">Crear Clase en Vivo</span>
             </div>
             <div class="nav-item role-teacher-only" onclick="openCreateCourseModal()">
@@ -114,7 +114,7 @@
                         <p class="welcome-subtitle">Aprende con rutas certificadas por Ubuntu Perú y la red global Siemens. Inteligencia Artificial, Robótica, Desarrollo e Ingeniería aplicada.</p>
                         <div class="welcome-actions">
                             <button class="btn btn-jitsi-live role-teacher-only" onclick="openInstantLiveModal()">
-                                <i class="fa-solid fa-bolt"></i> Crear Clase en Vivo
+                                <i class="fa-solid fa-chalkboard-user"></i> Crear Clase en Vivo
                             </button>
                             <button class="btn btn-primary role-teacher-only" onclick="openCreateCourseModal()">
                                 <i class="fa-solid fa-circle-plus"></i> Crear Nuevo Curso
@@ -165,7 +165,7 @@
                     </div>
                     <div class="header-btn-group role-teacher-only">
                         <button class="btn btn-jitsi-live" onclick="openInstantLiveModal()">
-                            <i class="fa-solid fa-bolt"></i> Crear Clase en Vivo
+                            <i class="fa-solid fa-chalkboard-user"></i> Crear Clase en Vivo
                         </button>
                     </div>
                 </div>
@@ -200,38 +200,37 @@
     </main>
 
 
-    <!-- ================= MODAL 1: CREAR CLASE EN VIVO INSTANTÁNEA (JITSI) ================= -->
+    <!-- ================= MODAL 1: CREAR CLASE EN VIVO ================= -->
     <div class="modal-overlay" id="instantLiveModal">
         <div class="modal-box">
-            <div class="modal-header" style="background: linear-gradient(135deg, #1E2225, #ef4444);">
-                <h3><i class="fa-solid fa-bolt"></i> Crear Clase en Vivo (Instantánea)</h3>
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--siemens-slate), var(--siemens-teal));">
+                <h3><i class="fa-solid fa-chalkboard-user"></i> Crear Clase en Vivo</h3>
                 <button class="modal-close" onclick="closeModal('instantLiveModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 16px;">
-                    Genera una sala de videoconferencia en vivo con <strong>Jitsi Meet</strong> al instante. Obtendrás la URL lista para compartir con tus alumnos y el botón para ingresar.
-                </p>
-
-                <div class="form-group">
-                    <label for="instantLiveTitle">Tema o Título de la Clase *</label>
-                    <input type="text" id="instantLiveTitle" class="form-control" placeholder="Ej: Workshop: Creación de Agentes con IA" value="">
-                </div>
-
-                <div class="form-group">
-                    <label for="instantLiveInstructor">Instructor / Presentador *</label>
-                    <input type="text" id="instantLiveInstructor" class="form-control" placeholder="Nombre del docente / instructor" value="">
-                </div>
-
-                <button type="button" class="btn btn-jitsi-live" style="width: 100%; justify-content: center; margin-top: 4px;" onclick="generateInstantJitsiClass()">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Enlace y Sala Jitsi
-                </button>
-
-                <!-- RESULTADO DE LA SALA CREADA -->
-                <div id="instantResultBox" class="instant-jitsi-box" style="display: none;">
-                    <div style="font-weight: 700; color: var(--siemens-teal); font-size: 0.9rem; margin-bottom: 4px;">
-                        <i class="fa-solid fa-circle-check"></i> ¡Sala de Jitsi Creada con Éxito!
+                <!-- FORMULARIO DE CREACIÓN (SE OCULTA TRAS CREAR LA CLASE) -->
+                <div id="instantFormFields">
+                    <div class="form-group">
+                        <label for="instantLiveTitle">Tema o Título de la Clase *</label>
+                        <input type="text" id="instantLiveTitle" class="form-control" placeholder="Ej: Workshop: Creación de Agentes con IA" value="">
                     </div>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary);">Comparte esta URL con tus estudiantes para que se unan:</p>
+
+                    <div class="form-group">
+                        <label for="instantLiveInstructor">Instructor / Presentador *</label>
+                        <input type="text" id="instantLiveInstructor" class="form-control" placeholder="Nombre del docente / instructor" value="">
+                    </div>
+
+                    <button type="button" class="btn btn-jitsi-live" style="width: 100%; justify-content: center; margin-top: 6px;" onclick="generateInstantJitsiClass()">
+                        <i class="fa-solid fa-chalkboard-user"></i> Crear Clase
+                    </button>
+                </div>
+
+                <!-- RESULTADO DE LA SALA CREADA (SE MUESTRA TRAS CREAR) -->
+                <div id="instantResultBox" class="instant-jitsi-box" style="display: none;">
+                    <div style="font-weight: 700; color: var(--siemens-teal); font-size: 0.95rem; margin-bottom: 6px;">
+                        <i class="fa-solid fa-circle-check"></i> Clase creada en vivo: <span id="instantSuccessClassName" style="color: var(--text-primary);"></span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px;">Comparte esta URL con tus estudiantes para que se unan:</p>
                     
                     <div class="jitsi-url-display">
                         <input type="text" id="generatedJitsiUrl" class="form-control" readonly>
@@ -240,12 +239,9 @@
                         </button>
                     </div>
 
-                    <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-primary" id="btnEnterGeneratedClass" style="flex: 1; justify-content: center;">
-                            <i class="fa-solid fa-door-open"></i> Entrar a la Clase
-                        </button>
-                        <button type="button" class="btn btn-outline" onclick="openJitsiNewTab()" title="Abrir en pestaña completa">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    <div style="margin-top: 14px;">
+                        <button type="button" class="btn btn-primary" id="btnEnterGeneratedClass" style="width: 100%; justify-content: center; padding: 11px;">
+                            <i class="fa-solid fa-video"></i> Entrar a la Clase
                         </button>
                     </div>
                 </div>
@@ -680,7 +676,7 @@
                             ${isTeacher ? `
                                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                                     <button class="btn btn-jitsi-live btn-sm" onclick="openInstantLiveModal()">
-                                        <i class="fa-solid fa-bolt"></i> Iniciar Clase Instantánea
+                                        <i class="fa-solid fa-chalkboard-user"></i> Crear Clase
                                     </button>
                                 </div>
                             ` : ''}
@@ -878,7 +874,10 @@
 
         // ================= JITSI INSTANT CREATION =================
         function openInstantLiveModal() {
-            document.getElementById('instantResultBox').style.display = 'none';
+            const formFields = document.getElementById('instantFormFields');
+            if (formFields) formFields.style.display = 'block';
+            const resultBox = document.getElementById('instantResultBox');
+            if (resultBox) resultBox.style.display = 'none';
             document.getElementById('instantLiveModal').classList.add('active');
         }
         window.openInstantLiveModal = openInstantLiveModal;
@@ -894,6 +893,14 @@
 
             lastCreatedRoomUrl = jitsiUrl;
             document.getElementById('generatedJitsiUrl').value = jitsiUrl;
+
+            // Actualizar nombre de la clase en el resultado
+            const successNameEl = document.getElementById('instantSuccessClassName');
+            if (successNameEl) successNameEl.textContent = title;
+
+            // Ocultar formulario y mostrar solo el resultado final
+            const formFields = document.getElementById('instantFormFields');
+            if (formFields) formFields.style.display = 'none';
             document.getElementById('instantResultBox').style.display = 'block';
 
             const btnEnter = document.getElementById('btnEnterGeneratedClass');
@@ -932,7 +939,7 @@
             }
             saveLiveState();
             renderLiveClasses();
-            showToast('¡Sala de Jitsi generada exitosamente!', 'success');
+            showToast('¡Clase en vivo creada exitosamente!', 'success');
         }
         window.generateInstantJitsiClass = generateInstantJitsiClass;
 
