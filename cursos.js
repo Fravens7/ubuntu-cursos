@@ -1218,6 +1218,27 @@ export function openCourseDetail(id) {
                         ` : ''}
                     </div>
                 </div>
+
+                ${activeWeek.anuncio && activeWeek.anuncio.trim() ? `
+                    <div class="week-announcement-banner" style="background: rgba(239, 108, 0, 0.08); border: 1.5px solid rgba(239, 108, 0, 0.35); border-left: 5px solid var(--ubuntu-orange); border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; display: flex; align-items: flex-start; gap: 14px; box-shadow: var(--shadow-sm);">
+                        <div style="background: var(--ubuntu-orange); color: #ffffff; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1rem; margin-top: 1px; box-shadow: 0 2px 6px rgba(239, 108, 0, 0.3);">
+                            <i class="fa-solid fa-bullhorn"></i>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
+                                <strong style="color: var(--ubuntu-orange); font-size: 0.84rem; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                                    Aviso del Docente
+                                </strong>
+                                ${isAuthor ? `
+                                    <button type="button" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')" style="background: none; border: none; color: var(--text-muted); font-size: 0.74rem; cursor: pointer; text-decoration: underline; padding: 0;" title="Editar o borrar este anuncio">
+                                        <i class="fa-solid fa-pen-to-square"></i> Editar aviso
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <p style="margin: 0; font-size: 0.88rem; color: var(--text-primary); line-height: 1.55; white-space: pre-wrap; word-break: break-word;">${activeWeek.anuncio.trim()}</p>
+                        </div>
+                    </div>
+                ` : ''}
             `;
         }
 
@@ -1309,6 +1330,12 @@ export function openWeekModal(courseId, weekId = null) {
                 document.getElementById('weekInputCanvaUrl').value = week.canvaUrl || '';
                 document.getElementById('weekInputCanvaUrl').dispatchEvent(new Event('input'));
             }
+            if (document.getElementById('weekInputNotice')) {
+                document.getElementById('weekInputNotice').value = week.anuncio || '';
+            }
+            if (window.toggleWeekNotice) {
+                window.toggleWeekNotice(Boolean(week.anuncio && week.anuncio.trim()));
+            }
             document.getElementById('weekInputVisible').checked = week.visible !== false;
         }
     } else {
@@ -1322,6 +1349,12 @@ export function openWeekModal(courseId, weekId = null) {
         if (document.getElementById('weekInputCanvaUrl')) {
             document.getElementById('weekInputCanvaUrl').value = '';
             document.getElementById('weekInputCanvaUrl').dispatchEvent(new Event('input'));
+        }
+        if (document.getElementById('weekInputNotice')) {
+            document.getElementById('weekInputNotice').value = '';
+        }
+        if (window.toggleWeekNotice) {
+            window.toggleWeekNotice(false);
         }
         document.getElementById('weekInputVisible').checked = true;
     }
@@ -1346,6 +1379,7 @@ export async function saveWeekForm(e) {
     const videoUrl = document.getElementById('weekInputVideoUrl').value.trim();
     const materialUrl = document.getElementById('weekInputMaterialUrl').value.trim();
     const canvaUrl = document.getElementById('weekInputCanvaUrl') ? document.getElementById('weekInputCanvaUrl').value.trim() : '';
+    const anuncio = document.getElementById('weekInputNotice') ? document.getElementById('weekInputNotice').value.trim() : '';
     const visible = document.getElementById('weekInputVisible').checked;
 
     let semanas = Array.isArray(course.semanas) ? [...course.semanas] : [];
@@ -1360,6 +1394,7 @@ export async function saveWeekForm(e) {
                 videoUrl,
                 materialUrl,
                 canvaUrl,
+                anuncio,
                 visible
             };
         }
@@ -1372,6 +1407,7 @@ export async function saveWeekForm(e) {
             videoUrl,
             materialUrl,
             canvaUrl,
+            anuncio,
             visible
         };
         semanas.push(newWeek);
@@ -1511,6 +1547,7 @@ export async function handleCreateCourse(e) {
     const weekVideoUrl = document.getElementById('courseWeekVideoUrl') ? document.getElementById('courseWeekVideoUrl').value.trim() : '';
     const weekMaterialUrl = document.getElementById('courseWeekMaterialUrl') ? document.getElementById('courseWeekMaterialUrl').value.trim() : '';
     const weekCanvaUrl = document.getElementById('courseWeekCanvaUrl') ? document.getElementById('courseWeekCanvaUrl').value.trim() : '';
+    const weekNotice = document.getElementById('courseWeekNotice') ? document.getElementById('courseWeekNotice').value.trim() : '';
 
     // Autoría real vinculada a la cuenta activa
     const instructor = currentUserName || 'Docente';
@@ -1528,7 +1565,7 @@ export async function handleCreateCourse(e) {
     };
     const icon = categoryIcons[category] || 'fa-graduation-cap';
 
-    // Inicializar con la primera semana ya equipada con sus materiales
+    // Inicializar con la primera semana ya equipada con sus materiales y posible aviso
     const initialWeek = {
         id: 'sem_' + Date.now(),
         numero: 1,
@@ -1537,6 +1574,7 @@ export async function handleCreateCourse(e) {
         videoUrl: weekVideoUrl,
         materialUrl: weekMaterialUrl,
         canvaUrl: weekCanvaUrl,
+        anuncio: weekNotice,
         visible: true
     };
 
@@ -1580,6 +1618,7 @@ export async function handleCreateCourse(e) {
         if (window.closeModal) window.closeModal('createCourseModal');
         document.getElementById('createCourseForm').reset();
         if (window.toggleCourseDesc) window.toggleCourseDesc(false);
+        if (window.toggleWeek1Notice) window.toggleWeek1Notice(false);
 
         if (window.showToast) {
             window.showToast(`¡Curso "${title}" creado con éxito! Abriendo aula virtual...`, 'success');
