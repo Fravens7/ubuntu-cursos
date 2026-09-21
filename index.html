@@ -329,6 +329,19 @@
                                 💡 Pega el enlace de tu diseño de Canva o el código de inserción (Compartir &gt; Más &gt; Insertar).
                             </small>
                         </div>
+
+                        <!-- AVISO O ANUNCIO SEMANA 1 (OPCIONAL PLEGABLE) -->
+                        <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
+                            <div style="display: flex; align-items: center;">
+                                <button type="button" id="btnToggleWeek1Notice" onclick="window.toggleWeek1Notice()" style="background: rgba(239, 108, 0, 0.08); color: var(--ubuntu-orange); border: 1px solid rgba(239, 108, 0, 0.3); border-radius: 999px; padding: 2px 10px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                                    <i class="fa-solid fa-bullhorn" id="iconToggleWeek1Notice" style="font-size: 0.7rem;"></i>
+                                    <span id="textToggleWeek1Notice">Agregar aviso o anuncio para alumnos (opcional)</span>
+                                </button>
+                            </div>
+                            <div id="week1NoticeContainer" style="display: none; margin-top: 6px;">
+                                <textarea id="courseWeekNotice" class="form-control" placeholder="Ej: ¡Bienvenidos al curso! En esta primera sesión revisen la diapositiva y video..." rows="2" style="font-size: 0.82rem;"></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -537,6 +550,22 @@
                         <small style="font-size: 0.74rem; color: var(--text-muted); display: block; margin-top: 4px;">
                             💡 Pega el enlace de tu diseño de Canva o el código de inserción (Compartir &gt; Más &gt; Insertar).
                         </small>
+                    </div>
+
+                    <!-- AVISO O ANUNCIO DE LA SEMANA (OPCIONAL PLEGABLE) -->
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                            <button type="button" id="btnToggleWeekNotice" onclick="window.toggleWeekNotice()" style="background: rgba(239, 108, 0, 0.08); color: var(--ubuntu-orange); border: 1px solid rgba(239, 108, 0, 0.3); border-radius: 999px; padding: 2px 10px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                                <i class="fa-solid fa-bullhorn" id="iconToggleWeekNotice" style="font-size: 0.7rem;"></i>
+                                <span id="textToggleWeekNotice">Agregar aviso o anuncio para alumnos (opcional)</span>
+                            </button>
+                        </div>
+                        <div id="weekNoticeContainer" style="display: none; margin-top: 6px;">
+                            <textarea id="weekInputNotice" class="form-control" placeholder="Ej: Estimados alumnos, hoy no tendremos clase en vivo por motivos de salud. Por favor revisen la presentación de Canva y el material asignado." rows="3" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.85rem; line-height: 1.4;"></textarea>
+                            <small style="color: var(--text-muted); font-size: 0.74rem; display: block; margin-top: 3px;">
+                                📢 Los alumnos verán este anuncio destacado arriba del video o material en esta semana.
+                            </small>
+                        </div>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 8px;">
@@ -1276,10 +1305,79 @@
         }
         window.toggleCourseDesc = toggleCourseDesc;
 
+        // Toggle para la pastilla de aviso de la Semana 1 en creación de curso
+        function toggleWeek1Notice(forceState) {
+            const container = document.getElementById('week1NoticeContainer');
+            const btn = document.getElementById('btnToggleWeek1Notice');
+            const icon = document.getElementById('iconToggleWeek1Notice');
+            const text = document.getElementById('textToggleWeek1Notice');
+            const textarea = document.getElementById('courseWeekNotice');
+            if (!container) return;
+
+            const isCurrentlyHidden = container.style.display === 'none' || !container.style.display;
+            const shouldShow = typeof forceState === 'boolean' ? forceState : isCurrentlyHidden;
+
+            if (shouldShow) {
+                container.style.display = 'block';
+                if (btn) {
+                    btn.style.background = 'var(--ubuntu-orange)';
+                    btn.style.color = '#ffffff';
+                }
+                if (icon) icon.className = 'fa-solid fa-minus';
+                if (text) text.textContent = 'Ocultar aviso';
+                if (textarea) textarea.focus();
+            } else {
+                container.style.display = 'none';
+                if (btn) {
+                    btn.style.background = 'rgba(239, 108, 0, 0.08)';
+                    btn.style.color = 'var(--ubuntu-orange)';
+                }
+                if (icon) icon.className = 'fa-solid fa-bullhorn';
+                if (text) text.textContent = 'Agregar aviso o anuncio para alumnos (opcional)';
+            }
+        }
+        window.toggleWeek1Notice = toggleWeek1Notice;
+
+        // Toggle para la pastilla de aviso en modal de configuración de semana
+        function toggleWeekNotice(forceState) {
+            const container = document.getElementById('weekNoticeContainer');
+            const btn = document.getElementById('btnToggleWeekNotice');
+            const icon = document.getElementById('iconToggleWeekNotice');
+            const text = document.getElementById('textToggleWeekNotice');
+            const textarea = document.getElementById('weekInputNotice');
+            if (!container) return;
+
+            const isCurrentlyHidden = container.style.display === 'none' || !container.style.display;
+            const shouldShow = typeof forceState === 'boolean' ? forceState : isCurrentlyHidden;
+
+            if (shouldShow) {
+                container.style.display = 'block';
+                if (btn) {
+                    btn.style.background = 'var(--ubuntu-orange)';
+                    btn.style.color = '#ffffff';
+                }
+                if (icon) icon.className = 'fa-solid fa-minus';
+                if (text) text.textContent = 'Ocultar aviso';
+                if (textarea) textarea.focus();
+            } else {
+                container.style.display = 'none';
+                if (btn) {
+                    btn.style.background = 'rgba(239, 108, 0, 0.08)';
+                    btn.style.color = 'var(--ubuntu-orange)';
+                }
+                if (icon) icon.className = 'fa-solid fa-bullhorn';
+                if (text) text.textContent = 'Agregar aviso o anuncio para alumnos (opcional)';
+            }
+        }
+        window.toggleWeekNotice = toggleWeekNotice;
+
         // Modal Controls
         function openCreateCourseModal() {
             if (window.toggleCourseDesc) {
                 window.toggleCourseDesc(false);
+            }
+            if (window.toggleWeek1Notice) {
+                window.toggleWeek1Notice(false);
             }
             const modal = document.getElementById('createCourseModal');
             if (modal) modal.classList.add('active');
