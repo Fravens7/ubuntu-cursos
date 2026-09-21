@@ -241,6 +241,51 @@ function getEmbeddableDocumentUrl(url) {
     return null;
 }
 
+// Obtener URL oficial de descarga directa de documentos (0% Egress, servidores de Google)
+export function getDownloadableDocumentUrl(url) {
+    if (!url) return null;
+    const cleanUrl = url.trim();
+
+    // Google Slides -> Exportar directamente como PDF oficial
+    if (cleanUrl.includes('docs.google.com/presentation/d/')) {
+        const match = cleanUrl.match(/presentation\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://docs.google.com/presentation/d/${match[1]}/export/pdf`;
+        }
+    }
+
+    // Google Drive File / PDF -> Descarga directa desde CDN de Google
+    if (cleanUrl.includes('drive.google.com')) {
+        const match = cleanUrl.match(/file\/d\/([a-zA-Z0-9_-]+)/) || cleanUrl.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+        }
+    }
+
+    // Google Sheets -> Exportar como Excel XLSX oficial
+    if (cleanUrl.includes('docs.google.com/spreadsheets/d/')) {
+        const match = cleanUrl.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=xlsx`;
+        }
+    }
+
+    // Google Docs -> Exportar como PDF oficial
+    if (cleanUrl.includes('docs.google.com/document/d/')) {
+        const match = cleanUrl.match(/document\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://docs.google.com/document/d/${match[1]}/export?format=pdf`;
+        }
+    }
+
+    // Archivo PDF directo
+    if (cleanUrl.toLowerCase().endsWith('.pdf')) {
+        return cleanUrl;
+    }
+
+    return null;
+}
+
 // Convertir URL de GitHub / Colab a Raw URL de GitHub
 function getGitHubRawUrl(url) {
     if (!url) return null;
@@ -416,9 +461,14 @@ async function loadAndRenderNotebook(containerElement, rawUrl, directUrl) {
                         <i class="fa-brands fa-python" style="color: #38bdf8; font-size: 1.3rem;"></i>
                         <span style="font-weight: 700; font-size: 0.9rem; color: #f3f4f6;">Cuaderno de Ejercicios Python (.ipynb)</span>
                     </div>
-                    <a href="${directUrl}" target="_blank" class="btn btn-sm" style="background: #e27d60; color: #fff; border: 0; font-size: 0.78rem; font-weight: 700; padding: 6px 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px; text-decoration: none;" title="Abrir en Google Colab para ejecutar con GPU/CPU">
-                        <i class="fa-solid fa-play"></i> Abrir y Ejecutar en Google Colab
-                    </a>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <a href="${rawUrl}" target="_blank" download class="btn btn-outline btn-sm" style="background: rgba(255, 255, 255, 0.08); color: #f3f4f6; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 0.78rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;" title="Descargar archivo de ejercicios .ipynb">
+                            <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Material
+                        </a>
+                        <a href="${directUrl}" target="_blank" class="btn btn-sm" style="background: #e27d60; color: #fff; border: 0; font-size: 0.78rem; font-weight: 700; padding: 6px 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px; text-decoration: none;" title="Abrir en Google Colab para ejecutar con GPU/CPU">
+                            <i class="fa-solid fa-play"></i> Abrir y Ejecutar en Google Colab
+                        </a>
+                    </div>
                 </div>
                 
                 <!-- Celdas del Cuaderno -->
@@ -910,6 +960,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
         });
     }
     if (docEmbedUrl) {
+        const downloadUrl = getDownloadableDocumentUrl(pdfUrl);
         mediaList.push({
             id: 'doc',
             type: 'iframe',
@@ -918,6 +969,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             iconColor: 'var(--ubuntu-orange)',
             embedUrl: docEmbedUrl,
             directUrl: pdfUrl,
+            downloadUrl: downloadUrl,
             aspectRatio: '58%',
             actionLabel: 'Pantalla Completa'
         });
@@ -958,6 +1010,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             rawUrl: resourceInfo.rawUrl,
             embedUrl: resourceInfo.embedUrl,
             directUrl: resourceInfo.directUrl,
+            downloadUrl: resourceInfo.rawUrl || null,
             aspectRatio: resourceInfo.aspectRatio || '68%',
             actionLabel: resourceInfo.actionLabel
         });
@@ -979,7 +1032,12 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                     ` : m.type === 'canva_notice' ? `
                         ${renderCanvaNoticeHtml(m.directUrl, isAuthor)}
                     ` : `
-                        <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
+                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; gap: 8px; flex-wrap: wrap;">
+                            ${m.downloadUrl ? `
+                                <a href="${m.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar material en tu computadora">
+                                    <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Material
+                                </a>
+                            ` : ''}
                             <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
                                 <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
                             </a>
@@ -1010,13 +1068,20 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             videoContainer.style.display = 'block';
         } else {
             videoContainer.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                     <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
                         <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}
                     </span>
-                    <a href="${item.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${item.actionLabel}">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.actionLabel}
-                    </a>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        ${item.downloadUrl ? `
+                            <a href="${item.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar material en tu computadora">
+                                <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Material
+                            </a>
+                        ` : ''}
+                        <a href="${item.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${item.actionLabel}">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.actionLabel}
+                        </a>
+                    </div>
                 </div>
                 <div style="position: relative; padding-bottom: ${item.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
                     <iframe src="${item.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
