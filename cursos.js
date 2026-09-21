@@ -78,6 +78,34 @@ export function initCursosModule(db) {
         console.warn("No se pudo conectar a la colección 'cursos':", err);
         renderCourses();
     }
+
+    // Configurar feedback dinámico para inputs de Canva
+    setTimeout(() => {
+        setupCanvaInputFeedback('courseWeekCanvaUrl');
+        setupCanvaInputFeedback('weekInputCanvaUrl');
+    }, 100);
+}
+
+// Configurar feedback en tiempo real para inputs de Canva
+function setupCanvaInputFeedback(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.addEventListener('input', () => {
+        const val = input.value.trim();
+        const hintEl = input.nextElementSibling;
+        if (!hintEl || hintEl.tagName !== 'SMALL') return;
+
+        if (!val) {
+            hintEl.innerHTML = '💡 Pega el enlace de tu diseño de Canva o el código de inserción (Compartir &gt; Más &gt; Insertar).';
+            hintEl.style.color = 'var(--text-muted)';
+        } else if (val.includes('canva.link/')) {
+            hintEl.innerHTML = '⚠️ <strong>Enlace corto detectado:</strong> Para que se previsualice interactivamente aquí dentro, abre ese enlace en tu navegador y copia la URL completa (<code>canva.com/design/...</code>) o desde <em>Compartir &gt; Más &gt; Insertar</em>.';
+            hintEl.style.color = 'var(--ubuntu-orange)';
+        } else if (val.includes('canva.com/design/') || val.includes('<iframe')) {
+            hintEl.innerHTML = '✅ <strong>¡Perfecto!</strong> Esta presentación de Canva se previsualizará interactivamente para tus alumnos.';
+            hintEl.style.color = 'var(--ubuntu-green)';
+        }
+    });
 }
 
 // Convertir cualquier URL de YouTube a URL embebible
@@ -94,6 +122,70 @@ function getYouTubeEmbedUrl(url) {
     }
 
     return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+}
+
+// Convertir enlace o código de inserción de Canva a información embebible (0% egress vía iframe oficial)
+export function getEmbeddableCanvaInfo(url) {
+    if (!url) return null;
+    let cleanUrl = url.trim();
+
+    // Si el usuario pegó el código iframe completo de Canva
+    if (cleanUrl.includes('<iframe')) {
+        const srcMatch = cleanUrl.match(/src=["']([^"']+)["']/i);
+        if (srcMatch && srcMatch[1]) {
+            cleanUrl = srcMatch[1].trim();
+        }
+    }
+
+    // Caso 1: Enlace completo de diseño canva.com/design/...
+    if (cleanUrl.includes('canva.com/design/')) {
+        // Si ya incluye view?embed o watch?embed
+        if (cleanUrl.includes('view?embed') || cleanUrl.includes('watch?embed')) {
+            return {
+                type: 'iframe',
+                embedUrl: cleanUrl,
+                directUrl: cleanUrl.replace('?embed', '').replace('&embed', ''),
+                isEmbeddable: true
+            };
+        }
+
+        // Extraer ID y posible hash de visualización
+        // Formato: /design/DAHTEtNuW8Y/t-09vJfZhZw64L3fdrRJlQ/view o /edit o /watch
+        const match = cleanUrl.match(/canva\.com\/design\/([a-zA-Z0-9_-]+)(?:\/([a-zA-Z0-9_-]+))?/);
+        if (match && match[1]) {
+            const designId = match[1];
+            const viewHash = match[2];
+
+            let embedUrl = '';
+            let directUrl = cleanUrl;
+
+            if (viewHash && !['view', 'edit', 'watch', 'present'].includes(viewHash.toLowerCase())) {
+                embedUrl = `https://www.canva.com/design/${designId}/${viewHash}/view?embed`;
+                directUrl = `https://www.canva.com/design/${designId}/${viewHash}/view`;
+            } else {
+                embedUrl = `https://www.canva.com/design/${designId}/view?embed`;
+                directUrl = `https://www.canva.com/design/${designId}/view`;
+            }
+
+            return {
+                type: 'iframe',
+                embedUrl,
+                directUrl,
+                isEmbeddable: true
+            };
+        }
+    }
+
+    // Caso 2: Enlace corto canva.link/XXXXX
+    if (cleanUrl.includes('canva.link/')) {
+        return {
+            type: 'canva_notice',
+            directUrl: cleanUrl,
+            isEmbeddable: false
+        };
+    }
+
+    return null;
 }
 
 // Convertir URL de Google Slides, Google Drive PDF, Google Docs a URL embebible
@@ -130,6 +222,14 @@ function getEmbeddableDocumentUrl(url) {
         const match = cleanUrl.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
         if (match && match[1]) {
             return `https://docs.google.com/spreadsheets/d/${match[1]}/preview`;
+        }
+    }
+
+    // Canva (Compatibilidad directa en caso de ser colocado en el campo de diapositivas)
+    if (cleanUrl.includes('canva.com/design/')) {
+        const canvaInfo = getEmbeddableCanvaInfo(cleanUrl);
+        if (canvaInfo && canvaInfo.embedUrl) {
+            return canvaInfo.embedUrl;
         }
     }
 
@@ -753,12 +853,46 @@ export async function handleSaveEditCourse(e) {
 // Estado de semana activa por curso
 let activeWeekIdByCourse = {};
 
-// Renderizador multimedia reusable (Video YouTube/Drive, Diapositivas/PDF y Colab)
-function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl) {
+// Renderizar aviso amigable para enlaces de Canva no embebibles directamente (como canva.link)
+function renderCanvaNoticeHtml(directUrl, isAuthor = false) {
+    return `
+        <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 28px 20px; text-align: center; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(0, 196, 204, 0.12); color: #00c4cc; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 12px;">
+                <i class="fa-solid fa-palette"></i>
+            </div>
+            <h4 style="margin-bottom: 8px; color: var(--text-primary); font-size: 1.05rem;">Presentación en Canva</h4>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">
+                Esta presentación fue vinculada mediante un enlace de Canva. Puedes abrirla directamente para visualizarla o proyectarla a pantalla completa.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <a href="${directUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="background: #00c4cc; border-color: #00c4cc; color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Diapositivas en Canva
+                </a>
+            </div>
+            ${isAuthor ? `
+                <div style="margin-top: 18px; padding: 12px 16px; background: rgba(239, 108, 0, 0.08); border-left: 3px solid var(--ubuntu-orange); border-radius: 8px; text-align: left; font-size: 0.78rem; color: var(--text-secondary); max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.4;">
+                    <strong style="color: var(--ubuntu-orange); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <i class="fa-solid fa-lightbulb"></i> ¿Deseas previsualizarla aquí dentro sin salir?
+                    </strong>
+                    Abre tu enlace en el navegador y copia la dirección completa que aparece en la barra superior (que empieza por <code>canva.com/design/...</code>) o en Canva ve a <strong>Compartir &gt; Más &gt; Insertar</strong> y pega ese enlace al editar esta semana.
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// Renderizador multimedia reusable (Video YouTube/Drive, Diapositivas/PDF, Canva y Colab)
+function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaUrl = null, isAuthor = false) {
     if (!videoContainer) return;
 
     const videoEmbedUrl = getYouTubeEmbedUrl(videoUrl);
-    const docEmbedUrl = getEmbeddableDocumentUrl(pdfUrl);
+    
+    // Verificar si el campo pdfUrl o canvaUrl contiene un enlace de Canva
+    const isPdfCanva = pdfUrl && (pdfUrl.includes('canva.com') || pdfUrl.includes('canva.link'));
+    const docEmbedUrl = isPdfCanva ? null : getEmbeddableDocumentUrl(pdfUrl);
+    
+    const effectiveCanva = canvaUrl || (isPdfCanva ? pdfUrl : null);
+    const canvaInfo = getEmbeddableCanvaInfo(effectiveCanva);
     const resourceInfo = getEmbeddableResourceUrl(resourceUrl);
 
     const mediaList = [];
@@ -788,6 +922,32 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl) {
             actionLabel: 'Pantalla Completa'
         });
     }
+    if (canvaInfo) {
+        if (canvaInfo.type === 'iframe') {
+            mediaList.push({
+                id: 'canva',
+                type: 'iframe',
+                title: 'Presentación Canva',
+                icon: 'fa-solid fa-palette',
+                iconColor: '#00c4cc',
+                embedUrl: canvaInfo.embedUrl,
+                directUrl: canvaInfo.directUrl,
+                aspectRatio: '56.25%',
+                actionLabel: 'Ver en Canva'
+            });
+        } else if (canvaInfo.type === 'canva_notice') {
+            mediaList.push({
+                id: 'canva',
+                type: 'canva_notice',
+                title: 'Presentación Canva',
+                icon: 'fa-solid fa-palette',
+                iconColor: '#00c4cc',
+                directUrl: canvaInfo.directUrl,
+                aspectRatio: 'auto',
+                actionLabel: 'Abrir en Canva'
+            });
+        }
+    }
     if (resourceInfo) {
         mediaList.push({
             id: 'resource',
@@ -816,6 +976,8 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl) {
                 <div id="mediaPane_${m.id}" class="media-content-pane" style="display: ${idx === 0 ? 'block' : 'none'};">
                     ${m.type === 'notebook' ? `
                         <div id="notebookView_${m.id}"></div>
+                    ` : m.type === 'canva_notice' ? `
+                        ${renderCanvaNoticeHtml(m.directUrl, isAuthor)}
                     ` : `
                         <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
                             <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
@@ -823,7 +985,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl) {
                             </a>
                         </div>
                         <div style="position: relative; padding-bottom: ${m.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                            <iframe src="${m.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                            <iframe src="${m.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
                         </div>
                     `}
                 </div>
@@ -843,6 +1005,9 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl) {
             videoContainer.innerHTML = `<div id="notebookView_single"></div>`;
             videoContainer.style.display = 'block';
             loadAndRenderNotebook(document.getElementById('notebookView_single'), item.rawUrl, item.directUrl);
+        } else if (item.type === 'canva_notice') {
+            videoContainer.innerHTML = renderCanvaNoticeHtml(item.directUrl, isAuthor);
+            videoContainer.style.display = 'block';
         } else {
             videoContainer.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -854,7 +1019,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl) {
                     </a>
                 </div>
                 <div style="position: relative; padding-bottom: ${item.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                    <iframe src="${item.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                    <iframe src="${item.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
                 </div>
             `;
             videoContainer.style.display = 'block';
@@ -895,6 +1060,17 @@ function setupModalButtons(course, isAuthor, isEnrolled) {
             btnResource.style.display = 'inline-flex';
         } else {
             btnResource.style.display = 'none';
+        }
+    }
+
+    const btnCanva = document.getElementById('detailBtnCanva');
+    if (btnCanva) {
+        const canvaInfo = getEmbeddableCanvaInfo(course.canvaUrl);
+        if (course.canvaUrl) {
+            btnCanva.href = (canvaInfo && canvaInfo.directUrl) ? canvaInfo.directUrl : course.canvaUrl;
+            btnCanva.style.display = 'inline-flex';
+        } else {
+            btnCanva.style.display = 'none';
         }
     }
 
@@ -1046,9 +1222,9 @@ export function openCourseDetail(id) {
         }
 
         // Renderizar multimedia de la semana activa
-        const hasMedia = activeWeek.videoUrl || activeWeek.materialUrl;
+        const hasMedia = activeWeek.videoUrl || activeWeek.materialUrl || activeWeek.canvaUrl;
         if (hasMedia) {
-            renderCourseMedia(videoContainer, activeWeek.videoUrl, activeWeek.materialUrl, null);
+            renderCourseMedia(videoContainer, activeWeek.videoUrl, activeWeek.materialUrl, null, activeWeek.canvaUrl, isAuthor);
         } else {
             videoContainer.style.display = 'block';
             videoContainer.innerHTML = `
@@ -1056,7 +1232,7 @@ export function openCourseDetail(id) {
                     <i class="fa-solid ${isAuthor ? 'fa-folder-plus' : 'fa-folder-open'}"></i>
                     <h4 style="color: var(--text-primary); margin-bottom: 6px;">Sin materiales aún</h4>
                     <p style="font-size: 0.85rem; max-width: 420px; margin: 0 auto 12px auto;">
-                        ${isAuthor ? 'Esta semana no tiene videos ni diapositivas cargadas. Haz clic en el botón para agregar el enlace de YouTube o Drive.' : 'El profesor aún no ha cargado los materiales de esta semana.'}
+                        ${isAuthor ? 'Esta semana no tiene videos ni presentaciones cargadas. Haz clic en el botón para agregar el enlace de YouTube, Drive o Canva.' : 'El profesor aún no ha cargado los materiales de esta semana.'}
                     </p>
                     ${isAuthor ? `
                         <button type="button" class="btn btn-sm btn-primary" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')">
@@ -1090,7 +1266,7 @@ export function openCourseDetail(id) {
         }
         if (weekHeaderEl) weekHeaderEl.innerHTML = '';
 
-        renderCourseMedia(videoContainer, course.videoUrl, course.pdfUrl, course.resourceUrl);
+        renderCourseMedia(videoContainer, course.videoUrl, course.pdfUrl, course.resourceUrl, course.canvaUrl, isAuthor);
     }
 
     setupModalButtons(course, isAuthor, isEnrolled);
@@ -1129,6 +1305,10 @@ export function openWeekModal(courseId, weekId = null) {
             document.getElementById('weekInputMeetUrl').value = week.meetUrl || '';
             document.getElementById('weekInputVideoUrl').value = week.videoUrl || '';
             document.getElementById('weekInputMaterialUrl').value = week.materialUrl || '';
+            if (document.getElementById('weekInputCanvaUrl')) {
+                document.getElementById('weekInputCanvaUrl').value = week.canvaUrl || '';
+                document.getElementById('weekInputCanvaUrl').dispatchEvent(new Event('input'));
+            }
             document.getElementById('weekInputVisible').checked = week.visible !== false;
         }
     } else {
@@ -1139,6 +1319,10 @@ export function openWeekModal(courseId, weekId = null) {
         document.getElementById('weekInputMeetUrl').value = '';
         document.getElementById('weekInputVideoUrl').value = '';
         document.getElementById('weekInputMaterialUrl').value = '';
+        if (document.getElementById('weekInputCanvaUrl')) {
+            document.getElementById('weekInputCanvaUrl').value = '';
+            document.getElementById('weekInputCanvaUrl').dispatchEvent(new Event('input'));
+        }
         document.getElementById('weekInputVisible').checked = true;
     }
 
@@ -1161,6 +1345,7 @@ export async function saveWeekForm(e) {
     const meetUrl = document.getElementById('weekInputMeetUrl').value.trim();
     const videoUrl = document.getElementById('weekInputVideoUrl').value.trim();
     const materialUrl = document.getElementById('weekInputMaterialUrl').value.trim();
+    const canvaUrl = document.getElementById('weekInputCanvaUrl') ? document.getElementById('weekInputCanvaUrl').value.trim() : '';
     const visible = document.getElementById('weekInputVisible').checked;
 
     let semanas = Array.isArray(course.semanas) ? [...course.semanas] : [];
@@ -1174,6 +1359,7 @@ export async function saveWeekForm(e) {
                 meetUrl,
                 videoUrl,
                 materialUrl,
+                canvaUrl,
                 visible
             };
         }
@@ -1185,6 +1371,7 @@ export async function saveWeekForm(e) {
             meetUrl,
             videoUrl,
             materialUrl,
+            canvaUrl,
             visible
         };
         semanas.push(newWeek);
@@ -1289,6 +1476,7 @@ export async function convertCourseToWeeks(courseId) {
         meetUrl: '',
         videoUrl: course.videoUrl || '',
         materialUrl: course.pdfUrl || course.resourceUrl || '',
+        canvaUrl: course.canvaUrl || '',
         visible: true
     };
 
@@ -1322,6 +1510,7 @@ export async function handleCreateCourse(e) {
     // Materiales directos de la Semana 1
     const weekVideoUrl = document.getElementById('courseWeekVideoUrl') ? document.getElementById('courseWeekVideoUrl').value.trim() : '';
     const weekMaterialUrl = document.getElementById('courseWeekMaterialUrl') ? document.getElementById('courseWeekMaterialUrl').value.trim() : '';
+    const weekCanvaUrl = document.getElementById('courseWeekCanvaUrl') ? document.getElementById('courseWeekCanvaUrl').value.trim() : '';
 
     // Autoría real vinculada a la cuenta activa
     const instructor = currentUserName || 'Docente';
@@ -1347,6 +1536,7 @@ export async function handleCreateCourse(e) {
         meetUrl: '',
         videoUrl: weekVideoUrl,
         materialUrl: weekMaterialUrl,
+        canvaUrl: weekCanvaUrl,
         visible: true
     };
 
