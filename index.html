@@ -826,7 +826,8 @@
 
                 if (userSnap.exists()) {
                     const data = userSnap.data();
-                    if (data.nombre) userDisplayName = data.nombre;
+                    const fullStudentName = data.nombreCompleto || (data.nombre && data.apellidos ? `${data.nombre} ${data.apellidos}` : data.nombre);
+                    if (fullStudentName) userDisplayName = fullStudentName;
                     if (data.rol) currentUserRole = data.rol.toLowerCase().trim();
                 } else {
                     // Fallback a 'jugadores' o 'users'
