@@ -654,11 +654,13 @@
         } catch (e) {
             liveClassesData = [];
         }
+        window.liveClassesData = liveClassesData;
 
         function saveLiveState() {
             try {
                 localStorage.setItem('ubuntu_live_classes', JSON.stringify(liveClassesData));
             } catch (e) {}
+            window.liveClassesData = liveClassesData;
         }
 
         async function endLiveClass(id) {
@@ -695,6 +697,9 @@
             if (dock) dock.remove();
 
             renderLiveClasses();
+            if (window.refreshCurrentCourseDetail) {
+                window.refreshCurrentCourseDetail();
+            }
             showToast('Clase finalizada con éxito.', 'normal');
         }
         window.endLiveClass = endLiveClass;
@@ -782,8 +787,12 @@
                     }
                 });
                 liveClassesData = list;
+                window.liveClassesData = liveClassesData;
                 saveLiveState();
                 renderLiveClasses();
+                if (window.refreshCurrentCourseDetail) {
+                    window.refreshCurrentCourseDetail();
+                }
             }, (err) => {
                 console.warn("Aviso de Firestore (Clases en Vivo):", err);
                 renderLiveClasses();
@@ -797,7 +806,11 @@
             if (e.key === 'ubuntu_live_classes') {
                 try {
                     liveClassesData = e.newValue ? JSON.parse(e.newValue) : [];
+                    window.liveClassesData = liveClassesData;
                     renderLiveClasses();
+                    if (window.refreshCurrentCourseDetail) {
+                        window.refreshCurrentCourseDetail();
+                    }
                 } catch(err) {}
             }
         });
@@ -811,7 +824,7 @@
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 // No hay sesión -> Volver al Login
-                window.location.href = '/login';
+                window.location.href = 'login.html';
                 return;
             }
 
@@ -913,10 +926,10 @@
         async function logout() {
             try {
                 await signOut(auth);
-                window.location.href = '/login';
+                window.location.href = 'login.html';
             } catch (error) {
                 console.error("Error al cerrar sesión:", error);
-                window.location.href = '/login';
+                window.location.href = 'login.html';
             }
         }
         window.logout = logout;
@@ -990,9 +1003,58 @@
             }
             saveLiveState();
             renderLiveClasses();
+            if (window.refreshCurrentCourseDetail) {
+                window.refreshCurrentCourseDetail();
+            }
             showToast('¡Clase en vivo creada exitosamente!', 'success');
         }
         window.generateInstantJitsiClass = generateInstantJitsiClass;
+
+        // Iniciar Clase en Vivo vinculada directamente a un curso y semana
+        async function startCourseLiveClass(courseId, weekId, courseTitle, weekTitle) {
+            const title = `${courseTitle || 'Curso'} — ${weekTitle || 'Clase en Vivo'}`;
+            const instructor = userDisplayName || 'Docente';
+            const cleanTitle = (courseTitle || 'Curso').replace(/[^a-zA-Z0-9]/g, '');
+            const randomCode = Math.floor(100000 + Math.random() * 900000);
+            const roomName = `Ubuntu_${cleanTitle.slice(0, 12)}_${randomCode}`;
+            const classId = `live_course_${courseId}_${Date.now()}`;
+
+            const newLive = {
+                id: classId,
+                title: title,
+                instructor: instructor,
+                instructorId: currentUser ? currentUser.uid : null,
+                roomName: roomName,
+                courseId: courseId,
+                weekId: weekId,
+                viewers: 1,
+                category: "Curso en Vivo",
+                activo: true,
+                time: "Iniciada Ahora (Jitsi Activo)"
+            };
+
+            currentLiveSessionId = classId;
+
+            try {
+                if (db) {
+                    await setDoc(doc(db, 'clases_en_vivo', classId), newLive);
+                }
+            } catch (err) {
+                console.warn("Aviso Firestore al crear clase en vivo del curso:", err);
+            }
+
+            if (!liveClassesData.some(c => c.id === classId)) {
+                liveClassesData.unshift(newLive);
+            }
+            saveLiveState();
+            renderLiveClasses();
+            if (window.refreshCurrentCourseDetail) {
+                window.refreshCurrentCourseDetail();
+            }
+            showToast(`¡Transmisión iniciada para "${courseTitle}"!`, 'success');
+            enterLiveRoom(title, instructor, roomName, 'popup');
+        }
+        window.startCourseLiveClass = startCourseLiveClass;
 
         function copyJitsiUrl() {
             const urlInput = document.getElementById('generatedJitsiUrl');
