@@ -214,3 +214,70 @@
     margin-bottom: 10px;
     display: block;
 }
+
+/* ── Botones y Animaciones de Clase en Vivo Dinámica por Curso ── */
+.btn-week-meet.is-live-pulse {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    animation: livePulseGlow 1.8s infinite;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-week-meet.is-live-pulse:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-2px) scale(1.02);
+}
+
+@keyframes livePulseGlow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+.btn-start-course-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: rgba(0, 153, 153, 0.1);
+    color: var(--siemens-teal, #009999);
+    border: 1.5px solid var(--siemens-teal, #009999);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-start-course-live:hover {
+    background: var(--siemens-teal, #009999);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 153, 153, 0.3);
+}
+
+.btn-end-course-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1.5px solid #f87171;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-end-course-live:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
