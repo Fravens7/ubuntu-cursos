@@ -1305,13 +1305,6 @@ export function openCourseDetail(id) {
                         <i class="fa-solid fa-tower-broadcast"></i> Iniciar Clase en Vivo
                     </button>
                 `;
-            } else if (activeWeek.meetUrl) {
-                // Enlace fijo opcional fijado por el docente (Zoom/Meet permanente)
-                liveActionHtml = `
-                    <a href="${activeWeek.meetUrl}" target="_blank" rel="noopener" class="btn-week-meet" style="background: var(--siemens-slate); opacity: 0.9;" title="Enlace de sala fijado por el docente">
-                        <i class="fa-solid fa-video"></i> Sala Programada
-                    </a>
-                `;
             }
 
             weekHeaderEl.innerHTML = `
@@ -1443,7 +1436,6 @@ export function openWeekModal(courseId, weekId = null) {
         if (week) {
             document.getElementById('weekModalTitle').textContent = `Editar Semana ${week.numero || ''}`;
             document.getElementById('weekInputTitle').value = week.titulo || '';
-            document.getElementById('weekInputMeetUrl').value = week.meetUrl || '';
             document.getElementById('weekInputVideoUrl').value = week.videoUrl || '';
             document.getElementById('weekInputMaterialUrl').value = week.materialUrl || '';
             if (document.getElementById('weekInputCanvaUrl')) {
@@ -1463,7 +1455,6 @@ export function openWeekModal(courseId, weekId = null) {
         document.getElementById('weekModalTitle').textContent = `Nueva Semana (Semana ${nextNum})`;
         document.getElementById('weekInputTitle').value = '';
         document.getElementById('weekInputTitle').placeholder = 'Ej: Introducción o tema principal';
-        document.getElementById('weekInputMeetUrl').value = '';
         document.getElementById('weekInputVideoUrl').value = '';
         document.getElementById('weekInputMaterialUrl').value = '';
         if (document.getElementById('weekInputCanvaUrl')) {
@@ -1495,7 +1486,6 @@ export async function saveWeekForm(e) {
 
     const weekId = document.getElementById('weekEditWeekId').value;
     const title = document.getElementById('weekInputTitle').value.trim();
-    const meetUrl = document.getElementById('weekInputMeetUrl').value.trim();
     const videoUrl = document.getElementById('weekInputVideoUrl').value.trim();
     const materialUrl = document.getElementById('weekInputMaterialUrl').value.trim();
     const canvaUrl = document.getElementById('weekInputCanvaUrl') ? document.getElementById('weekInputCanvaUrl').value.trim() : '';
@@ -1510,7 +1500,6 @@ export async function saveWeekForm(e) {
             semanas[idx] = {
                 ...semanas[idx],
                 titulo: title,
-                meetUrl,
                 videoUrl,
                 materialUrl,
                 canvaUrl,
@@ -1523,7 +1512,6 @@ export async function saveWeekForm(e) {
             id: 'sem_' + Date.now(),
             numero: semanas.length + 1,
             titulo: title,
-            meetUrl,
             videoUrl,
             materialUrl,
             canvaUrl,
@@ -1769,6 +1757,10 @@ export function filterCourses() {
 }
 
 // Exponer funciones a window para eventos HTML
+export function getTeacherCourses() {
+    return coursesList.filter(c => canUserEditCourse(c));
+}
+window.getTeacherCourses = getTeacherCourses;
 window.renderCourses = renderCourses;
 window.toggleEnroll = toggleEnroll;
 window.openCourseDetail = openCourseDetail;
