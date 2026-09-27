@@ -1244,16 +1244,20 @@ export function openCourseDetail(id) {
         }
 
         // Renderizar barra de navegación de semanas (Píldoras)
+        const liveList = (window.liveClassesData || []);
+
         if (weeksNavEl) {
             weeksNavEl.innerHTML = `
                 <div class="weeks-nav-container">
                     ${availableWeeks.map((w, idx) => {
                         const isActive = w.id === activeWeek.id;
                         const isHidden = w.visible === false;
+                        const isWeekLiveNow = liveList.some(c => c.courseId && c.courseId === course.id && String(c.weekId) === String(w.id));
                         return `
                             <button type="button" class="week-tab-btn ${isActive ? 'active' : ''} ${isHidden ? 'is-hidden' : ''}" onclick="window.selectWeekTab('${course.id}', '${w.id}')">
                                 <i class="fa-solid ${isActive ? 'fa-folder-open' : 'fa-folder'}"></i>
                                 <span>Semana ${w.numero || (idx + 1)}</span>
+                                ${isWeekLiveNow ? '<span class="live-dot" style="width: 7px; height: 7px; margin-left: 4px;" title="Clase en vivo transmitiéndose en esta semana"></span>' : ''}
                                 ${isAuthor && isHidden ? '<i class="fa-solid fa-eye-slash" title="Oculta para alumnos" style="font-size: 0.7rem; margin-left: 2px;"></i>' : ''}
                             </button>
                         `;
@@ -1277,16 +1281,15 @@ export function openCourseDetail(id) {
                 cleanWeekTitle = activeWeek.titulo || `Tema de la Semana ${activeWeek.numero || 1}`;
             }
 
-            // Buscar si existe una transmisión en vivo activa para este curso
-            const liveList = (window.liveClassesData || []);
-            const activeCourseLive = liveList.find(c => (c.courseId && c.courseId === course.id) || (c.instructorId && course.authorId && c.instructorId === course.authorId));
+            // Buscar si existe una transmisión en vivo activa ESPECÍFICAMENTE para esta semana de este curso
+            const activeCourseLive = liveList.find(c => c.courseId && c.courseId === course.id && String(c.weekId) === String(activeWeek.id));
 
             let liveActionHtml = '';
 
             if (activeCourseLive) {
-                // HAY CLASE EN VIVO ACTIVA EN TIEMPO REAL
+                // HAY CLASE EN VIVO ACTIVA EN ESTA SEMANA ESPECÍFICA
                 liveActionHtml = `
-                    <button type="button" class="btn-week-meet is-live-pulse" onclick="window.enterLiveRoom('${escapeAttr(activeCourseLive.title)}', '${escapeAttr(activeCourseLive.instructor)}', '${escapeAttr(activeCourseLive.roomName)}')" title="¡El profesor está transmitiendo en vivo ahora!">
+                    <button type="button" class="btn-week-meet is-live-pulse" onclick="window.enterLiveRoom('${escapeAttr(activeCourseLive.title)}', '${escapeAttr(activeCourseLive.instructor)}', '${escapeAttr(activeCourseLive.roomName)}')" title="¡El profesor está transmitiendo en vivo en esta semana!">
                         <span class="live-dot" style="background:#fff; box-shadow: 0 0 6px #fff;"></span>
                         <strong>EN VIVO AHORA</strong> — Entrar a Clase
                     </button>
@@ -1299,9 +1302,9 @@ export function openCourseDetail(id) {
                     `;
                 }
             } else if (isAuthor) {
-                // EL PROFESOR PUEDE INICIAR TRANSMISIÓN EN VIVO
+                // EL PROFESOR PUEDE INICIAR TRANSMISIÓN EN ESTA SEMANA
                 liveActionHtml = `
-                    <button type="button" class="btn-start-course-live" onclick="window.startCourseLiveClass('${course.id}', '${activeWeek.id}', '${escapeAttr(course.title)}', '${escapeAttr(cleanWeekTitle)}')" title="Iniciar videollamada Jitsi en vivo para este curso">
+                    <button type="button" class="btn-start-course-live" onclick="window.startCourseLiveClass('${course.id}', '${activeWeek.id}', '${escapeAttr(course.title)}', '${escapeAttr(cleanWeekTitle)}')" title="Iniciar videollamada Jitsi en vivo para esta semana">
                         <i class="fa-solid fa-tower-broadcast"></i> Iniciar Clase en Vivo
                     </button>
                 `;
