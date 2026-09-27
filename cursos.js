@@ -1171,10 +1171,32 @@ function setupModalButtons(course, isAuthor, isEnrolled) {
     }
 }
 
+let currentOpenCourseId = null;
+
+function escapeAttr(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;');
+}
+
+export function refreshCurrentCourseDetail() {
+    if (currentOpenCourseId) {
+        const modal = document.getElementById('courseDetailModal');
+        if (modal && modal.classList.contains('active')) {
+            openCourseDetail(currentOpenCourseId);
+        }
+    }
+}
+window.refreshCurrentCourseDetail = refreshCurrentCourseDetail;
+
 // Abrir Aula Virtual / Detalle del Curso (Con soporte por Semanas)
 export function openCourseDetail(id) {
     const course = coursesList.find(c => c.id === id);
     if (!course) return;
+
+    currentOpenCourseId = id;
 
     const modal = document.getElementById('courseDetailModal');
     if (!modal) return;
@@ -1255,6 +1277,43 @@ export function openCourseDetail(id) {
                 cleanWeekTitle = activeWeek.titulo || `Tema de la Semana ${activeWeek.numero || 1}`;
             }
 
+            // Buscar si existe una transmisión en vivo activa para este curso
+            const liveList = (window.liveClassesData || []);
+            const activeCourseLive = liveList.find(c => (c.courseId && c.courseId === course.id) || (c.instructorId && course.authorId && c.instructorId === course.authorId));
+
+            let liveActionHtml = '';
+
+            if (activeCourseLive) {
+                // HAY CLASE EN VIVO ACTIVA EN TIEMPO REAL
+                liveActionHtml = `
+                    <button type="button" class="btn-week-meet is-live-pulse" onclick="window.enterLiveRoom('${escapeAttr(activeCourseLive.title)}', '${escapeAttr(activeCourseLive.instructor)}', '${escapeAttr(activeCourseLive.roomName)}')" title="¡El profesor está transmitiendo en vivo ahora!">
+                        <span class="live-dot" style="background:#fff; box-shadow: 0 0 6px #fff;"></span>
+                        <strong>EN VIVO AHORA</strong> — Entrar a Clase
+                    </button>
+                `;
+                if (isAuthor) {
+                    liveActionHtml += `
+                        <button type="button" class="btn-end-course-live" onclick="window.endLiveClass('${activeCourseLive.id}')" title="Dar por terminada la clase para todos los alumnos">
+                            <i class="fa-solid fa-phone-slash"></i> Finalizar Transmisión
+                        </button>
+                    `;
+                }
+            } else if (isAuthor) {
+                // EL PROFESOR PUEDE INICIAR TRANSMISIÓN EN VIVO
+                liveActionHtml = `
+                    <button type="button" class="btn-start-course-live" onclick="window.startCourseLiveClass('${course.id}', '${activeWeek.id}', '${escapeAttr(course.title)}', '${escapeAttr(cleanWeekTitle)}')" title="Iniciar videollamada Jitsi en vivo para este curso">
+                        <i class="fa-solid fa-tower-broadcast"></i> Iniciar Clase en Vivo
+                    </button>
+                `;
+            } else if (activeWeek.meetUrl) {
+                // Enlace fijo opcional fijado por el docente (Zoom/Meet permanente)
+                liveActionHtml = `
+                    <a href="${activeWeek.meetUrl}" target="_blank" rel="noopener" class="btn-week-meet" style="background: var(--siemens-slate); opacity: 0.9;" title="Enlace de sala fijado por el docente">
+                        <i class="fa-solid fa-video"></i> Sala Programada
+                    </a>
+                `;
+            }
+
             weekHeaderEl.innerHTML = `
                 <div class="week-header-card">
                     <div class="week-header-info">
@@ -1262,11 +1321,7 @@ export function openCourseDetail(id) {
                         <span class="week-title-text">${cleanWeekTitle}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        ${activeWeek.meetUrl ? `
-                            <a href="${activeWeek.meetUrl}" target="_blank" rel="noopener" class="btn-week-meet">
-                                <i class="fa-solid fa-video"></i> Entrar a Clase en Vivo
-                            </a>
-                        ` : ''}
+                        ${liveActionHtml}
                         ${isAuthor ? `
                             <div class="teacher-actions-bar">
                                 <button type="button" class="badge-visibility ${isWeekHidden ? 'hidden' : 'published'}" onclick="window.toggleWeekVisibility('${course.id}', '${activeWeek.id}')" title="${isWeekHidden ? 'Clic para publicar a los alumnos' : 'Clic para ocultar a los alumnos'}">
