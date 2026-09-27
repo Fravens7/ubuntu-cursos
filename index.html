@@ -210,18 +210,26 @@
             <div class="modal-body">
                 <!-- FORMULARIO DE CREACIÓN (SE OCULTA TRAS CREAR LA CLASE) -->
                 <div id="instantFormFields">
-                    <div class="form-group">
-                        <label for="instantLiveTitle">Tema o Título de la Clase *</label>
-                        <input type="text" id="instantLiveTitle" class="form-control" placeholder="Ej: Workshop: Creación de Agentes con IA" value="">
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="instantLiveCourseSelect" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                            <i class="fa-solid fa-graduation-cap" style="color: var(--siemens-teal);"></i> Curso a Impartir *
+                        </label>
+                        <select id="instantLiveCourseSelect" class="form-control" onchange="onInstantCourseSelectChange()" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.88rem;">
+                            <option value="">Cargando tus cursos...</option>
+                        </select>
                     </div>
 
-                    <div class="form-group">
-                        <label for="instantLiveInstructor">Instructor / Presentador *</label>
-                        <input type="text" id="instantLiveInstructor" class="form-control" placeholder="Nombre del docente / instructor" value="">
+                    <div class="form-group" id="instantLiveWeekGroup" style="margin-bottom: 16px;">
+                        <label for="instantLiveWeekSelect" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                            <i class="fa-regular fa-calendar-check" style="color: var(--ubuntu-green);"></i> Semana a Transmitir *
+                        </label>
+                        <select id="instantLiveWeekSelect" class="form-control" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.88rem;">
+                            <option value="sem_1">Semana 1</option>
+                        </select>
                     </div>
 
-                    <button type="button" class="btn btn-jitsi-live" style="width: 100%; justify-content: center; margin-top: 6px;" onclick="generateInstantJitsiClass()">
-                        <i class="fa-solid fa-chalkboard-user"></i> Crear Clase
+                    <button type="button" class="btn btn-jitsi-live" id="btnSubmitInstantLive" style="width: 100%; justify-content: center; margin-top: 6px; padding: 11px;" onclick="generateInstantJitsiClass()">
+                        <i class="fa-solid fa-tower-broadcast"></i> Iniciar y Transmitir Clase en Vivo
                     </button>
                 </div>
 
@@ -518,14 +526,6 @@
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label for="weekInputTitle" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">Tema o Título de la Semana *</label>
                         <input type="text" id="weekInputTitle" class="form-control" placeholder="Ej: Introducción a Python o Práctica guiada" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="weekInputMeetUrl" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
-                            <i class="fa-solid fa-video" style="color: var(--ubuntu-green);"></i> Enlace de Clase en Vivo (Meet / Zoom / Jitsi)
-                        </label>
-                        <input type="url" id="weekInputMeetUrl" class="form-control" placeholder="https://meet.google.com/xyz-abcd-jkl" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
-                        <small style="color: var(--text-muted); font-size: 0.75rem;">Opcional. Los alumnos verán un botón destacado para entrar a la clase.</small>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 16px;">
@@ -936,23 +936,106 @@
 
 
 
-        // ================= JITSI INSTANT CREATION =================
-        function openInstantLiveModal() {
+        // ================= JITSI INSTANT CREATION (VINCULADO A CURSO Y SEMANA) =================
+        function openInstantLiveModal(presetCourseId = null, presetWeekId = null) {
             const formFields = document.getElementById('instantFormFields');
-            if (formFields) formFields.style.display = 'block';
             const resultBox = document.getElementById('instantResultBox');
+            if (formFields) formFields.style.display = 'block';
             if (resultBox) resultBox.style.display = 'none';
-            document.getElementById('instantLiveModal').classList.add('active');
+
+            const courseSelect = document.getElementById('instantLiveCourseSelect');
+            const weekSelect = document.getElementById('instantLiveWeekSelect');
+            const btnSubmit = document.getElementById('btnSubmitInstantLive');
+
+            // Obtener cursos del profesor activo
+            const teacherCourses = window.getTeacherCourses ? window.getTeacherCourses() : [];
+
+            if (courseSelect) {
+                if (!teacherCourses || teacherCourses.length === 0) {
+                    courseSelect.innerHTML = '<option value="">No tienes cursos creados todavía</option>';
+                    courseSelect.disabled = true;
+                    if (weekSelect) {
+                        weekSelect.innerHTML = '<option value="">Crea un curso primero</option>';
+                        weekSelect.disabled = true;
+                    }
+                    if (btnSubmit) btnSubmit.disabled = true;
+                } else {
+                    courseSelect.disabled = false;
+                    if (weekSelect) weekSelect.disabled = false;
+                    if (btnSubmit) btnSubmit.disabled = false;
+
+                    courseSelect.innerHTML = teacherCourses.map(c => `
+                        <option value="${c.id}" ${presetCourseId === c.id ? 'selected' : ''}>
+                            ${escapeHtml(c.title)} (${c.category || 'General'})
+                        </option>
+                    `).join('');
+
+                    const targetCourseId = presetCourseId || courseSelect.value;
+                    populateInstantWeeks(targetCourseId, presetWeekId);
+                }
+            }
+
+            const modal = document.getElementById('instantLiveModal');
+            if (modal) modal.classList.add('active');
         }
         window.openInstantLiveModal = openInstantLiveModal;
 
+        function onInstantCourseSelectChange() {
+            const courseSelect = document.getElementById('instantLiveCourseSelect');
+            if (courseSelect) {
+                populateInstantWeeks(courseSelect.value);
+            }
+        }
+        window.onInstantCourseSelectChange = onInstantCourseSelectChange;
+
+        function populateInstantWeeks(courseId, presetWeekId = null) {
+            const weekSelect = document.getElementById('instantLiveWeekSelect');
+            if (!weekSelect) return;
+
+            const teacherCourses = window.getTeacherCourses ? window.getTeacherCourses() : [];
+            const course = teacherCourses.find(c => c.id === courseId);
+
+            if (!course || !Array.isArray(course.semanas) || course.semanas.length === 0) {
+                weekSelect.innerHTML = '<option value="sem_1">Semana 1 (Clase Principal)</option>';
+                return;
+            }
+
+            weekSelect.innerHTML = course.semanas.map((w, idx) => `
+                <option value="${w.id}" ${presetWeekId === w.id ? 'selected' : ''}>
+                    Semana ${w.numero || (idx + 1)}: ${escapeHtml(w.titulo || 'Tema')}
+                </option>
+            `).join('');
+        }
+        window.populateInstantWeeks = populateInstantWeeks;
+
         async function generateInstantJitsiClass() {
-            const title = document.getElementById('instantLiveTitle').value.trim() || 'Clase en Vivo de Ubuntu Perú';
-            const instructor = document.getElementById('instantLiveInstructor').value.trim() || userDisplayName;
+            const courseSelect = document.getElementById('instantLiveCourseSelect');
+            const weekSelect = document.getElementById('instantLiveWeekSelect');
+            const courseId = courseSelect ? courseSelect.value : null;
+            const weekId = weekSelect ? weekSelect.value : null;
+
+            if (!courseId) {
+                showToast('Debes seleccionar un curso para iniciar la clase en vivo.', 'normal');
+                return;
+            }
+
+            const teacherCourses = window.getTeacherCourses ? window.getTeacherCourses() : [];
+            const course = teacherCourses.find(c => c.id === courseId);
+            const courseTitle = course ? course.title : 'Curso';
             
-            const cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '');
+            let weekTitle = 'Clase en Vivo';
+            if (course && Array.isArray(course.semanas)) {
+                const foundWeek = course.semanas.find(w => w.id === weekId);
+                if (foundWeek) {
+                    weekTitle = `Semana ${foundWeek.numero || 1}: ${foundWeek.titulo || 'Tema'}`;
+                }
+            }
+
+            const title = `${courseTitle} — ${weekTitle}`;
+            const instructor = userDisplayName || 'Docente';
+            const cleanTitle = courseTitle.replace(/[^a-zA-Z0-9]/g, '');
             const randomCode = Math.floor(100000 + Math.random() * 900000);
-            const roomName = `UbuntuPeru_${cleanTitle.slice(0, 15)}_${randomCode}`;
+            const roomName = `Ubuntu_${cleanTitle.slice(0, 12)}_${randomCode}`;
             const jitsiUrl = `https://meet.jit.si/${roomName}`;
 
             lastCreatedRoomUrl = jitsiUrl;
@@ -965,7 +1048,8 @@
             // Ocultar formulario y mostrar solo el resultado final
             const formFields = document.getElementById('instantFormFields');
             if (formFields) formFields.style.display = 'none';
-            document.getElementById('instantResultBox').style.display = 'block';
+            const resultBox = document.getElementById('instantResultBox');
+            if (resultBox) resultBox.style.display = 'block';
 
             const btnEnter = document.getElementById('btnEnterGeneratedClass');
             btnEnter.onclick = function() {
@@ -973,15 +1057,17 @@
                 enterLiveRoom(title, instructor, roomName);
             };
 
-            const classId = `live_${Date.now()}`;
+            const classId = `live_course_${courseId}_${Date.now()}`;
             const newLive = {
                 id: classId,
                 title: title,
                 instructor: instructor,
                 instructorId: currentUser ? currentUser.uid : null,
                 roomName: roomName,
+                courseId: courseId,
+                weekId: weekId,
                 viewers: 1,
-                category: "En Vivo",
+                category: course ? (course.category || "Curso en Vivo") : "Curso en Vivo",
                 activo: true,
                 time: "Iniciada Ahora (Jitsi Activo)"
             };
