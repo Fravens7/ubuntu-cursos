@@ -211,10 +211,13 @@
                         <p class="section-subtitle">Visualización administrativa de inscripciones por curso y desglose de cursos por docente.</p>
                     </div>
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <button class="btn btn-outline-danger btn-sm" onclick="window.cleanOrphanedStudents()" id="btnCleanOrphans" title="Depurar y remover de los cursos los UIDs huérfanos que no tienen ficha en usuarios">
+                            <i class="fa-solid fa-broom"></i> Depurar UIDs Huérfanos
+                        </button>
                         <button class="btn btn-outline btn-sm" onclick="window.refreshReportsData()" id="btnRefreshReports" title="Recargar información desde Firestore">
                             <i class="fa-solid fa-arrows-rotate"></i> Actualizar Reporte
                         </button>
-                        <button class="btn btn-primary btn-sm" onclick="window.exportReportsCsv()" title="Exportar reporte de alumnos en formato CSV compatible con Excel">
+                        <button class="btn btn-primary btn-sm" onclick="window.exportReportsCsv()" title="Exportar directorio de alumnos en formato CSV compatible con Excel">
                             <i class="fa-solid fa-file-csv"></i> Descargar CSV
                         </button>
                     </div>
@@ -229,9 +232,9 @@
                 <div class="report-controls-bar">
                     <div class="search-box" style="flex: 1; min-width: 260px;">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="reportSearchInput" placeholder="Buscar por curso, docente o alumno..." oninput="window.filterReports()">
+                        <input type="text" id="reportSearchInput" placeholder="Buscar alumno por nombre, correo, edad o curso..." oninput="window.filterReports()">
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div id="reportTeacherFilterGroup" style="display: none; align-items: center; gap: 8px;">
                         <label for="reportTeacherFilter" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">
                             <i class="fa-solid fa-chalkboard-user" style="color: var(--siemens-teal);"></i> Filtrar por Docente:
                         </label>
@@ -242,8 +245,11 @@
                 </div>
 
                 <!-- TABS BAR -->
-                <div class="report-tabs-bar" style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-                    <button class="filter-chip active" id="reportTabCoursesBtn" onclick="window.switchReportTab('courses')">
+                <div class="report-tabs-bar" style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; flex-wrap: wrap;">
+                    <button class="filter-chip active" id="reportTabStudentsBtn" onclick="window.switchReportTab('students')">
+                        <i class="fa-solid fa-users" style="margin-right: 6px;"></i> Directorio de Todos los Alumnos
+                    </button>
+                    <button class="filter-chip" id="reportTabCoursesBtn" onclick="window.switchReportTab('courses')">
                         <i class="fa-solid fa-book-open" style="margin-right: 6px;"></i> Por Cursos e Inscritos
                     </button>
                     <button class="filter-chip" id="reportTabTeachersBtn" onclick="window.switchReportTab('teachers')">
@@ -251,12 +257,17 @@
                     </button>
                 </div>
 
-                <!-- CONTENEDOR 1: POR CURSOS E INSCRITOS -->
-                <div id="reportCoursesContainer">
+                <!-- CONTENEDOR 1: DIRECTORIO DE TODOS LOS ALUMNOS -->
+                <div id="reportAllStudentsContainer">
+                    <!-- Renderizado dinámico de todos los estudiantes registrados -->
+                </div>
+
+                <!-- CONTENEDOR 2: POR CURSOS E INSCRITOS -->
+                <div id="reportCoursesContainer" style="display: none;">
                     <!-- Renderizado dinámico de cursos con alumnos inscritos -->
                 </div>
 
-                <!-- CONTENEDOR 2: CURSOS POR PROFESOR -->
+                <!-- CONTENEDOR 3: CURSOS POR PROFESOR -->
                 <div id="reportTeachersContainer" style="display: none;">
                     <!-- Renderizado dinámico agrupado por profesor -->
                 </div>
