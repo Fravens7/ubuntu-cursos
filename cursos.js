@@ -70,6 +70,9 @@ export function initCursosModule(db) {
 
             coursesList = firestoreCourses;
             renderCourses();
+            if (window.onCoursesUpdatedForReports) {
+                window.onCoursesUpdatedForReports();
+            }
         }, (error) => {
             console.warn("Aviso de Firestore (Cursos):", error);
             renderCourses();
@@ -585,14 +588,18 @@ export function renderCourses() {
     const myGrid = document.getElementById('myCoursesGrid');
     const searchInput = document.getElementById('searchInput');
     const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
-    const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'admin');
+    const isAdmin = currentUserRole === 'admin';
+    const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher');
     const currentUserId = currentAuthUser ? currentAuthUser.uid : null;
 
     // Filtrar cursos:
+    // Si es admin: ve todos los cursos (activos y ocultos) para gestión y supervisión general
     // Si es profesor: solo sus propios cursos (impartidos por él)
     // Si es estudiante: cursos activos del catálogo general
     let filtered = coursesList.filter(c => {
-        if (isTeacher) {
+        if (isAdmin) {
+            // El administrador visualiza todos los cursos existentes
+        } else if (isTeacher) {
             // Solo cursos creados por el profesor autenticado
             const isOwnCourse = (currentUserId && c.authorId === currentUserId) ||
                                 (currentAuthUser && currentAuthUser.email && c.authorEmail === currentAuthUser.email);
@@ -614,14 +621,14 @@ export function renderCourses() {
                 <div style="grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color);">
                     <i class="fa-solid fa-graduation-cap" style="font-size: 2.5rem; margin-bottom: 12px; display: block; color: var(--siemens-teal);"></i>
                     <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 6px;">
-                        ${isTeacher ? 'No has publicado cursos aún' : 'No hay cursos disponibles por el momento'}
+                        ${isAdmin ? 'No hay cursos registrados en la plataforma' : (isTeacher ? 'No has publicado cursos aún' : 'No hay cursos disponibles por el momento')}
                     </h3>
                     <p style="font-size: 0.85rem; max-width: 420px; margin: 0 auto 16px auto;">
-                        ${isTeacher ? 'Haz clic en el botón "Crear Curso" para subir tu primer curso con videos de YouTube y diapositivas de Google Drive.' : 'Vuelve pronto para explorar nuevos cursos o únete a las clases en vivo.'}
+                        ${isAdmin ? 'Puedes crear un nuevo curso con el botón de creación o esperar a que los docentes publiquen.' : (isTeacher ? 'Haz clic en el botón "Crear Curso" para subir tu primer curso con videos de YouTube y diapositivas de Google Drive.' : 'Vuelve pronto para explorar nuevos cursos o únete a las clases en vivo.')}
                     </p>
-                    ${isTeacher ? `
+                    ${(isAdmin || isTeacher) ? `
                         <button class="btn btn-primary" onclick="openCreateCourseModal()">
-                            <i class="fa-solid fa-plus"></i> Crear Mi Primer Curso
+                            <i class="fa-solid fa-plus"></i> Crear Nuevo Curso
                         </button>` : ''}
                 </div>`;
         } else {
@@ -650,17 +657,24 @@ export function renderCourses() {
                         
                         <div class="course-footer" style="flex-wrap: wrap; gap: 8px;">
                             ${canEdit ? `
-                                <!-- ACCIONES DE AUTOR/PROFESOR: EDITAR, OCULTAR Y ELIMINAR -->
-                                <div style="display: flex; gap: 6px; width: 100%; justify-content: space-between; align-items: center;">
-                                    <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditCourseModal('${course.id}')" title="Editar información del curso">
-                                        <i class="fa-solid fa-pen-to-square"></i> Editar
-                                    </button>
-                                    <button class="btn btn-sm ${isHidden ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleHideCourse('${course.id}')" title="${isHidden ? 'Volver a mostrar en el catálogo' : 'Ocultar curso del catálogo'}">
-                                        <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'}"></i> ${isHidden ? 'Reactivar' : 'Ocultar'}
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteCourse('${course.id}')" title="Eliminar curso permanentemente">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
+                                <!-- ACCIONES DE AUTOR/PROFESOR/ADMIN: EDITAR, OCULTAR Y ELIMINAR -->
+                                <div style="display: flex; gap: 6px; width: 100%; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditCourseModal('${course.id}')" title="Editar información del curso">
+                                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                                        </button>
+                                        <button class="btn btn-sm ${isHidden ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleHideCourse('${course.id}')" title="${isHidden ? 'Volver a mostrar en el catálogo' : 'Ocultar curso del catálogo'}">
+                                            <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'}"></i> ${isHidden ? 'Reactivar' : 'Ocultar'}
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteCourse('${course.id}')" title="Eliminar curso permanentemente">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                    ${isAdmin ? `
+                                        <button class="btn btn-sm ${isEnrolled ? 'btn-green' : 'btn-outline'}" onclick="event.stopPropagation(); toggleEnroll('${course.id}')" title="${isEnrolled ? 'Inscrito como estudiante' : 'Inscribirse al curso como alumno'}">
+                                            ${isEnrolled ? '<i class="fa-solid fa-check"></i> Inscrito' : '<i class="fa-solid fa-plus"></i> Inscribirme'}
+                                        </button>
+                                    ` : ''}
                                 </div>
                             ` : `
                                 <!-- ACCIÓN DE ESTUDIANTE / OBSERVADOR: INSCRIBIRME -->
@@ -1760,6 +1774,11 @@ export function filterCourses() {
 }
 
 // Exponer funciones a window para eventos HTML
+export function getCoursesList() {
+    return coursesList;
+}
+window.getCoursesList = getCoursesList;
+
 export function getTeacherCourses() {
     return coursesList.filter(c => canUserEditCourse(c));
 }
