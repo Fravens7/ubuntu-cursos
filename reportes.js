@@ -3,14 +3,14 @@
 // Ubuntu Perú & Siemens Alliance Platform
 // ==========================================================================
 
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 let dbInstance = null;
 let currentAuthUser = null;
 let currentUserRole = 'estudiante';
 let cachedUsers = {}; // Mapa uid -> datos del usuario
 let hasLoadedUsers = false;
-let currentReportTab = 'courses'; // 'courses' | 'teachers'
+let currentReportTab = 'students'; // 'students' | 'courses' | 'teachers'
 
 // Inicializador del módulo
 export function initReportsModule(db) {
@@ -157,17 +157,21 @@ function renderReportStats(courses) {
     if (!statsGrid) return;
 
     let totalEnrollments = 0;
-    const uniqueStudentsSet = new Set();
     const uniqueTeachersSet = new Set();
 
     courses.forEach(c => {
         const inscritos = Array.isArray(c.inscritos) ? c.inscritos : [];
         totalEnrollments += inscritos.length;
-        inscritos.forEach(uid => uniqueStudentsSet.add(uid));
         if (c.instructor && c.instructor.trim()) {
             uniqueTeachersSet.add(c.instructor.trim());
         }
     });
+
+    // Alumnos registrados reales en Firestore 'usuarios'
+    const registeredStudentsCount = Object.values(cachedUsers).filter(u => {
+        const r = (u.rol || 'estudiante').toLowerCase().trim();
+        return r === 'estudiante' || r === 'alumno';
+    }).length;
 
     statsGrid.innerHTML = `
         <div class="report-stat-card">
@@ -195,8 +199,8 @@ function renderReportStats(courses) {
                 <i class="fa-solid fa-users"></i>
             </div>
             <div class="report-stat-content">
-                <div class="report-stat-val">${uniqueStudentsSet.size}</div>
-                <div class="report-stat-lbl">Alumnos Únicos</div>
+                <div class="report-stat-val">${registeredStudentsCount}</div>
+                <div class="report-stat-lbl">Alumnos Registrados</div>
             </div>
         </div>
 
@@ -220,8 +224,145 @@ export function filterReports() {
     const teacherSelect = document.getElementById('reportTeacherFilter');
     const selectedTeacher = teacherSelect ? teacherSelect.value : 'all';
 
+    renderAllStudentsReport(searchQuery);
     renderCoursesReport(courses, searchQuery, selectedTeacher);
     renderTeachersReport(courses, searchQuery, selectedTeacher);
+}
+
+// 0. Renderizar Directorio General de Todos los Alumnos
+function renderAllStudentsReport(query) {
+    const container = document.getElementById('reportAllStudentsContainer');
+    if (!container) return;
+
+    const courses = window.getCoursesList ? window.getCoursesList() : [];
+    const allUsersList = Object.values(cachedUsers);
+
+    // Filtrar usuarios con rol estudiante
+    let students = allUsersList.filter(u => {
+        const rol = (u.rol || 'estudiante').toLowerCase().trim();
+        return rol === 'estudiante' || rol === 'alumno';
+    });
+
+    // Filtro por texto de búsqueda
+    if (query) {
+        students = students.filter(s => {
+            const name = (s.nombreCompleto || `${s.nombre || ''} ${s.apellidos || ''}`).toLowerCase();
+            const email = (s.email || '').toLowerCase();
+            const edad = String(s.edad || '');
+            return name.includes(query) || email.includes(query) || edad.includes(query);
+        });
+    }
+
+    if (students.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 48px 20px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color); color: var(--text-muted);">
+                <i class="fa-solid fa-users-slash" style="font-size: 2.2rem; color: var(--ubuntu-orange); margin-bottom: 12px; display: block;"></i>
+                <h4 style="color: var(--text-primary); margin-bottom: 6px; font-size: 1.05rem;">No se encontraron estudiantes registrados</h4>
+                <p style="font-size: 0.85rem; max-width: 400px; margin: 0 auto;">Intenta con otro término en el buscador o registra nuevos estudiantes desde la pestaña de inicio.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Ordenar más recientes primero
+    students.sort((a, b) => {
+        const dateA = a.fechaRegistro ? new Date(a.fechaRegistro).getTime() : 0;
+        const dateB = b.fechaRegistro ? new Date(b.fechaRegistro).getTime() : 0;
+        return dateB - dateA;
+    });
+
+    container.innerHTML = `
+        <div class="report-course-card" style="margin-bottom: 24px;">
+            <div class="report-course-header">
+                <div class="report-course-title-group">
+                    <span class="course-badge" style="position: static; font-size: 0.72rem; padding: 3px 8px; background: rgba(0, 153, 153, 0.15); color: var(--siemens-teal);">
+                        Directorio General
+                    </span>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                        Todos los Alumnos Registrados (${students.length})
+                    </h3>
+                    <span class="report-badge-count">
+                        <i class="fa-solid fa-graduation-cap"></i> ${students.length} ${students.length === 1 ? 'estudiante' : 'estudiantes'}
+                    </span>
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-secondary);">
+                    Lista completa de alumnos en Firestore (independientemente de si están inscritos o no en algún curso)
+                </div>
+            </div>
+
+            <div class="report-table-wrapper">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 48px;">#</th>
+                            <th>Estudiante</th>
+                            <th>Correo Electrónico</th>
+                            <th>Edad</th>
+                            <th>Fecha de Registro</th>
+                            <th>Cursos Inscritos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${students.map((st, idx) => {
+                            const name = st.nombreCompleto || `${st.nombre || ''} ${st.apellidos || ''}`.trim() || 'Estudiante';
+                            const email = st.email || 'Sin correo registrado';
+                            const initials = (name || 'E').substring(0, 1).toUpperCase();
+
+                            let ageHtml = '';
+                            if (st.edad !== undefined && st.edad !== null && st.edad !== '') {
+                                ageHtml = `<span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(String(st.edad))} años</span>`;
+                            } else {
+                                ageHtml = `<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Sin edad (Previo)</span>`;
+                            }
+
+                            const regDate = st.fechaRegistro ? formatRegistrationDate(st.fechaRegistro) : 'Sin fecha';
+                            const enrolledCourses = courses.filter(c => Array.isArray(c.inscritos) && c.inscritos.includes(st.uid));
+
+                            return `
+                                <tr>
+                                    <td style="color: var(--text-muted); font-weight: 600;">${idx + 1}</td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0, 153, 153, 0.12); color: var(--siemens-teal); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.82rem; flex-shrink: 0;">
+                                                ${escapeHtml(initials)}
+                                            </div>
+                                            <div>
+                                                <div style="font-weight: 600; color: var(--text-primary); font-size: 0.92rem;">${escapeHtml(name)}</div>
+                                                <div style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace;">UID: ${escapeHtml((st.uid || '').substring(0, 8))}...</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="mailto:${escapeHtml(email)}" style="color: var(--siemens-teal); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                            <i class="fa-regular fa-envelope" style="font-size: 0.8rem;"></i> ${escapeHtml(email)}
+                                        </a>
+                                    </td>
+                                    <td>${ageHtml}</td>
+                                    <td style="color: var(--text-secondary); font-size: 0.82rem;">${escapeHtml(regDate)}</td>
+                                    <td>
+                                        ${enrolledCourses.length === 0 ? `
+                                            <span style="font-size: 0.75rem; color: var(--text-muted); background: var(--bg-body); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border-color);">
+                                                Sin inscripciones aún
+                                            </span>
+                                        ` : `
+                                            <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+                                                <span class="report-badge-count" style="padding: 2px 8px; font-size: 0.75rem; background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700;">
+                                                    <i class="fa-solid fa-graduation-cap"></i> ${enrolledCourses.length} ${enrolledCourses.length === 1 ? 'curso' : 'cursos'}
+                                                </span>
+                                                <small style="color: var(--text-secondary); font-size: 0.75rem;" title="${escapeHtml(enrolledCourses.map(c => c.title).join(', '))}">
+                                                    (${escapeHtml(enrolledCourses.map(c => c.title).slice(0, 2).join(', '))}${enrolledCourses.length > 2 ? '...' : ''})
+                                                </small>
+                                            </div>
+                                        `}
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
 }
 
 // 1. Renderizar lista de Cursos con sus alumnos inscritos
@@ -537,21 +678,99 @@ function renderTeachersReport(courses, query, teacherFilter) {
 // Alternar entre las pestañas internas del reporte
 export function switchReportTab(tabName) {
     currentReportTab = tabName;
+    const tabStudentsBtn = document.getElementById('reportTabStudentsBtn');
     const tabCoursesBtn = document.getElementById('reportTabCoursesBtn');
     const tabTeachersBtn = document.getElementById('reportTabTeachersBtn');
+    const studentsContainer = document.getElementById('reportAllStudentsContainer');
     const coursesContainer = document.getElementById('reportCoursesContainer');
     const teachersContainer = document.getElementById('reportTeachersContainer');
+    const teacherFilterGroup = document.getElementById('reportTeacherFilterGroup');
 
-    if (tabName === 'courses') {
-        if (tabCoursesBtn) tabCoursesBtn.classList.add('active');
-        if (tabTeachersBtn) tabTeachersBtn.classList.remove('active');
-        if (coursesContainer) coursesContainer.style.display = 'block';
-        if (teachersContainer) teachersContainer.style.display = 'none';
-    } else {
-        if (tabCoursesBtn) tabCoursesBtn.classList.remove('active');
-        if (tabTeachersBtn) tabTeachersBtn.classList.add('active');
-        if (coursesContainer) coursesContainer.style.display = 'none';
-        if (teachersContainer) teachersContainer.style.display = 'block';
+    if (tabStudentsBtn) tabStudentsBtn.classList.toggle('active', tabName === 'students');
+    if (tabCoursesBtn) tabCoursesBtn.classList.toggle('active', tabName === 'courses');
+    if (tabTeachersBtn) tabTeachersBtn.classList.toggle('active', tabName === 'teachers');
+
+    if (studentsContainer) studentsContainer.style.display = (tabName === 'students') ? 'block' : 'none';
+    if (coursesContainer) coursesContainer.style.display = (tabName === 'courses') ? 'block' : 'none';
+    if (teachersContainer) teachersContainer.style.display = (tabName === 'teachers') ? 'block' : 'none';
+
+    // Mostrar el filtro de docente únicamente cuando corresponda
+    if (teacherFilterGroup) {
+        teacherFilterGroup.style.display = (tabName === 'students') ? 'none' : 'flex';
+    }
+}
+
+// Depurar UIDs huérfanos de todos los cursos en Firestore
+export async function cleanOrphanedStudents() {
+    if (!dbInstance) {
+        if (window.showToast) window.showToast('No hay conexión con la base de datos.', 'normal');
+        return;
+    }
+    const courses = window.getCoursesList ? window.getCoursesList() : [];
+    if (!courses || courses.length === 0) {
+        if (window.showToast) window.showToast('No hay cursos para analizar.', 'normal');
+        return;
+    }
+
+    // Asegurar los datos de usuarios más recientes
+    await loadUsersData(true);
+
+    let totalOrphans = 0;
+    const coursesToClean = [];
+
+    courses.forEach(c => {
+        const inscritos = Array.isArray(c.inscritos) ? c.inscritos : [];
+        const validInscritos = inscritos.filter(uid => Boolean(cachedUsers[uid]));
+        const removed = inscritos.length - validInscritos.length;
+        if (removed > 0) {
+            totalOrphans += removed;
+            coursesToClean.push({
+                courseId: c.id,
+                title: c.title,
+                newInscritos: validInscritos,
+                removedCount: removed
+            });
+        }
+    });
+
+    if (totalOrphans === 0) {
+        if (window.showToast) window.showToast('¡No se encontraron UIDs huérfanos! Todos los alumnos inscritos tienen ficha válida en la tabla usuarios.', 'success');
+        return;
+    }
+
+    const confirmMsg = `Se encontraron ${totalOrphans} inscripciones con "UID Previo" (cuentas antiguas o de prueba que no tienen ficha en la tabla 'usuarios').\n\n¿Deseas depurar y remover estos ${totalOrphans} registros de los cursos en Firestore automáticamente?`;
+    if (!confirm(confirmMsg)) return;
+
+    const btn = document.getElementById('btnCleanOrphans');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Depurando...';
+    }
+
+    try {
+        for (const item of coursesToClean) {
+            const courseRef = doc(dbInstance, 'cursos', item.courseId);
+            await updateDoc(courseRef, {
+                inscritos: item.newInscritos
+            });
+            // Reflejar localmente
+            const localCourse = courses.find(c => c.id === item.courseId);
+            if (localCourse) localCourse.inscritos = item.newInscritos;
+        }
+
+        if (window.showToast) {
+            window.showToast(`¡Se depuraron exitosamente ${totalOrphans} UIDs huérfanos de los cursos!`, 'success');
+        }
+
+        await renderReportsView();
+    } catch (err) {
+        console.error("Error al depurar alumnos huérfanos:", err);
+        if (window.showToast) window.showToast('Error al depurar en Firestore: ' + err.message, 'normal');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-broom"></i> Depurar UIDs Huérfanos';
+        }
     }
 }
 
@@ -579,55 +798,42 @@ export async function refreshReportsData() {
     }
 }
 
-// Exportar datos a CSV para abrir en Excel
+// Exportar directorio completo de alumnos a CSV para abrir en Excel
 export function exportReportsCsv() {
     const courses = window.getCoursesList ? window.getCoursesList() : [];
-    if (!courses || courses.length === 0) {
-        if (window.showToast) window.showToast('No hay cursos para exportar.', 'normal');
+    const allStudents = Object.values(cachedUsers).filter(u => {
+        const r = (u.rol || 'estudiante').toLowerCase().trim();
+        return r === 'estudiante' || r === 'alumno';
+    });
+
+    if (!allStudents || allStudents.length === 0) {
+        if (window.showToast) window.showToast('No hay alumnos registrados para exportar.', 'normal');
         return;
     }
 
     // Cabecera CSV compatible con Excel (BOM UTF-8)
-    let csv = '\uFEFF"Curso","Categoría","Docente","Estado Curso","ID Alumno","Nombre Alumno","Correo Alumno","Edad","Fecha Registro"\n';
+    let csv = '\uFEFF"Nombre Completo","Correo Electrónico","Edad","Fecha de Registro","Total Cursos Inscritos","Cursos Inscritos","UID Firestore"\n';
 
-    courses.forEach(c => {
-        const inscritos = Array.isArray(c.inscritos) ? c.inscritos : [];
-        const status = c.activo !== false ? 'Activo' : 'Oculto';
-        const teacher = (c.instructor || 'Docente').replace(/"/g, '""');
-        const title = (c.title || '').replace(/"/g, '""');
-        const cat = (c.category || 'General').replace(/"/g, '""');
-
-        if (inscritos.length === 0) {
-            csv += `"${title}","${cat}","${teacher}","${status}","Sin inscritos","—","—","—","—"\n`;
-        } else {
-            inscritos.forEach(uid => {
-                const u = cachedUsers[uid] || null;
-                const hasProfile = Boolean(u);
-                const name = (hasProfile 
-                    ? (u.nombreCompleto || (u.nombre && u.apellidos ? `${u.nombre} ${u.apellidos}` : u.nombre) || 'Estudiante')
-                    : `Alumno (ID: ${uid.substring(0, 8)}...)`).replace(/"/g, '""');
-                const email = (hasProfile 
-                    ? (u.email || 'Sin correo') 
-                    : 'Sin perfil en colección usuarios (UID previo)').replace(/"/g, '""');
-                const edad = hasProfile 
-                    ? (u.edad !== undefined && u.edad !== null && u.edad !== '' ? `${u.edad} años` : 'Sin edad (Registro previo)')
-                    : '— (Sin datos)';
-                const fecha = hasProfile && u.fechaRegistro ? formatRegistrationDate(u.fechaRegistro) : (hasProfile ? 'Sin fecha' : '—');
-                csv += `"${title}","${cat}","${teacher}","${status}","${uid}","${name}","${email}","${edad}","${fecha}"\n`;
-            });
-        }
+    allStudents.forEach(st => {
+        const name = (st.nombreCompleto || `${st.nombre || ''} ${st.apellidos || ''}`.trim() || 'Estudiante').replace(/"/g, '""');
+        const email = (st.email || 'Sin correo').replace(/"/g, '""');
+        const edad = st.edad !== undefined && st.edad !== null && st.edad !== '' ? `${st.edad} años` : 'Sin edad (Previo)';
+        const fecha = st.fechaRegistro ? formatRegistrationDate(st.fechaRegistro) : 'Sin fecha';
+        const enrolled = courses.filter(c => Array.isArray(c.inscritos) && c.inscritos.includes(st.uid));
+        const courseNames = enrolled.map(c => c.title).join('; ').replace(/"/g, '""');
+        csv += `"${name}","${email}","${edad}","${fecha}","${enrolled.length}","${courseNames}","${st.uid || ''}"\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `reporte_alumnos_ubuntu_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `directorio_alumnos_ubuntu_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
     if (window.showToast) {
-        window.showToast('Reporte CSV descargado con éxito.', 'normal');
+        window.showToast('Directorio de alumnos descargado en CSV con éxito.', 'normal');
     }
 }
 
@@ -663,6 +869,7 @@ window.filterReports = filterReports;
 window.switchReportTab = switchReportTab;
 window.refreshReportsData = refreshReportsData;
 window.exportReportsCsv = exportReportsCsv;
+window.cleanOrphanedStudents = cleanOrphanedStudents;
 
 // Suscripción automática a cambios de cursos si la sección de reportes está activa
 window.onCoursesUpdatedForReports = () => {
