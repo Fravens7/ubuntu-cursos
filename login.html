@@ -340,9 +340,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Si ya tiene sesión activa, redirigir automáticamente al dashboard
+        let isRegistering = false;
+
+        // Si ya tiene sesión activa, redirigir automáticamente al dashboard (a menos que esté registrándose)
         onAuthStateChanged(auth, (user) => {
-            if (user) {
+            if (user && !isRegistering) {
                 window.location.href = 'index.html';
             }
         });
@@ -477,6 +479,7 @@
                 return;
             }
 
+            isRegistering = true;
             btnRegisterSubmit.disabled = true;
             btnRegisterSubmit.textContent = 'Creando cuenta...';
             clearMsg();
@@ -512,6 +515,7 @@
                     window.location.href = 'index.html';
                 }, 800);
             } catch (error) {
+                isRegistering = false;
                 console.error("Error al registrar estudiante:", error);
                 btnRegisterSubmit.disabled = false;
                 btnRegisterSubmit.textContent = 'Crear cuenta de estudiante';
