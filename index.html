@@ -918,6 +918,43 @@
                         const pData = playerSnap.data();
                         if (pData.nombre) userDisplayName = pData.nombre;
                         if (pData.rol) currentUserRole = pData.rol.toLowerCase().trim();
+
+                        // Sincronizar automáticamente hacia 'usuarios' para asegurar coincidencia
+                        try {
+                            await setDoc(userRef, {
+                                uid: user.uid,
+                                nombre: pData.nombre || userDisplayName,
+                                nombreCompleto: pData.nombreCompleto || pData.nombre || userDisplayName,
+                                email: user.email || pData.email || '',
+                                rol: currentUserRole,
+                                edad: pData.edad || null,
+                                fechaRegistro: pData.fechaRegistro || new Date().toISOString(),
+                                origen: 'migrado_de_jugadores'
+                            }, { merge: true });
+                        } catch (mErr) {
+                            console.warn("Aviso al migrar datos a 'usuarios':", mErr);
+                        }
+                    } else {
+                        // AUTO-RECUPERACIÓN: El usuario está autenticado pero no tenía documento en Firestore 'usuarios'
+                        // (p. ej. cuentas creadas como test@gmail.com o registros previos)
+                        try {
+                            const newStudentData = {
+                                uid: user.uid,
+                                nombre: user.displayName || (user.email ? user.email.split('@')[0] : 'Estudiante'),
+                                apellidos: '',
+                                nombreCompleto: user.displayName || (user.email ? user.email.split('@')[0] : 'Estudiante'),
+                                email: user.email || '',
+                                rol: 'estudiante',
+                                edad: null, // Registro previo / sin edad especificada
+                                fechaRegistro: new Date().toISOString(),
+                                origen: 'auto_recuperado'
+                            };
+                            await setDoc(userRef, newStudentData, { merge: true });
+                            userDisplayName = newStudentData.nombreCompleto;
+                            console.log("Ficha sincronizada automáticamente en 'usuarios' para:", user.email);
+                        } catch (autoErr) {
+                            console.warn("Aviso al auto-recuperar ficha en 'usuarios':", autoErr);
+                        }
                     }
                 }
             } catch (err) {
