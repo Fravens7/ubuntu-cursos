@@ -61,6 +61,22 @@ export async function loadUsersData(forceRefresh = false) {
             // Ignorar si no existe
         }
 
+        // 3. Fallback a 'users' por si existieran usuarios manuales previos
+        try {
+            const oldUsersSnap = await getDocs(collection(dbInstance, 'users'));
+            oldUsersSnap.forEach((docSnap) => {
+                if (!usersMap[docSnap.id]) {
+                    const data = docSnap.data();
+                    usersMap[docSnap.id] = {
+                        uid: docSnap.id,
+                        ...data
+                    };
+                }
+            });
+        } catch (err) {
+            // Ignorar si no existe
+        }
+
         cachedUsers = usersMap;
         hasLoadedUsers = true;
     } catch (error) {
@@ -304,32 +320,63 @@ function renderCoursesReport(courses, query, teacherFilter) {
                             <tbody>
                                 ${inscritos.map((uid, index) => {
                                     const student = cachedUsers[uid] || null;
-                                    const studentName = student 
+                                    const hasProfile = Boolean(student);
+                                    const isOrphaned = !hasProfile;
+
+                                    const studentName = hasProfile 
                                         ? (student.nombreCompleto || `${student.nombre || ''} ${student.apellidos || ''}`.trim() || 'Estudiante')
                                         : `Alumno (ID: ${uid.substring(0, 8)}...)`;
-                                    const studentEmail = student ? (student.email || 'Sin correo registrado') : 'Registrado en Firestore';
-                                    const studentAge = student && student.edad ? `${student.edad} años` : '—';
-                                    const studentDate = student && student.fechaRegistro 
+
+                                    const studentEmail = hasProfile 
+                                        ? (student.email || 'Sin correo registrado') 
+                                        : 'Sin perfil en usuarios (UID previo)';
+
+                                    // Distinguir claramente si tiene edad o si es un registro previo/sin campo
+                                    let studentAgeHtml = '';
+                                    if (hasProfile) {
+                                        if (student.edad !== undefined && student.edad !== null && student.edad !== '') {
+                                            studentAgeHtml = `<span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(String(student.edad))} años</span>`;
+                                        } else {
+                                            studentAgeHtml = `<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;" title="Cuenta creada antes de solicitar edad en el registro">Sin edad (Previo)</span>`;
+                                        }
+                                    } else {
+                                        studentAgeHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">— (Sin datos)</span>`;
+                                    }
+
+                                    const studentDate = hasProfile && student.fechaRegistro 
                                         ? formatRegistrationDate(student.fechaRegistro)
-                                        : '—';
+                                        : (hasProfile ? 'Sin fecha' : '—');
 
                                     return `
                                         <tr>
                                             <td style="color: var(--text-muted); font-weight: 600;">${index + 1}</td>
                                             <td>
                                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                                    <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(0, 153, 153, 0.12); color: var(--siemens-teal); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;">
+                                                    <div style="width: 28px; height: 28px; border-radius: 50%; background: ${isOrphaned ? 'rgba(239, 108, 0, 0.12)' : 'rgba(0, 153, 153, 0.12)'}; color: ${isOrphaned ? 'var(--ubuntu-orange)' : 'var(--siemens-teal)'}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;">
                                                         ${escapeHtml(studentName.substring(0, 1).toUpperCase())}
                                                     </div>
-                                                    <span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(studentName)}</span>
+                                                    <div>
+                                                        <span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(studentName)}</span>
+                                                        ${isOrphaned ? `
+                                                            <span style="display: inline-block; background: rgba(239, 108, 0, 0.12); color: var(--ubuntu-orange); font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 4px;" title="Este UID está inscrito en el curso pero no tiene ficha en la tabla 'usuarios' (cuenta previa de prueba o sin sincronizar)">
+                                                                UID Previo
+                                                            </span>
+                                                        ` : ''}
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
-                                                <a href="mailto:${escapeHtml(studentEmail)}" style="color: var(--siemens-teal); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-                                                    <i class="fa-regular fa-envelope" style="font-size: 0.8rem;"></i> ${escapeHtml(studentEmail)}
-                                                </a>
+                                                ${hasProfile && student.email ? `
+                                                    <a href="mailto:${escapeHtml(studentEmail)}" style="color: var(--siemens-teal); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                                        <i class="fa-regular fa-envelope" style="font-size: 0.8rem;"></i> ${escapeHtml(studentEmail)}
+                                                    </a>
+                                                ` : `
+                                                    <span style="color: var(--text-muted); font-size: 0.82rem; display: inline-flex; align-items: center; gap: 5px;" title="No tiene ficha en la tabla usuarios de Firestore">
+                                                        <i class="fa-solid fa-triangle-exclamation" style="color: var(--ubuntu-orange); font-size: 0.75rem;"></i> ${escapeHtml(studentEmail)}
+                                                    </span>
+                                                `}
                                             </td>
-                                            <td style="color: var(--text-secondary);">${escapeHtml(studentAge)}</td>
+                                            <td>${studentAgeHtml}</td>
                                             <td style="color: var(--text-secondary); font-size: 0.82rem;">${escapeHtml(studentDate)}</td>
                                         </tr>
                                     `;
@@ -554,11 +601,18 @@ export function exportReportsCsv() {
             csv += `"${title}","${cat}","${teacher}","${status}","Sin inscritos","—","—","—","—"\n`;
         } else {
             inscritos.forEach(uid => {
-                const u = cachedUsers[uid] || {};
-                const name = (u.nombreCompleto || (u.nombre && u.apellidos ? `${u.nombre} ${u.apellidos}` : u.nombre) || 'Estudiante').replace(/"/g, '""');
-                const email = (u.email || 'Sin correo').replace(/"/g, '""');
-                const edad = u.edad || '—';
-                const fecha = u.fechaRegistro ? formatRegistrationDate(u.fechaRegistro) : '—';
+                const u = cachedUsers[uid] || null;
+                const hasProfile = Boolean(u);
+                const name = (hasProfile 
+                    ? (u.nombreCompleto || (u.nombre && u.apellidos ? `${u.nombre} ${u.apellidos}` : u.nombre) || 'Estudiante')
+                    : `Alumno (ID: ${uid.substring(0, 8)}...)`).replace(/"/g, '""');
+                const email = (hasProfile 
+                    ? (u.email || 'Sin correo') 
+                    : 'Sin perfil en colección usuarios (UID previo)').replace(/"/g, '""');
+                const edad = hasProfile 
+                    ? (u.edad !== undefined && u.edad !== null && u.edad !== '' ? `${u.edad} años` : 'Sin edad (Registro previo)')
+                    : '— (Sin datos)';
+                const fecha = hasProfile && u.fechaRegistro ? formatRegistrationDate(u.fechaRegistro) : (hasProfile ? 'Sin fecha' : '—');
                 csv += `"${title}","${cat}","${teacher}","${status}","${uid}","${name}","${email}","${edad}","${fecha}"\n`;
             });
         }
