@@ -3,7 +3,7 @@
 // Ubuntu Perú & Siemens Alliance Platform
 // ==========================================================================
 
-import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, doc, updateDoc, deleteDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 let dbInstance = null;
 let currentAuthUser = null;
@@ -300,6 +300,7 @@ function renderAllStudentsReport(query) {
                             <th>Edad</th>
                             <th>Fecha de Registro</th>
                             <th>Cursos Inscritos</th>
+                            <th style="width: 60px; text-align: center;">Acción</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -354,6 +355,11 @@ function renderAllStudentsReport(query) {
                                                 </small>
                                             </div>
                                         `}
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <button class="btn btn-outline-danger btn-sm" onclick="window.deleteStudent('${st.uid}', '${escapeAttr(name)}')" title="Eliminar estudiante de la plataforma" style="padding: 4px 9px; font-size: 0.82rem; border-radius: 6px;">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             `;
@@ -456,6 +462,7 @@ function renderCoursesReport(courses, query, teacherFilter) {
                                     <th>Correo Electrónico</th>
                                     <th>Edad</th>
                                     <th>Fecha de Registro</th>
+                                    <th style="width: 60px; text-align: center;">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -519,6 +526,11 @@ function renderCoursesReport(courses, query, teacherFilter) {
                                             </td>
                                             <td>${studentAgeHtml}</td>
                                             <td style="color: var(--text-secondary); font-size: 0.82rem;">${escapeHtml(studentDate)}</td>
+                                            <td style="text-align: center;">
+                                                <button class="btn btn-outline-danger btn-sm" onclick="window.removeStudentFromCourse('${course.id}', '${uid}', '${escapeAttr(studentName)}')" title="Remover de este curso" style="padding: 4px 9px; font-size: 0.82rem; border-radius: 6px;">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </td>
                                         </tr>
                                     `;
                                 }).join('')}
@@ -863,13 +875,100 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+// Helper para escapar atributos HTML
+function escapeAttr(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;');
+}
+
+// 1. Eliminar permanentemente un estudiante de la plataforma (desde Directorio)
+export async function deleteStudent(uid, studentName) {
+    if (!dbInstance || !uid) return;
+
+    const displayName = studentName || 'este estudiante';
+    const ok = confirm(`¿Estás seguro de que deseas eliminar permanentemente a "${displayName}"?\n\nSe borrará su ficha de Firestore y se desinscribirá de todos los cursos.`);
+    if (!ok) return;
+
+    try {
+        // 1. Borrar documento en 'usuarios'
+        try {
+            await deleteDoc(doc(dbInstance, 'usuarios', uid));
+        } catch (e) {
+            console.warn("Aviso al borrar de 'usuarios':", e);
+        }
+
+        // 2. Borrar fallback si existiera en 'jugadores' o 'users'
+        try { await deleteDoc(doc(dbInstance, 'jugadores', uid)); } catch (e) {}
+        try { await deleteDoc(doc(dbInstance, 'users', uid)); } catch (e) {}
+
+        // 3. Remover de todos los cursos en Firestore
+        const courses = window.getCoursesList ? window.getCoursesList() : [];
+        for (const c of courses) {
+            if (Array.isArray(c.inscritos) && c.inscritos.includes(uid)) {
+                const courseRef = doc(dbInstance, 'cursos', c.id);
+                const updatedInscritos = c.inscritos.filter(id => id !== uid);
+                await updateDoc(courseRef, { inscritos: updatedInscritos });
+                c.inscritos = updatedInscritos;
+            }
+        }
+
+        // 4. Actualizar caché local
+        delete cachedUsers[uid];
+
+        if (window.showToast) {
+            window.showToast(`Estudiante "${displayName}" eliminado con éxito.`, 'success');
+        }
+
+        await renderReportsView();
+    } catch (err) {
+        console.error("Error al eliminar estudiante:", err);
+        if (window.showToast) window.showToast('Error al eliminar: ' + err.message, 'normal');
+    }
+}
+
+// 2. Remover un estudiante o UID huérfano de un curso específico
+export async function removeStudentFromCourse(courseId, uid, studentName) {
+    if (!dbInstance || !courseId || !uid) return;
+
+    const displayName = studentName || `ID: ${uid.substring(0, 8)}...`;
+    const ok = confirm(`¿Deseas desinscribir/eliminar a "${displayName}" de este curso?`);
+    if (!ok) return;
+
+    try {
+        const courses = window.getCoursesList ? window.getCoursesList() : [];
+        const course = courses.find(c => c.id === courseId);
+
+        const courseRef = doc(dbInstance, 'cursos', courseId);
+        if (course && Array.isArray(course.inscritos)) {
+            const updatedInscritos = course.inscritos.filter(id => id !== uid);
+            await updateDoc(courseRef, { inscritos: updatedInscritos });
+            course.inscritos = updatedInscritos;
+        } else {
+            await updateDoc(courseRef, { inscritos: arrayRemove(uid) });
+        }
+
+        if (window.showToast) {
+            window.showToast(`Alumno removido del curso exitosamente.`, 'success');
+        }
+
+        await renderReportsView();
+    } catch (err) {
+        console.error("Error al remover alumno del curso:", err);
+        if (window.showToast) window.showToast('Error al remover alumno: ' + err.message, 'normal');
+    }
+}
+
 // Exponer funciones globales a window
 window.renderReportsView = renderReportsView;
 window.filterReports = filterReports;
 window.switchReportTab = switchReportTab;
 window.refreshReportsData = refreshReportsData;
 window.exportReportsCsv = exportReportsCsv;
-window.cleanOrphanedStudents = cleanOrphanedStudents;
+window.deleteStudent = deleteStudent;
+window.removeStudentFromCourse = removeStudentFromCourse;
 
 // Suscripción automática a cambios de cursos si la sección de reportes está activa
 window.onCoursesUpdatedForReports = () => {
