@@ -60,6 +60,12 @@
                 <i class="fa-solid fa-plus-circle"></i>
                 <span>Crear Nuevo Curso</span>
             </div>
+
+            <div class="nav-section-title role-admin-only">Administración</div>
+            <div class="nav-item role-admin-only" onclick="switchView('view-reports', this)">
+                <i class="fa-solid fa-chart-pie" style="color: var(--ubuntu-orange);"></i>
+                <span>Reportes / Alumnos</span>
+            </div>
         </nav>
 
         <div class="sidebar-footer">
@@ -193,6 +199,66 @@
 
                 <div class="courses-grid" id="myCoursesGrid">
                     <!-- Cursos inscritos -->
+                </div>
+            </section>
+ 
+            <!-- ================= VIEW 4: REPORTES / ALUMNOS (SOLO ADMIN) ================= -->
+            <section id="view-reports" class="view-section">
+                <!-- Section Header -->
+                <div class="section-header" style="flex-wrap: wrap; gap: 14px;">
+                    <div>
+                        <h2 class="section-title"><i class="fa-solid fa-chart-pie" style="color: var(--ubuntu-orange);"></i> Reporte de Cursos y Alumnos</h2>
+                        <p class="section-subtitle">Visualización administrativa de inscripciones por curso y desglose de cursos por docente.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <button class="btn btn-outline btn-sm" onclick="window.refreshReportsData()" id="btnRefreshReports" title="Recargar información desde Firestore">
+                            <i class="fa-solid fa-arrows-rotate"></i> Actualizar Reporte
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="window.exportReportsCsv()" title="Exportar reporte de alumnos en formato CSV compatible con Excel">
+                            <i class="fa-solid fa-file-csv"></i> Descargar CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- METRICS SUMMARY CARDS -->
+                <div class="report-stats-grid" id="reportStatsGrid">
+                    <!-- Renderizado dinámico desde reportes.js -->
+                </div>
+
+                <!-- FILTER AND SEARCH BAR -->
+                <div class="report-controls-bar">
+                    <div class="search-box" style="flex: 1; min-width: 260px;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="reportSearchInput" placeholder="Buscar por curso, docente o alumno..." oninput="window.filterReports()">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="reportTeacherFilter" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">
+                            <i class="fa-solid fa-chalkboard-user" style="color: var(--siemens-teal);"></i> Filtrar por Docente:
+                        </label>
+                        <select id="reportTeacherFilter" class="form-control" onchange="window.filterReports()" style="padding: 9px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.85rem; background: var(--bg-card); color: var(--text-primary); min-width: 200px;">
+                            <option value="all">Todos los Docentes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- TABS BAR -->
+                <div class="report-tabs-bar" style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                    <button class="filter-chip active" id="reportTabCoursesBtn" onclick="window.switchReportTab('courses')">
+                        <i class="fa-solid fa-book-open" style="margin-right: 6px;"></i> Por Cursos e Inscritos
+                    </button>
+                    <button class="filter-chip" id="reportTabTeachersBtn" onclick="window.switchReportTab('teachers')">
+                        <i class="fa-solid fa-chalkboard-user" style="margin-right: 6px;"></i> Cursos Creados por Profesor
+                    </button>
+                </div>
+
+                <!-- CONTENEDOR 1: POR CURSOS E INSCRITOS -->
+                <div id="reportCoursesContainer">
+                    <!-- Renderizado dinámico de cursos con alumnos inscritos -->
+                </div>
+
+                <!-- CONTENEDOR 2: CURSOS POR PROFESOR -->
+                <div id="reportTeachersContainer" style="display: none;">
+                    <!-- Renderizado dinámico agrupado por profesor -->
                 </div>
             </section>
 
@@ -594,6 +660,7 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { initCursosModule, setCursosUser, deleteCourse } from "./cursos.js";
+        import { initReportsModule, setReportsUser, renderReportsView } from "./reportes.js";
 
         // Configuración de Firebase
         const firebaseConfig = {
@@ -609,8 +676,9 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Inicializar módulo de Cursos con Firestore
+        // Inicializar módulos de Cursos y Reportes con Firestore
         initCursosModule(db);
+        initReportsModule(db);
 
         // Global Jitsi API Instance
         let currentJitsiApi = null;
@@ -858,19 +926,28 @@
 
             applyUserRoleUI(userDisplayName, currentUserRole);
             setCursosUser(user, currentUserRole, userDisplayName);
+            setReportsUser(user, currentUserRole);
             renderLiveClasses();
         });
 
         // Actualizar interfaz según el rol y nombre
         function applyUserRoleUI(name, role) {
-            const isTeacher = (role === 'profesor' || role === 'docente' || role === 'instructor' || role === 'teacher' || role === 'admin');
+            const normalizedRole = role ? role.toLowerCase().trim() : 'estudiante';
+            const isAdmin = (normalizedRole === 'admin');
+            const isTeacher = (normalizedRole === 'profesor' || normalizedRole === 'docente' || normalizedRole === 'instructor' || normalizedRole === 'teacher' || isAdmin);
 
-            if (isTeacher) {
+            if (isAdmin) {
+                document.body.classList.add('is-admin');
+                document.body.classList.add('is-teacher');
+                document.body.classList.remove('is-student');
+            } else if (isTeacher) {
+                document.body.classList.remove('is-admin');
                 document.body.classList.add('is-teacher');
                 document.body.classList.remove('is-student');
             } else {
-                document.body.classList.add('is-student');
+                document.body.classList.remove('is-admin');
                 document.body.classList.remove('is-teacher');
+                document.body.classList.add('is-student');
             }
 
             // Avatar en Sidebar
@@ -888,30 +965,55 @@
             // Rol en Sidebar
             const roleEl = document.getElementById('sidebarUserRole');
             if (roleEl) {
-                roleEl.textContent = isTeacher ? 'Profesor / Docente' : 'Estudiante';
+                if (isAdmin) {
+                    roleEl.textContent = 'Administrador(a)';
+                } else if (isTeacher) {
+                    roleEl.textContent = 'Profesor / Docente';
+                } else {
+                    roleEl.textContent = 'Estudiante';
+                }
             }
 
             // Título de navegación en Sidebar según rol
             const navCoursesTitle = document.getElementById('navCoursesTitle');
             if (navCoursesTitle) {
-                navCoursesTitle.textContent = isTeacher ? 'Mis Cursos Impartidos' : 'Cursos Disponibles';
+                if (isAdmin) {
+                    navCoursesTitle.textContent = 'Todos los Cursos';
+                } else if (isTeacher) {
+                    navCoursesTitle.textContent = 'Mis Cursos Impartidos';
+                } else {
+                    navCoursesTitle.textContent = 'Cursos Disponibles';
+                }
             }
 
             // Título y subtítulo de la sección según rol
             const sectionCoursesTitle = document.getElementById('sectionCoursesTitle');
             if (sectionCoursesTitle) {
-                sectionCoursesTitle.innerHTML = `<i class="fa-solid fa-layer-group" style="color: var(--siemens-teal);"></i> ${isTeacher ? 'Mis Cursos Impartidos' : 'Catálogo de Cursos Disponibles'}`;
+                if (isAdmin) {
+                    sectionCoursesTitle.innerHTML = `<i class="fa-solid fa-layer-group" style="color: var(--siemens-teal);"></i> Catálogo Global de Cursos`;
+                } else if (isTeacher) {
+                    sectionCoursesTitle.innerHTML = `<i class="fa-solid fa-layer-group" style="color: var(--siemens-teal);"></i> Mis Cursos Impartidos`;
+                } else {
+                    sectionCoursesTitle.innerHTML = `<i class="fa-solid fa-layer-group" style="color: var(--siemens-teal);"></i> Catálogo de Cursos Disponibles`;
+                }
             }
 
             const sectionCoursesSubtitle = document.getElementById('sectionCoursesSubtitle');
             if (sectionCoursesSubtitle) {
-                sectionCoursesSubtitle.textContent = isTeacher ? 'Administra y gestiona los cursos que impartes a la comunidad.' : 'Cursos interactivos, prácticos y con proyectos reales de la industria.';
+                if (isAdmin) {
+                    sectionCoursesSubtitle.textContent = 'Supervisión y gestión global de cursos de la plataforma.';
+                } else if (isTeacher) {
+                    sectionCoursesSubtitle.textContent = 'Administra y gestiona los cursos que impartes a la comunidad.';
+                } else {
+                    sectionCoursesSubtitle.textContent = 'Cursos interactivos, prácticos y con proyectos reales de la industria.';
+                }
             }
 
             // Saludo en Banner
             const greetingEl = document.getElementById('welcomeGreeting');
             if (greetingEl) {
-                greetingEl.textContent = `¡Bienvenido de vuelta, ${name}! (${isTeacher ? 'Profesor' : 'Estudiante'})`;
+                const roleBadgeText = isAdmin ? 'Administrador(a)' : (isTeacher ? 'Profesor' : 'Estudiante');
+                greetingEl.textContent = `¡Bienvenido de vuelta, ${name}! (${roleBadgeText})`;
             }
 
             // Auto-completar nombre de instructor en modales
@@ -1179,7 +1281,11 @@
         // ================= ENTER LIVE ROOM (POP-UP ILIMITADO O MODAL) =================
         async function enterLiveRoom(title, instructor, roomName, mode = 'popup') {
             const finalRoomName = roomName || 'UbuntuPeru_Live_' + Math.floor(Math.random() * 100000);
-            const userTag = currentUserRole === 'profesor' ? `${userDisplayName} (Profesor)` : `${userDisplayName} (Estudiante)`;
+            const userTag = currentUserRole === 'admin' 
+                ? `${userDisplayName} (Administrador)` 
+                : (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher' 
+                    ? `${userDisplayName} (Profesor)` 
+                    : `${userDisplayName} (Estudiante)`);
             const jitsiUrl = `https://meet.jit.si/${finalRoomName}#userInfo.displayName="${encodeURIComponent(userTag)}"&config.prejoinPageEnabled=false`;
 
             if (mode === 'popup') {
@@ -1405,6 +1511,17 @@
 
             if (viewId === 'view-live') {
                 renderLiveClasses();
+            }
+
+            if (viewId === 'view-reports') {
+                if (currentUserRole !== 'admin') {
+                    if (window.showToast) window.showToast('Acceso restringido: Esta vista es solo para administradores.', 'normal');
+                    switchView('view-courses', document.querySelectorAll('.nav-item')[0]);
+                    return;
+                }
+                if (window.renderReportsView) {
+                    window.renderReportsView();
+                }
             }
 
             if (window.innerWidth <= 900) {
