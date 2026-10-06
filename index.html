@@ -50,6 +50,11 @@
                 <i class="fa-solid fa-book-bookmark"></i>
                 <span>Mis Inscripciones</span>
             </div>
+            <div class="nav-item role-student-only" onclick="openStudentGuideModal()">
+                <i class="fa-solid fa-book-open-reader" style="color: var(--siemens-teal);"></i>
+                <span>Guía del Estudiante</span>
+                <span style="margin-left: auto; font-size: 0.65rem; background: rgba(0, 153, 153, 0.12); color: var(--siemens-teal); padding: 2px 7px; border-radius: 999px; font-weight: 700;">PDF</span>
+            </div>
 
             <div class="nav-section-title role-teacher-only">Gestión Docente</div>
             <div class="nav-item role-teacher-only" onclick="openInstantLiveModal()">
@@ -127,6 +132,9 @@
                             </button>
                             <button class="btn btn-orange" onclick="switchView('view-live', document.querySelectorAll('.nav-item')[1])">
                                 <i class="fa-solid fa-tower-broadcast"></i> Ver Clases en Vivo
+                            </button>
+                            <button class="btn btn-outline role-student-only" onclick="openStudentGuideModal()" style="border-color: rgba(255, 255, 255, 0.35); color: #fff; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(4px);">
+                                <i class="fa-solid fa-book-open-reader"></i> Guía del Estudiante
                             </button>
                         </div>
                     </div>
@@ -279,6 +287,40 @@
         </div>
     </main>
 
+    <!-- ================= MODAL: GUÍA DE USUARIO ESTUDIANTE ================= -->
+    <div class="modal-overlay" id="studentGuideModal" onclick="if(event.target === this) closeStudentGuideModal()">
+        <div class="modal-box modal-guide-box">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(0, 153, 153, 0.25); display: flex; align-items: center; justify-content: center; color: var(--siemens-teal); flex-shrink: 0;">
+                        <i class="fa-solid fa-book-open-reader" style="font-size: 1.2rem;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.05rem; color: #fff; font-weight: 700;">Guía de Usuario para Estudiantes</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: rgba(255, 255, 255, 0.75);">Manual de inducción: registro, acceso, cursos y clases en vivo</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a href="https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="color: #fff; border-color: rgba(255,255,255,0.3); padding: 5px 12px; font-size: 0.78rem; text-decoration: none;" title="Abrir en pestaña nueva">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="hide-mobile">Abrir en Drive</span>
+                    </a>
+                    <button class="modal-close" onclick="closeStudentGuideModal()" title="Cerrar Guía">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <iframe id="studentGuideIframe" class="guide-iframe" src="" allow="autoplay" allowfullscreen></iframe>
+            </div>
+            <div class="modal-footer">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.82rem; color: var(--text-secondary); user-select: none;">
+                    <input type="checkbox" id="chkDontShowGuideAgain" checked style="accent-color: var(--siemens-teal); cursor: pointer; width: 16px; height: 16px;">
+                    <span>No volver a mostrar automáticamente al iniciar sesión</span>
+                </label>
+                <button type="button" class="btn btn-primary btn-sm" onclick="closeStudentGuideModal()">
+                    ¡Entendido! Explorar Plataforma
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- ================= MODAL 1: CREAR CLASE EN VIVO ================= -->
     <div class="modal-overlay" id="instantLiveModal">
@@ -979,6 +1021,9 @@
             setCursosUser(user, currentUserRole, userDisplayName);
             setReportsUser(user, currentUserRole);
             renderLiveClasses();
+
+            // Disparador de Onboarding: Guía del Estudiante automática en primera visita
+            checkStudentGuideOnboarding(user.uid, currentUserRole);
         });
 
         // Actualizar interfaz según el rol y nombre
@@ -1706,6 +1751,49 @@
             if (modal) modal.classList.remove('active');
         }
         window.closeModal = closeModal;
+
+        // ================= GUÍA DEL ESTUDIANTE (MODAL Y ONBOARDING) =================
+        const STUDENT_GUIDE_PREVIEW_URL = 'https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/preview';
+
+        function openStudentGuideModal() {
+            const modal = document.getElementById('studentGuideModal');
+            const iframe = document.getElementById('studentGuideIframe');
+            if (!modal) return;
+            if (iframe && (!iframe.src || iframe.src === 'about:blank' || !iframe.src.includes('drive.google.com'))) {
+                iframe.src = STUDENT_GUIDE_PREVIEW_URL;
+            }
+            modal.classList.add('active');
+        }
+        window.openStudentGuideModal = openStudentGuideModal;
+
+        function closeStudentGuideModal() {
+            const modal = document.getElementById('studentGuideModal');
+            if (modal) modal.classList.remove('active');
+            if (currentUser && currentUser.uid) {
+                const chk = document.getElementById('chkDontShowGuideAgain');
+                if (!chk || chk.checked) {
+                    localStorage.setItem('guia_estudiante_vista_' + currentUser.uid, 'true');
+                } else {
+                    localStorage.removeItem('guia_estudiante_vista_' + currentUser.uid);
+                }
+            }
+        }
+        window.closeStudentGuideModal = closeStudentGuideModal;
+
+        function checkStudentGuideOnboarding(uid, role) {
+            const normalizedRole = role ? role.toLowerCase().trim() : 'estudiante';
+            const isStudent = (normalizedRole === 'estudiante' || normalizedRole === 'alumno');
+            if (!isStudent) return;
+
+            const hasSeenGuide = localStorage.getItem('guia_estudiante_vista_' + uid);
+            if (!hasSeenGuide) {
+                // Pequeño retardo para dar tiempo a que los cursos y UI carguen fluidamente
+                setTimeout(() => {
+                    openStudentGuideModal();
+                }, 800);
+            }
+        }
+        window.checkStudentGuideOnboarding = checkStudentGuideOnboarding;
 
         // Toast Helper
         function showToast(message, type = 'normal') {
