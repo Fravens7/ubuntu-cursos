@@ -1405,4 +1405,15 @@ body.is-admin .nav-section-title.role-teacher-only {
     font-size: 1.1rem;
     flex-shrink: 0;
 }
+.report-search-box {
+    flex: 0 1 440px;
+    max-width: 440px;
+}
+.report-search-box:hover .search-input {
+    border-color: var(--siemens-teal);
+    box-shadow: 0 0 0 2px var(--siemens-teal-light);
+}
 
+.report-search-box:hover .search-icon {
+    color: var(--siemens-teal);
+}

@@ -690,6 +690,17 @@ function renderTeachersReport(courses, query, teacherFilter) {
 // Alternar entre las pestañas internas del reporte
 export function switchReportTab(tabName) {
     currentReportTab = tabName;
+    const searchInput = document.getElementById('reportSearchInput');
+
+    if (searchInput) {
+        if (tabName === 'students') {
+            searchInput.placeholder = 'Buscar alumno por nombre, correo o edad...';
+        } else if (tabName === 'courses') {
+            searchInput.placeholder = 'Buscar curso, docente o alumno...';
+        } else if (tabName === 'teachers') {
+            searchInput.placeholder = 'Buscar docente o curso...';
+        }
+    }
     const tabStudentsBtn = document.getElementById('reportTabStudentsBtn');
     const tabCoursesBtn = document.getElementById('reportTabCoursesBtn');
     const tabTeachersBtn = document.getElementById('reportTabTeachersBtn');

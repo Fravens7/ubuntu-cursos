@@ -227,9 +227,15 @@
 
                 <!-- FILTER AND SEARCH BAR -->
                 <div class="report-controls-bar">
-                    <div class="search-box" style="flex: 1; min-width: 260px;">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="reportSearchInput" placeholder="Buscar alumno por nombre, correo, edad o curso..." oninput="window.filterReports()">
+                    <div class="search-box report-search-box">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input
+                            type="text"
+                            class="search-input"
+                            id="reportSearchInput"
+                            placeholder="Buscar alumno por nombre, correo o edad..."
+                            oninput="window.filterReports()"
+                        >
                     </div>
                     <div id="reportTeacherFilterGroup" style="display: none; align-items: center; gap: 8px;">
                         <label for="reportTeacherFilter" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">
