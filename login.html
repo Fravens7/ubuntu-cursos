@@ -221,6 +221,193 @@
             border: 1px solid #86efac;
             display: block;
         }
+
+        /* Barra de acceso a la Guía de Estudiante */
+        .auth-guide-banner {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px dashed var(--border-color);
+        }
+        .btn-guide-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: rgba(0, 153, 153, 0.06);
+            border: 1px solid rgba(0, 153, 153, 0.25);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            cursor: pointer;
+            text-align: left;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .btn-guide-trigger:hover {
+            background: rgba(0, 153, 153, 0.12);
+            border-color: var(--siemens-teal);
+            transform: translateY(-1px);
+        }
+        .btn-guide-trigger i.guide-icon {
+            font-size: 1.35rem;
+            color: var(--siemens-teal);
+            flex-shrink: 0;
+        }
+        .guide-trigger-text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+        }
+        .guide-trigger-title {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .guide-trigger-sub {
+            font-size: 0.75rem;
+            color: var(--siemens-teal);
+            font-weight: 600;
+        }
+        .guide-trigger-arrow {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            transition: transform 0.2s ease;
+        }
+        .btn-guide-trigger:hover .guide-trigger-arrow {
+            transform: translateX(3px);
+            color: var(--siemens-teal);
+        }
+
+        /* Modal Guía Estudiante en Login */
+        .guide-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .guide-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .guide-modal-box {
+            background: #ffffff;
+            width: 100%;
+            max-width: 1050px;
+            height: 90vh;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            transform: scale(0.96);
+            transition: transform 0.2s ease;
+        }
+        .guide-modal-overlay.active .guide-modal-box {
+            transform: scale(1);
+        }
+        .guide-modal-header {
+            background: linear-gradient(135deg, var(--siemens-slate) 0%, #0d3838 100%);
+            color: #ffffff;
+            padding: 16px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .guide-header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+        }
+        .guide-header-title i {
+            font-size: 1.4rem;
+            color: var(--siemens-teal);
+            background: rgba(0, 153, 153, 0.2);
+            padding: 8px;
+            border-radius: 8px;
+        }
+        .guide-header-title h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .guide-header-title p {
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin: 2px 0 0 0;
+        }
+        .guide-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .guide-btn-ext {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 7px 12px;
+            border-radius: var(--radius-md);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .guide-btn-ext:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .guide-btn-close {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.2s ease;
+        }
+        .guide-btn-close:hover {
+            color: #ffffff;
+        }
+        .guide-modal-body {
+            position: relative;
+            flex: 1;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+        }
+        .guide-iframe {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            border: none;
+        }
+        @media (max-width: 640px) {
+            .guide-modal-box {
+                height: 96vh;
+                border-radius: var(--radius-md);
+            }
+            .guide-header-title p, .guide-btn-ext span {
+                display: none;
+            }
+            .guide-modal-header {
+                padding: 12px 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -309,6 +496,42 @@
         </form>
 
         <div id="message" class="message"></div>
+
+        <!-- Acceso directo a la Guía de Estudiante para nuevos alumnos -->
+        <div class="auth-guide-banner">
+            <button type="button" class="btn-guide-trigger" id="btnOpenGuideLogin">
+                <i class="fa-solid fa-book-open-reader guide-icon"></i>
+                <div class="guide-trigger-text">
+                    <span class="guide-trigger-title">¿Primera vez o dudas para ingresar?</span>
+                    <span class="guide-trigger-sub">Consulta la Guía del Estudiante en PDF</span>
+                </div>
+                <i class="fa-solid fa-chevron-right guide-trigger-arrow"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Guía de Usuario Estudiante (Pre-Login) -->
+    <div id="modalGuideLogin" class="guide-modal-overlay">
+        <div class="guide-modal-box">
+            <div class="guide-modal-header">
+                <div class="guide-header-title">
+                    <i class="fa-solid fa-book-open-reader"></i>
+                    <div>
+                        <h3>Guía de Usuario para Estudiantes</h3>
+                        <p>Aprende a registrarte, iniciar sesión y navegar en la plataforma</p>
+                    </div>
+                </div>
+                <div class="guide-header-actions">
+                    <a href="https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="guide-btn-ext" title="Abrir en pestaña nueva">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Abrir en Drive</span>
+                    </a>
+                    <button type="button" class="guide-btn-close" id="btnCloseGuideLogin" title="Cerrar Guía">&times;</button>
+                </div>
+            </div>
+            <div class="guide-modal-body">
+                <iframe id="guideLoginIframe" class="guide-iframe" src="" allow="autoplay" allowfullscreen></iframe>
+            </div>
+        </div>
     </div>
 
     <!-- Firebase SDK Modular -->
@@ -532,6 +755,37 @@
                 }
 
                 showMsg(errorMsg, 'error');
+            }
+        });
+
+        // Control de Modal Guía de Estudiante en Login
+        const btnOpenGuideLogin = document.getElementById('btnOpenGuideLogin');
+        const btnCloseGuideLogin = document.getElementById('btnCloseGuideLogin');
+        const modalGuideLogin = document.getElementById('modalGuideLogin');
+        const guideLoginIframe = document.getElementById('guideLoginIframe');
+        const GUIDE_DRIVE_PREVIEW_URL = 'https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/preview';
+
+        function openLoginGuide() {
+            if (guideLoginIframe && (!guideLoginIframe.src || guideLoginIframe.src === 'about:blank' || !guideLoginIframe.src.includes('drive.google.com'))) {
+                guideLoginIframe.src = GUIDE_DRIVE_PREVIEW_URL;
+            }
+            if (modalGuideLogin) modalGuideLogin.classList.add('active');
+        }
+
+        function closeLoginGuide() {
+            if (modalGuideLogin) modalGuideLogin.classList.remove('active');
+        }
+
+        if (btnOpenGuideLogin) btnOpenGuideLogin.addEventListener('click', openLoginGuide);
+        if (btnCloseGuideLogin) btnCloseGuideLogin.addEventListener('click', closeLoginGuide);
+        if (modalGuideLogin) {
+            modalGuideLogin.addEventListener('click', (e) => {
+                if (e.target === modalGuideLogin) closeLoginGuide();
+            });
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalGuideLogin && modalGuideLogin.classList.contains('active')) {
+                closeLoginGuide();
             }
         });
     </script>
