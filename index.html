@@ -53,7 +53,7 @@
             <div class="nav-item role-student-only" onclick="openStudentGuideModal()">
                 <i class="fa-solid fa-book-open-reader" style="color: var(--siemens-teal);"></i>
                 <span>Guía del Estudiante</span>
-                <span style="margin-left: auto; font-size: 0.65rem; background: rgba(0, 153, 153, 0.12); color: var(--siemens-teal); padding: 2px 7px; border-radius: 999px; font-weight: 700;">PDF</span>
+                <span style="margin-left: auto; font-size: 0.65rem; background: rgba(0, 153, 153, 0.12); color: var(--siemens-teal); padding: 2px 7px; border-radius: 999px; font-weight: 700;">PDF &amp; VIDEO</span>
             </div>
 
             <div class="nav-section-title role-teacher-only">Gestión Docente</div>
@@ -297,18 +297,38 @@
                     </div>
                     <div>
                         <h3 style="margin: 0; font-size: 1.05rem; color: #fff; font-weight: 700;">Guía de Usuario para Estudiantes</h3>
-                        <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: rgba(255, 255, 255, 0.75);">Manual de inducción: registro, acceso, cursos y clases en vivo</p>
+                        <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: rgba(255, 255, 255, 0.75);">Manual de inducción y video tutorial paso a paso</p>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <a href="https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="color: #fff; border-color: rgba(255,255,255,0.3); padding: 5px 12px; font-size: 0.78rem; text-decoration: none;" title="Abrir en pestaña nueva">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="hide-mobile">Abrir en Drive</span>
+                    <a id="studentGuideExtLink" href="https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="color: #fff; border-color: rgba(255,255,255,0.3); padding: 5px 12px; font-size: 0.78rem; text-decoration: none;" title="Abrir en pestaña nueva">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> <span id="studentGuideExtText" class="hide-mobile">Abrir en Drive</span>
                     </a>
                     <button class="modal-close" onclick="closeStudentGuideModal()" title="Cerrar Guía">&times;</button>
                 </div>
             </div>
+
+            <!-- Selector de Pestañas: PDF / Video -->
+            <div class="guide-tabs-bar">
+                <button type="button" class="guide-tab-btn guide-tab-btn-main active" data-tab="pdf" onclick="switchStudentGuideTab('pdf')">
+                    <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
+                    <span>Guía en PDF</span>
+                    <span class="guide-tab-tag tag-pdf">Drive</span>
+                </button>
+                <button type="button" class="guide-tab-btn guide-tab-btn-main" data-tab="video" onclick="switchStudentGuideTab('video')">
+                    <i class="fa-brands fa-youtube" style="color: #ef4444; font-size: 1rem;"></i>
+                    <span>Video Tutorial</span>
+                    <span class="guide-tab-tag tag-video">HD</span>
+                </button>
+            </div>
+
             <div class="modal-body">
-                <iframe id="studentGuideIframe" class="guide-iframe" src="" allow="autoplay" allowfullscreen></iframe>
+                <div id="guideTabPanePdf" class="guide-tab-pane active">
+                    <iframe id="studentGuideIframe" class="guide-iframe" src="" allow="autoplay" allowfullscreen></iframe>
+                </div>
+                <div id="guideTabPaneVideo" class="guide-tab-pane">
+                    <iframe id="studentGuideVideoIframe" class="guide-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                </div>
             </div>
             <div class="modal-footer">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.82rem; color: var(--text-secondary); user-select: none;">
@@ -1754,14 +1774,65 @@
 
         // ================= GUÍA DEL ESTUDIANTE (MODAL Y ONBOARDING) =================
         const STUDENT_GUIDE_PREVIEW_URL = 'https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/preview';
+        const STUDENT_GUIDE_DRIVE_EXT_URL = 'https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/view?usp=sharing';
+        const STUDENT_GUIDE_VIDEO_EMBED_URL = 'https://www.youtube.com/embed/1YTXHXlbPQ0?enablejsapi=1&rel=0';
+        const STUDENT_GUIDE_VIDEO_EXT_URL = 'https://youtu.be/1YTXHXlbPQ0';
 
-        function openStudentGuideModal() {
-            const modal = document.getElementById('studentGuideModal');
-            const iframe = document.getElementById('studentGuideIframe');
-            if (!modal) return;
-            if (iframe && (!iframe.src || iframe.src === 'about:blank' || !iframe.src.includes('drive.google.com'))) {
-                iframe.src = STUDENT_GUIDE_PREVIEW_URL;
+        let currentStudentGuideTab = 'pdf';
+
+        function switchStudentGuideTab(tab) {
+            currentStudentGuideTab = tab;
+            const tabBtns = document.querySelectorAll('.guide-tab-btn-main');
+            const panePdf = document.getElementById('guideTabPanePdf');
+            const paneVideo = document.getElementById('guideTabPaneVideo');
+            const iframePdf = document.getElementById('studentGuideIframe');
+            const iframeVideo = document.getElementById('studentGuideVideoIframe');
+            const extLink = document.getElementById('studentGuideExtLink');
+
+            tabBtns.forEach(btn => {
+                if (btn.getAttribute('data-tab') === tab) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            if (tab === 'pdf') {
+                if (panePdf) panePdf.classList.add('active');
+                if (paneVideo) paneVideo.classList.remove('active');
+                if (iframePdf && (!iframePdf.src || iframePdf.src === 'about:blank' || !iframePdf.src.includes('drive.google.com'))) {
+                    iframePdf.src = STUDENT_GUIDE_PREVIEW_URL;
+                }
+                // Pausar video de YouTube si estaba reproduciéndose
+                if (iframeVideo && iframeVideo.contentWindow) {
+                    try {
+                        iframeVideo.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                    } catch (e) {}
+                }
+                if (extLink) {
+                    extLink.href = STUDENT_GUIDE_DRIVE_EXT_URL;
+                    extLink.title = 'Abrir PDF en pestaña nueva';
+                    extLink.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> <span id="studentGuideExtText" class="hide-mobile">Abrir en Drive</span>';
+                }
+            } else if (tab === 'video') {
+                if (paneVideo) paneVideo.classList.add('active');
+                if (panePdf) panePdf.classList.remove('active');
+                if (iframeVideo && (!iframeVideo.src || iframeVideo.src === 'about:blank' || !iframeVideo.src.includes('youtube.com'))) {
+                    iframeVideo.src = STUDENT_GUIDE_VIDEO_EMBED_URL;
+                }
+                if (extLink) {
+                    extLink.href = STUDENT_GUIDE_VIDEO_EXT_URL;
+                    extLink.title = 'Ver en YouTube en pestaña nueva';
+                    extLink.innerHTML = '<i class="fa-brands fa-youtube" style="color: #ef4444;"></i> <span id="studentGuideExtText" class="hide-mobile">Ver en YouTube</span>';
+                }
             }
+        }
+        window.switchStudentGuideTab = switchStudentGuideTab;
+
+        function openStudentGuideModal(initialTab = 'pdf') {
+            const modal = document.getElementById('studentGuideModal');
+            if (!modal) return;
+            switchStudentGuideTab(initialTab);
             modal.classList.add('active');
         }
         window.openStudentGuideModal = openStudentGuideModal;
@@ -1769,6 +1840,13 @@
         function closeStudentGuideModal() {
             const modal = document.getElementById('studentGuideModal');
             if (modal) modal.classList.remove('active');
+
+            // Detener reproducción del video de YouTube al cerrar modal
+            const iframeVideo = document.getElementById('studentGuideVideoIframe');
+            if (iframeVideo && iframeVideo.src) {
+                iframeVideo.src = '';
+            }
+
             if (currentUser && currentUser.uid) {
                 const chk = document.getElementById('chkDontShowGuideAgain');
                 if (!chk || chk.checked) {
