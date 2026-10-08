@@ -1437,6 +1437,66 @@ body.is-admin .nav-section-title.role-teacher-only {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Barra de pestañas (PDF / Video) */
+.guide-tabs-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #0b1120;
+    padding: 9px 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.guide-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.guide-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.guide-tab-btn.active {
+    background: rgba(0, 153, 153, 0.2);
+    border-color: var(--siemens-teal);
+    color: #ffffff;
+    box-shadow: 0 0 14px rgba(0, 153, 153, 0.25);
+}
+
+.guide-tab-tag {
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.guide-tab-btn.active .guide-tab-tag.tag-pdf {
+    background: rgba(0, 153, 153, 0.35);
+    color: #5eead4;
+}
+
+.guide-tab-btn.active .guide-tab-tag.tag-video {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+}
+
 .modal-guide-box .modal-body {
     padding: 0;
     position: relative;
@@ -1447,7 +1507,21 @@ body.is-admin .nav-section-title.role-teacher-only {
     overflow: hidden;
 }
 
-.modal-guide-box .guide-iframe {
+.guide-tab-pane {
+    display: none;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    position: relative;
+}
+
+.guide-tab-pane.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-guide-box .guide-iframe,
+.guide-tab-pane .guide-iframe {
     width: 100%;
     height: 100%;
     flex: 1;
@@ -1474,6 +1548,16 @@ body.is-admin .nav-section-title.role-teacher-only {
     }
     .modal-guide-box .modal-header {
         padding: 12px 16px;
+    }
+    .guide-tabs-bar {
+        padding: 8px 12px;
+        gap: 6px;
+    }
+    .guide-tab-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 6px 10px;
+        font-size: 0.76rem;
     }
     .modal-guide-box .modal-footer {
         padding: 10px 14px;
