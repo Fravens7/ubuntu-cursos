@@ -389,12 +389,79 @@
             background: #0f172a;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
-        .guide-iframe {
+        /* Pestañas (PDF / Video) en Login */
+        .guide-tabs-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0b1120;
+            padding: 9px 22px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .guide-tab-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .guide-tab-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        .guide-tab-btn.active {
+            background: rgba(0, 153, 153, 0.2);
+            border-color: var(--siemens-teal);
+            color: #ffffff;
+            box-shadow: 0 0 14px rgba(0, 153, 153, 0.25);
+        }
+        .guide-tab-tag {
+            font-size: 0.65rem;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .guide-tab-btn.active .guide-tab-tag.tag-pdf {
+            background: rgba(0, 153, 153, 0.35);
+            color: #5eead4;
+        }
+        .guide-tab-btn.active .guide-tab-tag.tag-video {
+            background: rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+        }
+        .guide-tab-pane {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            position: relative;
+        }
+        .guide-tab-pane.active {
+            display: flex;
+            flex-direction: column;
+        }
+        .guide-iframe,
+        .guide-tab-pane .guide-iframe {
             width: 100%;
             height: 100%;
             flex: 1;
             border: none;
+            background: #0f172a;
         }
         @media (max-width: 640px) {
             .guide-modal-box {
@@ -406,6 +473,16 @@
             }
             .guide-modal-header {
                 padding: 12px 14px;
+            }
+            .guide-tabs-bar {
+                padding: 8px 12px;
+                gap: 6px;
+            }
+            .guide-tab-btn {
+                flex: 1;
+                justify-content: center;
+                padding: 6px 10px;
+                font-size: 0.76rem;
             }
         }
     </style>
@@ -503,7 +580,7 @@
                 <i class="fa-solid fa-book-open-reader guide-icon"></i>
                 <div class="guide-trigger-text">
                     <span class="guide-trigger-title">¿Primera vez o dudas para ingresar?</span>
-                    <span class="guide-trigger-sub">Consulta la Guía del Estudiante en PDF</span>
+                    <span class="guide-trigger-sub">Consulta la Guía del Estudiante (PDF y Video)</span>
                 </div>
                 <i class="fa-solid fa-chevron-right guide-trigger-arrow"></i>
             </button>
@@ -522,14 +599,34 @@
                     </div>
                 </div>
                 <div class="guide-header-actions">
-                    <a href="https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="guide-btn-ext" title="Abrir en pestaña nueva">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Abrir en Drive</span>
+                    <a id="guideLoginExtLink" href="https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="guide-btn-ext" title="Abrir en pestaña nueva">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> <span id="guideLoginExtText">Abrir en Drive</span>
                     </a>
                     <button type="button" class="guide-btn-close" id="btnCloseGuideLogin" title="Cerrar Guía">&times;</button>
                 </div>
             </div>
+
+            <!-- Pestañas PDF y Video -->
+            <div class="guide-tabs-bar">
+                <button type="button" class="guide-tab-btn guide-tab-btn-login active" data-tab="pdf" onclick="switchLoginGuideTab('pdf')">
+                    <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
+                    <span>Guía en PDF</span>
+                    <span class="guide-tab-tag tag-pdf">Drive</span>
+                </button>
+                <button type="button" class="guide-tab-btn guide-tab-btn-login" data-tab="video" onclick="switchLoginGuideTab('video')">
+                    <i class="fa-brands fa-youtube" style="color: #ef4444; font-size: 1rem;"></i>
+                    <span>Video Tutorial</span>
+                    <span class="guide-tab-tag tag-video">HD</span>
+                </button>
+            </div>
+
             <div class="guide-modal-body">
-                <iframe id="guideLoginIframe" class="guide-iframe" src="" allow="autoplay" allowfullscreen></iframe>
+                <div id="guideLoginPanePdf" class="guide-tab-pane active">
+                    <iframe id="guideLoginIframe" class="guide-iframe" src="" allow="autoplay" allowfullscreen></iframe>
+                </div>
+                <div id="guideLoginPaneVideo" class="guide-tab-pane">
+                    <iframe id="guideLoginVideoIframe" class="guide-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                </div>
             </div>
         </div>
     </div>
@@ -764,19 +861,78 @@
         const modalGuideLogin = document.getElementById('modalGuideLogin');
         const guideLoginIframe = document.getElementById('guideLoginIframe');
         const GUIDE_DRIVE_PREVIEW_URL = 'https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/preview';
+        const GUIDE_DRIVE_EXT_URL = 'https://drive.google.com/file/d/16DUmP7ECAkjJCUxBrOJtQord8KTRapaN/view?usp=sharing';
+        const GUIDE_VIDEO_EMBED_URL = 'https://www.youtube.com/embed/1YTXHXlbPQ0?enablejsapi=1&rel=0';
+        const GUIDE_VIDEO_EXT_URL = 'https://youtu.be/1YTXHXlbPQ0';
 
-        function openLoginGuide() {
-            if (guideLoginIframe && (!guideLoginIframe.src || guideLoginIframe.src === 'about:blank' || !guideLoginIframe.src.includes('drive.google.com'))) {
-                guideLoginIframe.src = GUIDE_DRIVE_PREVIEW_URL;
+        let currentLoginGuideTab = 'pdf';
+
+        function switchLoginGuideTab(tab) {
+            currentLoginGuideTab = tab;
+            const tabBtns = document.querySelectorAll('.guide-tab-btn-login');
+            const panePdf = document.getElementById('guideLoginPanePdf');
+            const paneVideo = document.getElementById('guideLoginPaneVideo');
+            const iframePdf = document.getElementById('guideLoginIframe');
+            const iframeVideo = document.getElementById('guideLoginVideoIframe');
+            const extLink = document.getElementById('guideLoginExtLink');
+
+            tabBtns.forEach(btn => {
+                if (btn.getAttribute('data-tab') === tab) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            if (tab === 'pdf') {
+                if (panePdf) panePdf.classList.add('active');
+                if (paneVideo) paneVideo.classList.remove('active');
+                if (iframePdf && (!iframePdf.src || iframePdf.src === 'about:blank' || !iframePdf.src.includes('drive.google.com'))) {
+                    iframePdf.src = GUIDE_DRIVE_PREVIEW_URL;
+                }
+                // Pausar video si estaba reproduciéndose
+                if (iframeVideo && iframeVideo.contentWindow) {
+                    try {
+                        iframeVideo.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                    } catch (e) {}
+                }
+                if (extLink) {
+                    extLink.href = GUIDE_DRIVE_EXT_URL;
+                    extLink.title = 'Abrir PDF en pestaña nueva';
+                    extLink.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> <span id="guideLoginExtText">Abrir en Drive</span>';
+                }
+            } else if (tab === 'video') {
+                if (paneVideo) paneVideo.classList.add('active');
+                if (panePdf) panePdf.classList.remove('active');
+                if (iframeVideo && (!iframeVideo.src || iframeVideo.src === 'about:blank' || !iframeVideo.src.includes('youtube.com'))) {
+                    iframeVideo.src = GUIDE_VIDEO_EMBED_URL;
+                }
+                if (extLink) {
+                    extLink.href = GUIDE_VIDEO_EXT_URL;
+                    extLink.title = 'Ver en YouTube en pestaña nueva';
+                    extLink.innerHTML = '<i class="fa-brands fa-youtube" style="color: #ef4444;"></i> <span id="guideLoginExtText">Ver en YouTube</span>';
+                }
             }
+        }
+        window.switchLoginGuideTab = switchLoginGuideTab;
+
+        function openLoginGuide(initialTab = 'pdf') {
+            switchLoginGuideTab(initialTab);
             if (modalGuideLogin) modalGuideLogin.classList.add('active');
         }
+        window.openLoginGuide = openLoginGuide;
 
         function closeLoginGuide() {
             if (modalGuideLogin) modalGuideLogin.classList.remove('active');
+            // Detener reproducción de video de YouTube al cerrar modal
+            const iframeVideo = document.getElementById('guideLoginVideoIframe');
+            if (iframeVideo && iframeVideo.src) {
+                iframeVideo.src = '';
+            }
         }
+        window.closeLoginGuide = closeLoginGuide;
 
-        if (btnOpenGuideLogin) btnOpenGuideLogin.addEventListener('click', openLoginGuide);
+        if (btnOpenGuideLogin) btnOpenGuideLogin.addEventListener('click', () => openLoginGuide('pdf'));
         if (btnCloseGuideLogin) btnCloseGuideLogin.addEventListener('click', closeLoginGuide);
         if (modalGuideLogin) {
             modalGuideLogin.addEventListener('click', (e) => {
