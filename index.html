@@ -734,9 +734,13 @@
             </div>
             <span style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--siemens-teal); font-weight: 800;">Modo Administrador • Cloudflare R2</span>
             <h3 style="font-size: 1.25rem; font-weight: 800; margin: 6px 0 10px; color: #fff;" id="adminLiveChoiceCourseTitle">Iniciar Clase en Vivo</h3>
-            <p style="font-size: 0.84rem; color: #94a3b8; line-height: 1.5; margin-bottom: 22px;">
+            <p style="font-size: 0.84rem; color: #94a3b8; line-height: 1.5; margin-bottom: 14px;">
                 ¿Deseas activar la <strong>Grabación 480p "Pluma"</strong>? El navegador te solicitará seleccionar la pantalla a capturar con compresión ultraligera y, al finalizar la clase, se guardará y publicará automáticamente en este curso.
             </p>
+            <div style="background: rgba(0, 153, 153, 0.12); border: 1px dashed var(--siemens-teal); border-radius: 8px; padding: 8px 12px; margin-bottom: 20px; font-size: 0.78rem; color: #e2e8f0; text-align: left; display: flex; align-items: flex-start; gap: 8px;">
+                <i class="fa-solid fa-display" style="color: var(--siemens-teal); margin-top: 2px;"></i>
+                <span>En el diálogo de Chrome, selecciona <strong>"Toda la pantalla"</strong> o <strong>"Ventana"</strong> para capturar tu clase completa.</span>
+            </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button type="button" class="btn btn-primary" id="btnAdminChoiceRecord" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700; background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; font-size: 0.92rem;">
@@ -994,9 +998,19 @@
                         video: {
                             width: { ideal: 854, max: 1280 },
                             height: { ideal: 480, max: 720 },
-                            frameRate: { ideal: 15, max: 20 }
+                            frameRate: { ideal: 15, max: 20 },
+                            displaySurface: "monitor"
                         },
-                        audio: true // Captura audio de la pestaña o sistema
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        },
+                        preferCurrentTab: false,
+                        selfBrowserSurface: "exclude",
+                        systemAudio: "include",
+                        surfaceSwitching: "include",
+                        monitorTypeSurfaces: "include"
                     });
 
                     // 2. Intentar capturar micrófono del docente/admin para mezclarlo
