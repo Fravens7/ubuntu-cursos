@@ -726,6 +726,61 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: SUBIDA DE GRABACIÓN CLOUDFLARE R2 (ADMIN ONLY) ================= -->
+    <div id="recorderUploadModal" class="modal-overlay" style="display: none; z-index: 100000; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);">
+        <div class="modal-box" style="max-width: 480px; width: 92%; text-align: center; padding: 32px 24px; border: 1.5px solid var(--siemens-teal); background: #1a1e22; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+            <div style="font-size: 2.4rem; color: var(--siemens-teal); margin-bottom: 12px; animation: pulse 1.5s infinite;">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 6px; color: #fff;">Subiendo a Cloudflare R2</h3>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;" id="uploadModalDesc">Procesando compresión 480p "pluma" y guardando en bucket...</p>
+            
+            <div style="background: rgba(255,255,255,0.06); border-radius: 12px; height: 14px; overflow: hidden; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+                <div id="uploadProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--siemens-teal), var(--ubuntu-green)); border-radius: 12px; transition: width 0.25s ease;"></div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #cbd5e1; font-family: monospace; font-weight: 600; margin-bottom: 18px;">
+                <span id="uploadPercent">0%</span>
+                <span id="uploadSizeInfo">Calculando peso...</span>
+            </div>
+
+            <div id="uploadSuccessDetails" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 0.82rem; color: var(--ubuntu-green); text-align: left;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700;">
+                    <i class="fa-solid fa-circle-check"></i> <span id="uploadSuccessMsg">¡Grabación subida y vinculada al curso!</span>
+                </div>
+                <div style="margin-top: 6px; word-break: break-all; font-size: 0.75rem; color: #94a3b8;" id="uploadSuccessUrl"></div>
+            </div>
+
+            <button type="button" id="btnUploadModalClose" class="btn btn-primary" style="width: 100%; justify-content: center; display: none;" onclick="closeRecorderUploadModal()">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= FLOATING RECORDER BAR (ADMIN ONLY) ================= -->
+    <div id="adminRecorderBar" style="display: none; position: fixed; bottom: 24px; left: 24px; z-index: 99999; background: #1a1e22; border: 2px solid #ef4444; border-radius: 50px; padding: 10px 18px; color: #fff; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.25); align-items: center; gap: 14px; font-family: sans-serif; animation: slideUp 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="recDot" style="width: 12px; height: 12px; background: #ef4444; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #ef4444; animation: blinkREC 1s infinite alternate;"></span>
+            <span style="font-weight: 800; font-size: 0.82rem; letter-spacing: 0.05em; color: #ef4444;">REC 480p PLUMA</span>
+        </div>
+        <div style="font-family: monospace; font-size: 0.95rem; font-weight: 700; color: #fff;" id="recTimerDisplay">00:00:00</div>
+        <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;" id="recSizeDisplay">(~0.0 MB)</div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <button type="button" id="btnRecPause" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: rgba(255,255,255,0.2); color: #fff;" title="Pausar / Reanudar grabación" onclick="window.UbuntuClassRecorder && window.UbuntuClassRecorder.togglePause()">
+                <i class="fa-solid fa-pause"></i>
+            </button>
+            <button type="button" id="btnRecStop" class="btn btn-danger btn-sm" style="padding: 4px 12px; font-size: 0.75rem; font-weight: 700; background: #ef4444;" title="Finalizar grabación y subir a R2" onclick="window.UbuntuClassRecorder && window.UbuntuClassRecorder.stopAndUpload()">
+                <i class="fa-solid fa-stop"></i> Detener y Subir
+            </button>
+        </div>
+    </div>
+    <style>
+        @keyframes blinkREC {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.3; transform: scale(0.85); }
+        }
+    </style>
+
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -734,7 +789,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, setDoc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { initCursosModule, setCursosUser, deleteCourse } from "./cursos.js";
         import { initReportsModule, setReportsUser, renderReportsView } from "./reportes.js";
 
@@ -807,9 +862,453 @@
             window.liveClassesData = liveClassesData;
         }
 
+        // ================= MODAL HELPER FUNCTIONS: SUBIDA R2 =================
+        function openRecorderUploadModal(totalBytes = 0) {
+            const modal = document.getElementById('recorderUploadModal');
+            if (!modal) return;
+            const bar = document.getElementById('uploadProgressBar');
+            const pct = document.getElementById('uploadPercent');
+            const sizeInfo = document.getElementById('uploadSizeInfo');
+            const successBox = document.getElementById('uploadSuccessDetails');
+            const closeBtn = document.getElementById('btnUploadModalClose');
+            const desc = document.getElementById('uploadModalDesc');
+
+            if (bar) bar.style.width = '0%';
+            if (pct) pct.textContent = '0%';
+            const totalMb = (totalBytes / (1024 * 1024)).toFixed(2);
+            if (sizeInfo) sizeInfo.textContent = `0 MB / ${totalMb} MB`;
+            if (successBox) successBox.style.display = 'none';
+            if (closeBtn) closeBtn.style.display = 'none';
+            if (desc) desc.textContent = 'Comprimiendo video 480p "pluma" y guardando en bucket R2...';
+
+            modal.style.display = 'flex';
+        }
+        window.openRecorderUploadModal = openRecorderUploadModal;
+
+        function updateRecorderUploadProgress(percent, loaded, total) {
+            const bar = document.getElementById('uploadProgressBar');
+            const pct = document.getElementById('uploadPercent');
+            const sizeInfo = document.getElementById('uploadSizeInfo');
+
+            if (bar) bar.style.width = `${percent}%`;
+            if (pct) pct.textContent = `${percent}%`;
+            if (sizeInfo) {
+                const loadedMb = (loaded / (1024 * 1024)).toFixed(2);
+                const totalMb = (total / (1024 * 1024)).toFixed(2);
+                sizeInfo.textContent = `${loadedMb} MB / ${totalMb} MB`;
+            }
+        }
+        window.updateRecorderUploadProgress = updateRecorderUploadProgress;
+
+        function showUploadSuccess(publicUrl, courseTitle) {
+            const bar = document.getElementById('uploadProgressBar');
+            const pct = document.getElementById('uploadPercent');
+            const desc = document.getElementById('uploadModalDesc');
+            const successBox = document.getElementById('uploadSuccessDetails');
+            const successUrl = document.getElementById('uploadSuccessUrl');
+            const closeBtn = document.getElementById('btnUploadModalClose');
+
+            if (bar) bar.style.width = '100%';
+            if (pct) pct.textContent = '100%';
+            if (desc) desc.textContent = '¡Grabación procesada y guardada con éxito en Cloudflare R2!';
+            if (successBox) successBox.style.display = 'block';
+            if (successUrl) {
+                successUrl.innerHTML = `<a href="${publicUrl}" target="_blank" style="color: var(--siemens-teal); text-decoration: underline; font-weight: 600;">Abrir Video Grabado</a> <span style="color: #64748b; font-size: 0.72rem; margin-left: 6px;">(${publicUrl})</span>`;
+            }
+            if (closeBtn) closeBtn.style.display = 'inline-flex';
+        }
+        window.showUploadSuccess = showUploadSuccess;
+
+        function closeRecorderUploadModal() {
+            const modal = document.getElementById('recorderUploadModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeRecorderUploadModal = closeRecorderUploadModal;
+
+        // ================= UBUNTU CLASS RECORDER (480P PLUMA -> CLOUDFLARE R2) [ADMIN ONLY] =================
+        const UbuntuClassRecorder = {
+            isRecording: false,
+            isPaused: false,
+            mediaRecorder: null,
+            recordedChunks: [],
+            screenStream: null,
+            micStream: null,
+            audioContext: null,
+            combinedStream: null,
+            recordingStartTime: null,
+            timerInterval: null,
+            elapsedSeconds: 0,
+            currentMetadata: null, // { courseId, weekId, courseTitle, weekTitle }
+            workerUploadUrl: 'https://ubuntu-grabaciones-uploader.asoc-ubuntuperu.workers.dev/',
+
+            // Verificar si el usuario actual es admin
+            isAdmin() {
+                return (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin');
+            },
+
+            // Iniciar grabación 480p "pluma"
+            async startRecording(metadata = {}) {
+                if (!this.isAdmin()) {
+                    console.warn("Grabación restringida: Solo el rol admin puede grabar en esta fase de prueba.");
+                    return false;
+                }
+
+                if (this.isRecording) {
+                    showToast("Ya hay una grabación activa en segundo plano.", "normal");
+                    return false;
+                }
+
+                this.currentMetadata = metadata;
+                this.recordedChunks = [];
+                this.elapsedSeconds = 0;
+
+                try {
+                    // 1. Capturar pantalla / ventana / pestaña a 480p @ 15fps
+                    this.screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: {
+                            width: { ideal: 854, max: 1280 },
+                            height: { ideal: 480, max: 720 },
+                            frameRate: { ideal: 15, max: 20 }
+                        },
+                        audio: true // Captura audio de la pestaña o sistema
+                    });
+
+                    // 2. Intentar capturar micrófono del docente/admin para mezclarlo
+                    try {
+                        this.micStream = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true
+                            }
+                        });
+                    } catch (micErr) {
+                        console.info("Grabando solo audio de pantalla (micrófono no disponible o rechazado):", micErr);
+                        this.micStream = null;
+                    }
+
+                    // 3. Mezclar pistas de audio con AudioContext nativo
+                    let finalAudioTrack = null;
+                    const sysAudioTracks = this.screenStream.getAudioTracks();
+                    const micAudioTracks = this.micStream ? this.micStream.getAudioTracks() : [];
+
+                    if (sysAudioTracks.length > 0 || micAudioTracks.length > 0) {
+                        try {
+                            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                            this.audioContext = new AudioContextClass();
+                            const dest = this.audioContext.createMediaStreamDestination();
+
+                            if (sysAudioTracks.length > 0) {
+                                const sysSource = this.audioContext.createMediaStreamSource(new MediaStream([sysAudioTracks[0]]));
+                                sysSource.connect(dest);
+                            }
+                            if (micAudioTracks.length > 0) {
+                                const micSource = this.audioContext.createMediaStreamSource(new MediaStream([micAudioTracks[0]]));
+                                micSource.connect(dest);
+                            }
+
+                            finalAudioTrack = dest.stream.getAudioTracks()[0];
+                        } catch (audioErr) {
+                            console.warn("Fallo al mezclar audio con AudioContext, usando pista de pantalla:", audioErr);
+                            finalAudioTrack = sysAudioTracks[0] || (micAudioTracks[0] || null);
+                        }
+                    }
+
+                    // 4. Armar stream combinado
+                    const videoTrack = this.screenStream.getVideoTracks()[0];
+                    const tracksToRecord = [videoTrack];
+                    if (finalAudioTrack) tracksToRecord.push(finalAudioTrack);
+
+                    this.combinedStream = new MediaStream(tracksToRecord);
+
+                    // Si el usuario cancela la compartición desde el banner nativo del navegador
+                    videoTrack.onended = () => {
+                        if (this.isRecording) {
+                            showToast("Captura de pantalla finalizada.", "normal");
+                            this.stopAndUpload(this.currentMetadata);
+                        }
+                    };
+
+                    // 5. Configurar MediaRecorder en perfil "Pluma" (280 kbps video + 32 kbps audio)
+                    const candidateTypes = [
+                        'video/webm;codecs=vp8,opus',
+                        'video/webm;codecs=vp9,opus',
+                        'video/webm;codecs=h264,opus',
+                        'video/webm'
+                    ];
+                    let selectedMime = candidateTypes.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+
+                    this.mediaRecorder = new MediaRecorder(this.combinedStream, {
+                        mimeType: selectedMime,
+                        videoBitsPerSecond: 280000, // 280 kbps "pluma"
+                        audioBitsPerSecond: 32000   // 32 kbps voz
+                    });
+
+                    this.mediaRecorder.ondataavailable = (e) => {
+                        if (e.data && e.data.size > 0) {
+                            this.recordedChunks.push(e.data);
+                            this.updateSizeDisplay();
+                        }
+                    };
+
+                    this.mediaRecorder.start(3000); // Guardar chunk cada 3 segundos
+                    this.isRecording = true;
+                    this.isPaused = false;
+                    this.recordingStartTime = Date.now();
+
+                    this.startTimer();
+                    this.showBar();
+                    this.updateDockButton(true);
+                    showToast("🔴 Grabación 480p Pluma iniciada. Se subirá a Cloudflare R2.", "success");
+                    return true;
+
+                } catch (err) {
+                    console.error("Error al iniciar grabación:", err);
+                    if (err.name !== 'NotAllowedError') {
+                        showToast("No se pudo iniciar la grabación: " + err.message, "normal");
+                    }
+                    this.cleanupStreams();
+                    return false;
+                }
+            },
+
+            // Pausar / Reanudar
+            togglePause() {
+                if (!this.mediaRecorder || !this.isRecording) return;
+                const btn = document.getElementById('btnRecPause');
+                const dot = document.getElementById('recDot');
+                if (this.mediaRecorder.state === 'recording') {
+                    this.mediaRecorder.pause();
+                    this.isPaused = true;
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                    if (dot) dot.style.animationPlayState = 'paused';
+                    showToast("Grabación en pausa.", "normal");
+                } else if (this.mediaRecorder.state === 'paused') {
+                    this.mediaRecorder.resume();
+                    this.isPaused = false;
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                    if (dot) dot.style.animationPlayState = 'running';
+                    showToast("Grabación reanudada.", "success");
+                }
+            },
+
+            // Detener y Subir a Cloudflare R2
+            async stopAndUpload(overrideMeta = null) {
+                if (!this.isRecording && this.recordedChunks.length === 0) return;
+                const meta = overrideMeta || this.currentMetadata || {};
+
+                this.stopTimer();
+                this.hideBar();
+                this.updateDockButton(false);
+
+                return new Promise((resolve) => {
+                    const finalize = async () => {
+                        const blob = new Blob(this.recordedChunks, { type: this.mediaRecorder?.mimeType || 'video/webm' });
+                        this.cleanupStreams();
+                        this.isRecording = false;
+                        this.isPaused = false;
+
+                        if (blob.size < 1000) {
+                            showToast("Grabación descartada (muy corta o vacía).", "normal");
+                            resolve(null);
+                            return;
+                        }
+
+                        // Abrir modal de progreso
+                        openRecorderUploadModal(blob.size);
+
+                        // Nombre de archivo ordenado
+                        const cleanCourseId = meta.courseId ? String(meta.courseId).replace(/[^a-zA-Z0-9_-]/g, '') : 'instant';
+                        const cleanWeekId = meta.weekId ? String(meta.weekId).replace(/[^a-zA-Z0-9_-]/g, '') : 'gen';
+                        const timestamp = Date.now();
+                        const filename = `clase_${cleanCourseId}_${cleanWeekId}_${timestamp}.webm`;
+
+                        try {
+                            const publicVideoUrl = await this.performUpload(blob, filename);
+
+                            // Si la clase pertenece a un curso y semana, actualizar Firestore
+                            if (meta.courseId && meta.weekId) {
+                                await this.saveUrlToCourseWeek(meta.courseId, meta.weekId, publicVideoUrl);
+                            }
+
+                            showUploadSuccess(publicVideoUrl, meta.courseTitle);
+                            showToast("¡Grabación subida y disponible en el curso!", "success");
+                            resolve(publicVideoUrl);
+                        } catch (uploadErr) {
+                            console.error("Error al subir a R2:", uploadErr);
+                            showToast("Error al subir a Cloudflare R2: " + uploadErr.message, "normal");
+                            closeRecorderUploadModal();
+                            resolve(null);
+                        }
+                    };
+
+                    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                        this.mediaRecorder.onstop = finalize;
+                        this.mediaRecorder.stop();
+                    } else {
+                        finalize();
+                    }
+                });
+            },
+
+            // Descartar sin subir
+            discardRecording() {
+                this.stopTimer();
+                this.hideBar();
+                this.updateDockButton(false);
+                this.cleanupStreams();
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    try { this.mediaRecorder.stop(); } catch(e) {}
+                }
+                this.recordedChunks = [];
+                this.isRecording = false;
+                this.isPaused = false;
+                showToast("Grabación descartada.", "normal");
+            },
+
+            // Subida vía XHR al Worker para monitorear progreso exacto en tiempo real
+            performUpload(blob, filename) {
+                return new Promise((resolve, reject) => {
+                    const uploadUrl = `${this.workerUploadUrl}?filename=${encodeURIComponent(filename)}`;
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('PUT', uploadUrl);
+                    xhr.setRequestHeader('Content-Type', blob.type || 'video/webm');
+
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            const percent = Math.round((e.loaded / e.total) * 100);
+                            updateRecorderUploadProgress(percent, e.loaded, e.total);
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const resp = JSON.parse(xhr.responseText);
+                                const finalUrl = resp.url || `${this.workerUploadUrl}${resp.key || ('grabaciones-ubuntu-clasesweb/' + filename)}`;
+                                resolve(finalUrl);
+                            } catch (e) {
+                                resolve(`${this.workerUploadUrl}grabaciones-ubuntu-clasesweb/${filename}`);
+                            }
+                        } else {
+                            reject(new Error(`Servidor R2 respondió con código ${xhr.status}: ${xhr.responseText}`));
+                        }
+                    };
+
+                    xhr.onerror = () => reject(new Error("Error de red al conectar con Cloudflare Worker."));
+                    xhr.send(blob);
+                });
+            },
+
+            // Guardar automáticamente la URL de la grabación en Firestore en la semana del curso
+            async saveUrlToCourseWeek(courseId, weekId, videoUrl) {
+                try {
+                    if (!db) return;
+                    const courseRef = doc(db, 'cursos', String(courseId));
+                    const courseSnap = await getDoc(courseRef);
+                    if (courseSnap.exists()) {
+                        const data = courseSnap.data();
+                        const semanas = Array.isArray(data.semanas) ? [...data.semanas] : [];
+                        const idx = semanas.findIndex(w => String(w.id) === String(weekId));
+                        if (idx !== -1) {
+                            semanas[idx] = {
+                                ...semanas[idx],
+                                videoUrl: videoUrl
+                            };
+                            await updateDoc(courseRef, { semanas });
+                            if (window.refreshCurrentCourseDetail) {
+                                window.refreshCurrentCourseDetail();
+                            }
+                        }
+                    }
+                } catch (dbErr) {
+                    console.warn("Aviso al vincular videoUrl a la semana en Firestore:", dbErr);
+                }
+            },
+
+            // Limpieza de streams
+            cleanupStreams() {
+                if (this.screenStream) {
+                    this.screenStream.getTracks().forEach(t => { try { t.stop(); } catch(e) {} });
+                    this.screenStream = null;
+                }
+                if (this.micStream) {
+                    this.micStream.getTracks().forEach(t => { try { t.stop(); } catch(e) {} });
+                    this.micStream = null;
+                }
+                if (this.combinedStream) {
+                    this.combinedStream.getTracks().forEach(t => { try { t.stop(); } catch(e) {} });
+                    this.combinedStream = null;
+                }
+                if (this.audioContext) {
+                    try { this.audioContext.close(); } catch(e) {}
+                    this.audioContext = null;
+                }
+            },
+
+            // Temporizador
+            startTimer() {
+                const timerEl = document.getElementById('recTimerDisplay');
+                if (this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => {
+                    if (!this.isPaused) {
+                        this.elapsedSeconds++;
+                        const h = String(Math.floor(this.elapsedSeconds / 3600)).padStart(2, '0');
+                        const m = String(Math.floor((this.elapsedSeconds % 3600) / 60)).padStart(2, '0');
+                        const s = String(this.elapsedSeconds % 60).padStart(2, '0');
+                        if (timerEl) timerEl.textContent = `${h}:${m}:${s}`;
+                    }
+                }, 1000);
+            },
+
+            stopTimer() {
+                if (this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = null;
+            },
+
+            updateSizeDisplay() {
+                const sizeEl = document.getElementById('recSizeDisplay');
+                if (!sizeEl) return;
+                const totalBytes = this.recordedChunks.reduce((acc, c) => acc + c.size, 0);
+                const mb = (totalBytes / (1024 * 1024)).toFixed(1);
+                sizeEl.textContent = `(~${mb} MB)`;
+            },
+
+            showBar() {
+                const bar = document.getElementById('adminRecorderBar');
+                if (bar) bar.style.display = 'flex';
+            },
+
+            hideBar() {
+                const bar = document.getElementById('adminRecorderBar');
+                if (bar) bar.style.display = 'none';
+            },
+
+            updateDockButton(isRec) {
+                const txt = document.getElementById('dockRecordTxt');
+                if (txt) txt.textContent = isRec ? 'Detener REC' : 'Grabar R2';
+            }
+        };
+        window.UbuntuClassRecorder = UbuntuClassRecorder;
+
         async function endLiveClass(id) {
             const ok = confirm('¿Estás seguro de que deseas dar por finalizada esta clase en vivo para todos los alumnos? La transmisión se cerrará en la plataforma.');
             if (!ok) return;
+
+            // Procesar grabación si el Admin estaba grabando la clase
+            if (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin' && window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording) {
+                const liveObj = liveClassesData.find(c => String(c.id) === String(id));
+                const saveOk = confirm('🔴 Grabación activa detectada.\n\n¿Deseas guardar y subir la grabación en 480p a Cloudflare R2 para publicarla en el curso?');
+                if (saveOk) {
+                    await window.UbuntuClassRecorder.stopAndUpload({
+                        courseId: liveObj ? liveObj.courseId : null,
+                        weekId: liveObj ? liveObj.weekId : null,
+                        courseTitle: liveObj ? liveObj.title : 'Clase en Vivo'
+                    });
+                } else {
+                    window.UbuntuClassRecorder.discardRecording();
+                }
+            }
 
             try {
                 if (db && id) {
@@ -1273,6 +1772,21 @@
             btnEnter.onclick = function() {
                 closeModal('instantLiveModal');
                 enterLiveRoom(title, instructor, roomName);
+
+                // Oferta de grabación en Cloudflare R2 exclusiva para Rol Admin durante pruebas
+                if (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin') {
+                    setTimeout(() => {
+                        const wantRec = confirm(`🔴 [Modo Prueba Admin]\n\n¿Deseas activar la Grabación Pluma (480p) en Cloudflare R2 para "${title}"?`);
+                        if (wantRec && window.UbuntuClassRecorder) {
+                            window.UbuntuClassRecorder.startRecording({
+                                courseId,
+                                weekId,
+                                courseTitle: title,
+                                weekTitle: 'Clase en Vivo'
+                            });
+                        }
+                    }, 1200);
+                }
             };
 
             const classId = `live_course_${courseId}_${Date.now()}`;
@@ -1357,6 +1871,21 @@
             }
             showToast(`¡Transmisión iniciada para "${courseTitle}"!`, 'success');
             enterLiveRoom(title, instructor, roomName, 'popup');
+
+            // Oferta de grabación en Cloudflare R2 exclusiva para Rol Admin
+            if (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin') {
+                setTimeout(() => {
+                    const wantRec = confirm(`🔴 [Modo Prueba Admin]\n\n¿Deseas activar la Grabación Pluma (480p) en Cloudflare R2 para la clase de "${courseTitle}"?\n\nAl terminar la clase, la grabación se comprimirá y se guardará automáticamente en el curso.`);
+                    if (wantRec && window.UbuntuClassRecorder) {
+                        window.UbuntuClassRecorder.startRecording({
+                            courseId,
+                            weekId,
+                            courseTitle,
+                            weekTitle
+                        });
+                    }
+                }, 1200);
+            }
         }
         window.startCourseLiveClass = startCourseLiveClass;
 
@@ -1540,12 +2069,22 @@
                 document.body.appendChild(dock);
             }
 
+            const isAdminUser = (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin');
+            const isRec = window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording;
+
+            const adminRecordBtnHtml = isAdminUser ? `
+                <button class="btn btn-outline btn-sm" id="btnDockAdminRecord" style="border-color: rgba(239,68,68,0.5); color: #ef4444; padding: 6px 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;" title="Iniciar / Detener Grabación R2 (Admin)">
+                    <i class="fa-solid fa-record-vinyl"></i> <span id="dockRecordTxt">${isRec ? 'Detener REC' : 'Grabar R2'}</span>
+                </button>
+            ` : '';
+
             dock.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="live-dot"></span>
                     <div style="font-weight: 700; font-size: 0.88rem; color: #fff;">${escapeHtml(title)}</div>
                 </div>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    ${adminRecordBtnHtml}
                     <button class="btn btn-primary btn-sm" id="btnDockFocusLive" title="Traer clase al frente / maximizar">
                         <i class="fa-solid fa-window-restore"></i> Ver Clase
                     </button>
@@ -1554,6 +2093,21 @@
                     </button>
                 </div>
             `;
+
+            const btnAdminRec = dock.querySelector('#btnDockAdminRecord');
+            if (btnAdminRec) {
+                btnAdminRec.onclick = function() {
+                    if (window.UbuntuClassRecorder) {
+                        if (window.UbuntuClassRecorder.isRecording) {
+                            window.UbuntuClassRecorder.stopAndUpload();
+                        } else {
+                            window.UbuntuClassRecorder.startRecording({
+                                courseTitle: title
+                            });
+                        }
+                    }
+                };
+            }
 
             const btnFocus = dock.querySelector('#btnDockFocusLive');
             if (btnFocus) {
