@@ -950,6 +950,13 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
     if (!videoContainer) return;
 
     const videoEmbedUrl = getYouTubeEmbedUrl(videoUrl);
+    const isDirectVideo = videoUrl && (
+        videoUrl.includes('.webm') || 
+        videoUrl.includes('.mp4') || 
+        videoUrl.includes('workers.dev') || 
+        videoUrl.includes('r2.dev') || 
+        videoUrl.includes('grabaciones-ubuntu-clasesweb')
+    );
     
     // Verificar si el campo pdfUrl o canvaUrl contiene un enlace de Canva
     const isPdfCanva = pdfUrl && (pdfUrl.includes('canva.com') || pdfUrl.includes('canva.link'));
@@ -971,6 +978,18 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             directUrl: videoUrl,
             aspectRatio: '56.25%',
             actionLabel: 'Ver en YouTube'
+        });
+    } else if (isDirectVideo) {
+        mediaList.push({
+            id: 'video',
+            type: 'html5_video',
+            title: 'Grabación de Clase (R2)',
+            icon: 'fa-solid fa-video',
+            iconColor: 'var(--siemens-teal)',
+            directUrl: videoUrl,
+            downloadUrl: videoUrl,
+            aspectRatio: '56.25%',
+            actionLabel: 'Abrir Video'
         });
     }
     if (docEmbedUrl) {
@@ -1045,6 +1064,20 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                         <div id="notebookView_${m.id}"></div>
                     ` : m.type === 'canva_notice' ? `
                         ${renderCanvaNoticeHtml(m.directUrl, isAuthor)}
+                    ` : m.type === 'html5_video' ? `
+                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; gap: 8px; flex-wrap: wrap;">
+                            <a href="${m.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
+                                <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Grabación
+                            </a>
+                            <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
+                            </a>
+                        </div>
+                        <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                            <video controls playsinline preload="metadata" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${m.directUrl}">
+                                Tu navegador no soporta reproducción directa de video.
+                            </video>
+                        </div>
                     ` : `
                         <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; gap: 8px; flex-wrap: wrap;">
                             ${m.downloadUrl ? `
@@ -1079,6 +1112,28 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             loadAndRenderNotebook(document.getElementById('notebookView_single'), item.rawUrl, item.directUrl);
         } else if (item.type === 'canva_notice') {
             videoContainer.innerHTML = renderCanvaNoticeHtml(item.directUrl, isAuthor);
+            videoContainer.style.display = 'block';
+        } else if (item.type === 'html5_video') {
+            videoContainer.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                    <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
+                        <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <a href="${item.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
+                            <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Grabación
+                        </a>
+                        <a href="${item.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${item.actionLabel}">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.actionLabel}
+                        </a>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                    <video controls playsinline preload="metadata" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${item.directUrl}">
+                        Tu navegador no soporta reproducción directa de video.
+                    </video>
+                </div>
+            `;
             videoContainer.style.display = 'block';
         } else {
             videoContainer.innerHTML = `
