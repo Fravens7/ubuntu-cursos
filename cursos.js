@@ -945,18 +945,82 @@ function renderCanvaNoticeHtml(directUrl, isAuthor = false) {
     `;
 }
 
-// Renderizador multimedia reusable (Video YouTube/Drive, Diapositivas/PDF, Canva y Colab)
-function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaUrl = null, isAuthor = false) {
+// Funciones auxiliares para reproductor de grabaciones
+function isDirectVideo(url) {
+    if (!url || typeof url !== 'string') return false;
+    return url.includes('.webm') || 
+           url.includes('.mp4') || 
+           url.includes('workers.dev') || 
+           url.includes('r2.dev') || 
+           url.includes('grabaciones-ubuntu-clasesweb');
+}
+
+function formatRecordingDate(url) {
+    if (!url) return '';
+    try {
+        const match = url.match(/_(\d{13})\.webm/);
+        if (match && match[1]) {
+            const timestamp = parseInt(match[1], 10);
+            const date = new Date(timestamp);
+            if (!isNaN(date.getTime())) {
+                const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+                const formatted = new Intl.DateTimeFormat('es-PE', options).format(date);
+                return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+            }
+        }
+    } catch (e) {
+        console.warn('Error formateando fecha de grabación:', e);
+    }
+    return '';
+}
+
+window.formatVideoDurationBadge = function(videoEl, badgeId) {
+    if (!videoEl) return;
+    const badgeEl = document.getElementById(badgeId);
+    if (!badgeEl) return;
+
+    const setDurationText = (duration) => {
+        if (!duration || isNaN(duration) || duration === Infinity || duration <= 0) return;
+        const totalSec = Math.round(duration);
+        const mins = Math.floor(totalSec / 60);
+        const secs = totalSec % 60;
+        let durationText = '';
+        if (mins >= 60) {
+            const hours = Math.floor(mins / 60);
+            const remainMins = mins % 60;
+            durationText = ` • Duración: ${hours} h ${remainMins} min`;
+        } else if (mins > 0) {
+            durationText = ` • Duración: ${mins} min ${secs > 0 ? secs + ' s' : ''}`;
+        } else {
+            durationText = ` • Duración: ${secs} s`;
+        }
+        badgeEl.textContent = durationText;
+    };
+
+    if (videoEl.duration && videoEl.duration !== Infinity && !isNaN(videoEl.duration)) {
+        setDurationText(videoEl.duration);
+    } else {
+        const onTimeUpdate = () => {
+            if (videoEl.duration && videoEl.duration !== Infinity) {
+                videoEl.removeEventListener('timeupdate', onTimeUpdate);
+                setDurationText(videoEl.duration);
+            }
+        };
+        videoEl.addEventListener('timeupdate', onTimeUpdate);
+        try {
+            videoEl.currentTime = 1e101;
+            videoEl.currentTime = 0;
+        } catch(e) {}
+    }
+};
+
+// Renderizador multimedia reusable (Video YouTube/Drive, Grabación de Clase, Diapositivas/PDF, Canva y Colab)
+function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaUrl = null, isAuthor = false, recordingUrl = null) {
     if (!videoContainer) return;
 
-    const videoEmbedUrl = getYouTubeEmbedUrl(videoUrl);
-    const isDirectVideo = videoUrl && (
-        videoUrl.includes('.webm') || 
-        videoUrl.includes('.mp4') || 
-        videoUrl.includes('workers.dev') || 
-        videoUrl.includes('r2.dev') || 
-        videoUrl.includes('grabaciones-ubuntu-clasesweb')
-    );
+    const directRecordingUrl = recordingUrl || (isDirectVideo(videoUrl) ? videoUrl : null);
+    const standardVideoUrl = (videoUrl && !isDirectVideo(videoUrl)) ? videoUrl : null;
+    const videoEmbedUrl = standardVideoUrl ? getYouTubeEmbedUrl(standardVideoUrl) : null;
     
     // Verificar si el campo pdfUrl o canvaUrl contiene un enlace de Canva
     const isPdfCanva = pdfUrl && (pdfUrl.includes('canva.com') || pdfUrl.includes('canva.link'));
@@ -975,19 +1039,22 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             icon: 'fa-brands fa-youtube',
             iconColor: '#ff4d4d',
             embedUrl: videoEmbedUrl,
-            directUrl: videoUrl,
+            directUrl: standardVideoUrl,
             aspectRatio: '56.25%',
             actionLabel: 'Ver en YouTube'
         });
-    } else if (isDirectVideo) {
-        const downloadUrl = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 'download=1';
+    }
+    if (directRecordingUrl) {
+        const downloadUrl = directRecordingUrl + (directRecordingUrl.includes('?') ? '&' : '?') + 'download=1';
+        const formattedDate = formatRecordingDate(directRecordingUrl);
         mediaList.push({
-            id: 'video',
+            id: 'recording',
             type: 'html5_video',
-            title: 'Grabación de Clase (R2)',
+            title: 'Grabación de Clase',
+            formattedDate: formattedDate,
             icon: 'fa-solid fa-video',
             iconColor: 'var(--siemens-teal)',
-            directUrl: videoUrl,
+            directUrl: directRecordingUrl,
             downloadUrl: downloadUrl,
             aspectRatio: '56.25%',
             actionLabel: 'Abrir Video'
@@ -1066,16 +1133,21 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                     ` : m.type === 'canva_notice' ? `
                         ${renderCanvaNoticeHtml(m.directUrl, isAuthor)}
                     ` : m.type === 'html5_video' ? `
-                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; gap: 8px; flex-wrap: wrap;">
-                            <a href="${m.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
-                                <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Grabación
-                            </a>
-                            <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
-                                <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
-                            </a>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
+                                <i class="${m.icon}" style="color: ${m.iconColor};"></i> ${m.title}${m.formattedDate ? ` • ${m.formattedDate}` : ''}<span id="badgeDuration_${m.id}"></span>
+                            </span>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <a href="${m.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
+                                    <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Grabación
+                                </a>
+                                <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
+                                </a>
+                            </div>
                         </div>
                         <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                            <video controls playsinline preload="metadata" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${m.directUrl}">
+                            <video controls playsinline preload="metadata" onloadedmetadata="window.formatVideoDurationBadge(this, 'badgeDuration_${m.id}')" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${m.directUrl}">
                                 <source src="${m.directUrl}" type="video/webm">
                                 Tu navegador no soporta reproducción directa de video.
                             </video>
@@ -1119,7 +1191,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             videoContainer.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                     <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
-                        <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}
+                        <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}${item.formattedDate ? ` • ${item.formattedDate}` : ''}<span id="badgeDuration_${item.id}"></span>
                     </span>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <a href="${item.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
@@ -1131,7 +1203,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                     </div>
                 </div>
                 <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                    <video controls playsinline preload="metadata" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${item.directUrl}">
+                    <video controls playsinline preload="metadata" onloadedmetadata="window.formatVideoDurationBadge(this, 'badgeDuration_${item.id}')" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${item.directUrl}">
                         <source src="${item.directUrl}" type="video/webm">
                         Tu navegador no soporta reproducción directa de video.
                     </video>
@@ -1431,9 +1503,11 @@ export function openCourseDetail(id) {
         }
 
         // Renderizar multimedia de la semana activa
-        const hasMedia = activeWeek.videoUrl || activeWeek.materialUrl || activeWeek.canvaUrl;
+        const recordingUrl = activeWeek.recordingUrl || (isDirectVideo(activeWeek.videoUrl) ? activeWeek.videoUrl : null);
+        const standardVideoUrl = (activeWeek.videoUrl && !isDirectVideo(activeWeek.videoUrl)) ? activeWeek.videoUrl : null;
+        const hasMedia = standardVideoUrl || activeWeek.materialUrl || activeWeek.canvaUrl || recordingUrl;
         if (hasMedia) {
-            renderCourseMedia(videoContainer, activeWeek.videoUrl, activeWeek.materialUrl, null, activeWeek.canvaUrl, isAuthor);
+            renderCourseMedia(videoContainer, standardVideoUrl, activeWeek.materialUrl, null, activeWeek.canvaUrl, isAuthor, recordingUrl);
         } else {
             videoContainer.style.display = 'block';
             videoContainer.innerHTML = `
@@ -1475,7 +1549,9 @@ export function openCourseDetail(id) {
         }
         if (weekHeaderEl) weekHeaderEl.innerHTML = '';
 
-        renderCourseMedia(videoContainer, course.videoUrl, course.pdfUrl, course.resourceUrl, course.canvaUrl, isAuthor);
+        const legacyRecording = isDirectVideo(course.videoUrl) ? course.videoUrl : null;
+        const legacyVideo = (course.videoUrl && !isDirectVideo(course.videoUrl)) ? course.videoUrl : null;
+        renderCourseMedia(videoContainer, legacyVideo, course.pdfUrl, course.resourceUrl, course.canvaUrl, isAuthor, legacyRecording);
     }
 
     setupModalButtons(course, isAuthor, isEnrolled);
@@ -1511,7 +1587,7 @@ export function openWeekModal(courseId, weekId = null) {
         if (week) {
             document.getElementById('weekModalTitle').textContent = `Editar Semana ${week.numero || ''}`;
             document.getElementById('weekInputTitle').value = week.titulo || '';
-            document.getElementById('weekInputVideoUrl').value = week.videoUrl || '';
+            document.getElementById('weekInputVideoUrl').value = (week.videoUrl && !isDirectVideo(week.videoUrl)) ? week.videoUrl : '';
             document.getElementById('weekInputMaterialUrl').value = week.materialUrl || '';
             if (document.getElementById('weekInputCanvaUrl')) {
                 document.getElementById('weekInputCanvaUrl').value = week.canvaUrl || '';
@@ -1572,14 +1648,17 @@ export async function saveWeekForm(e) {
     if (weekId) {
         const idx = semanas.findIndex(w => w.id === weekId);
         if (idx !== -1) {
+            const existingWeek = semanas[idx];
+            const existingRecording = existingWeek.recordingUrl || (isDirectVideo(existingWeek.videoUrl) ? existingWeek.videoUrl : null);
             semanas[idx] = {
-                ...semanas[idx],
+                ...existingWeek,
                 titulo: title,
                 videoUrl,
                 materialUrl,
                 canvaUrl,
                 anuncio,
-                visible
+                visible,
+                recordingUrl: existingRecording
             };
         }
     } else {
