@@ -726,6 +726,32 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: ELECCIÓN INICIO CLASE ADMIN (GRABAR R2 O SOLO CLASE) ================= -->
+    <div id="adminLiveChoiceModal" class="modal-overlay" style="display: none; z-index: 100000; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);">
+        <div class="modal-box" style="max-width: 480px; width: 92%; padding: 30px 24px; border: 1.5px solid var(--siemens-teal); background: #1a1e22; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center;">
+            <div style="width: 58px; height: 58px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
+                <i class="fa-solid fa-record-vinyl fa-beat"></i>
+            </div>
+            <span style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--siemens-teal); font-weight: 800;">Modo Administrador • Cloudflare R2</span>
+            <h3 style="font-size: 1.25rem; font-weight: 800; margin: 6px 0 10px; color: #fff;" id="adminLiveChoiceCourseTitle">Iniciar Clase en Vivo</h3>
+            <p style="font-size: 0.84rem; color: #94a3b8; line-height: 1.5; margin-bottom: 22px;">
+                ¿Deseas activar la <strong>Grabación 480p "Pluma"</strong>? El navegador te solicitará seleccionar la pantalla a capturar con compresión ultraligera y, al finalizar la clase, se guardará y publicará automáticamente en este curso.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="button" class="btn btn-primary" id="btnAdminChoiceRecord" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700; background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; font-size: 0.92rem;">
+                    <i class="fa-solid fa-record-vinyl"></i> Iniciar Clase y GRABAR en R2
+                </button>
+                <button type="button" class="btn btn-outline" id="btnAdminChoiceNoRecord" style="width: 100%; justify-content: center; padding: 11px; border-color: rgba(255,255,255,0.2); color: #cbd5e1; font-size: 0.88rem;">
+                    <i class="fa-solid fa-video"></i> Iniciar Solo Clase (Sin Grabar)
+                </button>
+                <button type="button" class="btn btn-outline" style="width: 100%; justify-content: center; font-size: 0.8rem; border: none; color: #64748b; margin-top: 4px;" onclick="closeModal('adminLiveChoiceModal')">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= MODAL: SUBIDA DE GRABACIÓN CLOUDFLARE R2 (ADMIN ONLY) ================= -->
     <div id="recorderUploadModal" class="modal-overlay" style="display: none; z-index: 100000; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);">
         <div class="modal-box" style="max-width: 480px; width: 92%; text-align: center; padding: 32px 24px; border: 1.5px solid var(--siemens-teal); background: #1a1e22; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
@@ -1064,7 +1090,9 @@
 
                 } catch (err) {
                     console.error("Error al iniciar grabación:", err);
-                    if (err.name !== 'NotAllowedError') {
+                    if (err.name === 'NotAllowedError') {
+                        showToast("Grabación cancelada: No se seleccionó ninguna pantalla para capturar.", "normal");
+                    } else {
                         showToast("No se pudo iniciar la grabación: " + err.message, "normal");
                     }
                     this.cleanupStreams();
@@ -1095,7 +1123,7 @@
             // Detener y Subir a Cloudflare R2
             async stopAndUpload(overrideMeta = null) {
                 if (!this.isRecording && this.recordedChunks.length === 0) return;
-                const meta = overrideMeta || this.currentMetadata || {};
+                const meta = overrideMeta || this.currentMetadata || window.currentActiveCourseLive || {};
 
                 this.stopTimer();
                 this.hideBar();
@@ -1203,7 +1231,10 @@
             // Guardar automáticamente la URL de la grabación en Firestore en la semana del curso
             async saveUrlToCourseWeek(courseId, weekId, videoUrl) {
                 try {
-                    if (!db) return;
+                    if (!db || !courseId || !weekId) {
+                        console.warn("Faltan parámetros para vincular:", { courseId, weekId, videoUrl });
+                        return;
+                    }
                     const courseRef = doc(db, 'cursos', String(courseId));
                     const courseSnap = await getDoc(courseRef);
                     if (courseSnap.exists()) {
@@ -1216,9 +1247,27 @@
                                 videoUrl: videoUrl
                             };
                             await updateDoc(courseRef, { semanas });
-                            if (window.refreshCurrentCourseDetail) {
+
+                            // Actualizar también en el array local en memoria de cursos.js
+                            if (window.getCoursesList) {
+                                const localList = window.getCoursesList();
+                                const localCourse = localList.find(c => String(c.id) === String(courseId));
+                                if (localCourse && Array.isArray(localCourse.semanas)) {
+                                    const lIdx = localCourse.semanas.findIndex(w => String(w.id) === String(weekId));
+                                    if (lIdx !== -1) {
+                                        localCourse.semanas[lIdx].videoUrl = videoUrl;
+                                    }
+                                }
+                            }
+
+                            showToast('¡Grabación vinculada exitosamente a la semana!', 'success');
+                            if (window.openCourseDetail) {
+                                window.openCourseDetail(courseId);
+                            } else if (window.refreshCurrentCourseDetail) {
                                 window.refreshCurrentCourseDetail();
                             }
+                        } else {
+                            console.warn("Semana no encontrada en Firestore:", weekId);
                         }
                     }
                 } catch (dbErr) {
@@ -1828,8 +1877,30 @@
         }
         window.generateInstantJitsiClass = generateInstantJitsiClass;
 
+        let pendingLiveSessionParams = null;
+
         // Iniciar Clase en Vivo vinculada directamente a un curso y semana
         async function startCourseLiveClass(courseId, weekId, courseTitle, weekTitle) {
+            // Si es administrador, abrir modal de elección directa para garantizar User Activation nativa
+            if (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin') {
+                pendingLiveSessionParams = { courseId, weekId, courseTitle, weekTitle };
+                const modal = document.getElementById('adminLiveChoiceModal');
+                const titleEl = document.getElementById('adminLiveChoiceCourseTitle');
+                if (titleEl) titleEl.textContent = `${courseTitle || 'Curso'} — ${weekTitle || 'Semana'}`;
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.classList.add('active');
+                }
+                return;
+            }
+
+            // Para profesores y roles regulares, iniciar directo sin modal admin
+            await executeStartCourseLiveClass(courseId, weekId, courseTitle, weekTitle, false);
+        }
+        window.startCourseLiveClass = startCourseLiveClass;
+
+        // Ejecución real de inicio de transmisión
+        async function executeStartCourseLiveClass(courseId, weekId, courseTitle, weekTitle, isRecording = false) {
             const title = `${courseTitle || 'Curso'} — ${weekTitle || 'Clase en Vivo'}`;
             const instructor = userDisplayName || 'Docente';
             const cleanTitle = (courseTitle || 'Curso').replace(/[^a-zA-Z0-9]/g, '');
@@ -1852,6 +1923,7 @@
             };
 
             currentLiveSessionId = classId;
+            window.currentActiveCourseLive = { courseId, weekId, courseTitle, weekTitle, title, roomName };
 
             try {
                 if (db) {
@@ -1870,24 +1942,48 @@
                 window.refreshCurrentCourseDetail();
             }
             showToast(`¡Transmisión iniciada para "${courseTitle}"!`, 'success');
-            enterLiveRoom(title, instructor, roomName, 'popup');
-
-            // Oferta de grabación en Cloudflare R2 exclusiva para Rol Admin
-            if (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin') {
-                setTimeout(() => {
-                    const wantRec = confirm(`🔴 [Modo Prueba Admin]\n\n¿Deseas activar la Grabación Pluma (480p) en Cloudflare R2 para la clase de "${courseTitle}"?\n\nAl terminar la clase, la grabación se comprimirá y se guardará automáticamente en el curso.`);
-                    if (wantRec && window.UbuntuClassRecorder) {
-                        window.UbuntuClassRecorder.startRecording({
-                            courseId,
-                            weekId,
-                            courseTitle,
-                            weekTitle
-                        });
-                    }
-                }, 1200);
-            }
+            enterLiveRoom(title, instructor, roomName, 'popup', courseId, weekId);
         }
-        window.startCourseLiveClass = startCourseLiveClass;
+        window.executeStartCourseLiveClass = executeStartCourseLiveClass;
+
+        // Event listeners directos para el modal de elección Admin
+        const btnAdminChoiceRecord = document.getElementById('btnAdminChoiceRecord');
+        if (btnAdminChoiceRecord) {
+            btnAdminChoiceRecord.onclick = async function() {
+                const modal = document.getElementById('adminLiveChoiceModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.remove('active');
+                }
+                if (!pendingLiveSessionParams) return;
+                const { courseId, weekId, courseTitle, weekTitle } = pendingLiveSessionParams;
+
+                // DIRECT USER GESTURE: Dispara de inmediato el selector de pantalla de Chrome sin bloqueos
+                const recStarted = await window.UbuntuClassRecorder.startRecording({
+                    courseId,
+                    weekId,
+                    courseTitle,
+                    weekTitle
+                });
+
+                // Abrir la sala de Jitsi
+                await executeStartCourseLiveClass(courseId, weekId, courseTitle, weekTitle, recStarted);
+            };
+        }
+
+        const btnAdminChoiceNoRecord = document.getElementById('btnAdminChoiceNoRecord');
+        if (btnAdminChoiceNoRecord) {
+            btnAdminChoiceNoRecord.onclick = async function() {
+                const modal = document.getElementById('adminLiveChoiceModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.remove('active');
+                }
+                if (!pendingLiveSessionParams) return;
+                const { courseId, weekId, courseTitle, weekTitle } = pendingLiveSessionParams;
+                await executeStartCourseLiveClass(courseId, weekId, courseTitle, weekTitle, false);
+            };
+        }
 
         function copyJitsiUrl() {
             const urlInput = document.getElementById('generatedJitsiUrl');
@@ -1924,7 +2020,7 @@
         }
 
         // ================= ENTER LIVE ROOM (POP-UP ILIMITADO O MODAL) =================
-        async function enterLiveRoom(title, instructor, roomName, mode = 'popup') {
+        async function enterLiveRoom(title, instructor, roomName, mode = 'popup', courseId = null, weekId = null) {
             const finalRoomName = roomName || 'UbuntuPeru_Live_' + Math.floor(Math.random() * 100000);
             const userTag = currentUserRole === 'admin' 
                 ? `${userDisplayName} (Administrador)` 
@@ -1962,7 +2058,7 @@
                     }
                 }, 1500);
 
-                showFloatingCallBar(title, finalRoomName);
+                showFloatingCallBar(title, finalRoomName, courseId, weekId);
                 showToast(`¡Clase iniciada en ventana dedicada! Sin límite de tiempo.`, 'success');
             } else {
                 document.getElementById('liveRoomTitle').innerHTML = `<i class="fa-solid fa-signal" style="color: var(--siemens-teal);"></i> ${title} — ${instructor}`;
@@ -2045,7 +2141,14 @@
         }
         window.hangupLiveClass = hangupLiveClass;
 
-        function showFloatingCallBar(title, roomName) {
+        function showFloatingCallBar(title, roomName, courseId = null, weekId = null) {
+            window.currentActiveCourseLive = {
+                title,
+                roomName,
+                courseId: courseId || window.currentActiveCourseLive?.courseId,
+                weekId: weekId || window.currentActiveCourseLive?.weekId
+            };
+
             let dock = document.getElementById('floatingLiveDock');
             if (!dock) {
                 dock = document.createElement('div');
@@ -2096,14 +2199,12 @@
 
             const btnAdminRec = dock.querySelector('#btnDockAdminRecord');
             if (btnAdminRec) {
-                btnAdminRec.onclick = function() {
+                btnAdminRec.onclick = async function() {
                     if (window.UbuntuClassRecorder) {
                         if (window.UbuntuClassRecorder.isRecording) {
-                            window.UbuntuClassRecorder.stopAndUpload();
+                            await window.UbuntuClassRecorder.stopAndUpload(window.currentActiveCourseLive);
                         } else {
-                            window.UbuntuClassRecorder.startRecording({
-                                courseTitle: title
-                            });
+                            await window.UbuntuClassRecorder.startRecording(window.currentActiveCourseLive || { courseTitle: title });
                         }
                     }
                 };
