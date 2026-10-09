@@ -732,8 +732,8 @@
             <div style="font-size: 2.4rem; color: var(--siemens-teal); margin-bottom: 12px; animation: pulse 1.5s infinite;">
                 <i class="fa-solid fa-cloud-arrow-up"></i>
             </div>
-            <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 6px; color: #fff;">Subiendo a Cloudflare R2</h3>
-            <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;" id="uploadModalDesc">Procesando compresión 480p "pluma" y guardando en bucket...</p>
+            <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 6px; color: #fff;">Subiendo Grabación de Clase</h3>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;" id="uploadModalDesc">Procesando video de la clase y guardando en la nube...</p>
             
             <div style="background: rgba(255,255,255,0.06); border-radius: 12px; height: 14px; overflow: hidden; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.1); position: relative;">
                 <div id="uploadProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--siemens-teal), var(--ubuntu-green)); border-radius: 12px; transition: width 0.25s ease;"></div>
@@ -862,7 +862,7 @@
             if (sizeInfo) sizeInfo.textContent = `0 MB / ${totalMb} MB`;
             if (successBox) successBox.style.display = 'none';
             if (closeBtn) closeBtn.style.display = 'none';
-            if (desc) desc.textContent = 'Comprimiendo video 480p "pluma" y guardando en bucket R2...';
+            if (desc) desc.textContent = 'Procesando video de clase y guardando en la nube...';
 
             modal.style.display = 'flex';
         }
@@ -893,7 +893,7 @@
 
             if (bar) bar.style.width = '100%';
             if (pct) pct.textContent = '100%';
-            if (desc) desc.textContent = '¡Grabación procesada y guardada con éxito en Cloudflare R2!';
+            if (desc) desc.textContent = '¡Grabación procesada y guardada con éxito en la plataforma!';
             if (successBox) successBox.style.display = 'block';
             if (successUrl) {
                 successUrl.innerHTML = `<a href="${publicUrl}" target="_blank" style="color: var(--siemens-teal); text-decoration: underline; font-weight: 600;">Abrir Video Grabado</a> <span style="color: #64748b; font-size: 0.72rem; margin-left: 6px;">(${publicUrl})</span>`;
@@ -1051,7 +1051,7 @@
 
                     this.startTimer();
                     if (window.renderFloatingDock) window.renderFloatingDock();
-                    showToast("Grabación 480p Pluma iniciada. Se subirá a Cloudflare R2.", "success");
+                    showToast("Grabación de clase iniciada.", "success");
                     return true;
 
                 } catch (err) {
@@ -1082,7 +1082,7 @@
                 }
             },
 
-            // Detener y Subir a Cloudflare R2
+            // Detener y Subir
             async stopAndUpload(overrideMeta = null) {
                 if (!this.isRecording && this.recordedChunks.length === 0) return;
                 const meta = overrideMeta || this.currentMetadata || window.currentActiveCourseLive || {};
@@ -1127,15 +1127,23 @@
                             showToast("¡Grabación subida y disponible en el curso!", "success");
                             resolve(publicVideoUrl);
                         } catch (uploadErr) {
-                            console.error("Error al subir a R2:", uploadErr);
-                            showToast("Error al subir a Cloudflare R2: " + uploadErr.message, "normal");
+                            console.error("Error al subir grabación:", uploadErr);
+                            showToast("Error al subir la grabación: " + uploadErr.message, "normal");
                             closeRecorderUploadModal();
                             resolve(null);
                         }
                     };
 
                     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                        if (this.mediaRecorder.state === 'paused') {
+                            try { this.mediaRecorder.resume(); } catch(e) {}
+                        }
                         this.mediaRecorder.onstop = finalize;
+                        try {
+                            if (typeof this.mediaRecorder.requestData === 'function') {
+                                this.mediaRecorder.requestData();
+                            }
+                        } catch(e) {}
                         this.mediaRecorder.stop();
                     } else {
                         finalize();
@@ -1182,11 +1190,11 @@
                                 resolve(`${this.workerUploadUrl}grabaciones-ubuntu-clasesweb/${filename}`);
                             }
                         } else {
-                            reject(new Error(`Servidor R2 respondió con código ${xhr.status}: ${xhr.responseText}`));
+                            reject(new Error(`Servidor de grabaciones respondió con código ${xhr.status}: ${xhr.responseText}`));
                         }
                     };
 
-                    xhr.onerror = () => reject(new Error("Error de red al conectar con Cloudflare Worker."));
+                    xhr.onerror = () => reject(new Error("Error de red al conectar con el servidor de grabaciones."));
                     xhr.send(blob);
                 });
             },
@@ -1205,9 +1213,11 @@
                         const semanas = Array.isArray(data.semanas) ? [...data.semanas] : [];
                         const idx = semanas.findIndex(w => String(w.id) === String(weekId));
                         if (idx !== -1) {
+                            const isOldWebm = semanas[idx].videoUrl && (semanas[idx].videoUrl.includes('.webm') || semanas[idx].videoUrl.includes('workers.dev'));
                             semanas[idx] = {
                                 ...semanas[idx],
-                                videoUrl: videoUrl
+                                recordingUrl: videoUrl,
+                                videoUrl: (!semanas[idx].videoUrl || isOldWebm) ? videoUrl : semanas[idx].videoUrl
                             };
                             await updateDoc(courseRef, { semanas });
 
@@ -1218,7 +1228,10 @@
                                 if (localCourse && Array.isArray(localCourse.semanas)) {
                                     const lIdx = localCourse.semanas.findIndex(w => String(w.id) === String(weekId));
                                     if (lIdx !== -1) {
-                                        localCourse.semanas[lIdx].videoUrl = videoUrl;
+                                        localCourse.semanas[lIdx].recordingUrl = videoUrl;
+                                        if (!localCourse.semanas[lIdx].videoUrl || isOldWebm) {
+                                            localCourse.semanas[lIdx].videoUrl = videoUrl;
+                                        }
                                     }
                                 }
                             }
@@ -1307,7 +1320,7 @@
             // Procesar grabación si el Admin estaba grabando la clase
             if (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin' && window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording) {
                 const liveObj = liveClassesData.find(c => String(c.id) === String(id));
-                const saveOk = confirm('🔴 Grabación activa detectada.\n\n¿Deseas guardar y subir la grabación en 480p a Cloudflare R2 para publicarla en el curso?');
+                const saveOk = confirm('🔴 Grabación activa detectada.\n\n¿Deseas guardar y subir la grabación para publicarla en el curso?');
                 if (saveOk) {
                     await window.UbuntuClassRecorder.stopAndUpload({
                         courseId: liveObj ? liveObj.courseId : null,
@@ -1780,7 +1793,8 @@
             const btnEnter = document.getElementById('btnEnterGeneratedClass');
             btnEnter.onclick = function() {
                 closeModal('instantLiveModal');
-                enterLiveRoom(title, instructor, roomName);
+                window.currentActiveCourseLive = { courseId, weekId, courseTitle, weekTitle, title, roomName };
+                enterLiveRoom(title, instructor, roomName, 'popup', courseId, weekId);
             };
 
             const classId = `live_course_${courseId}_${Date.now()}`;
@@ -1799,6 +1813,7 @@
             };
 
             currentLiveSessionId = classId;
+            window.currentActiveCourseLive = { courseId, weekId, courseTitle, weekTitle, title, roomName };
 
             // 1. Guardar en Firestore para sincronizar en tiempo real con TODOS los estudiantes
             try {
@@ -1830,6 +1845,7 @@
 
         // Ejecución real de inicio de transmisión
         async function executeStartCourseLiveClass(courseId, weekId, courseTitle, weekTitle, isRecording = false) {
+            if (window.closeModal) window.closeModal('courseDetailModal');
             const title = `${courseTitle || 'Curso'} — ${weekTitle || 'Clase en Vivo'}`;
             const instructor = userDisplayName || 'Docente';
             const cleanTitle = (courseTitle || 'Curso').replace(/[^a-zA-Z0-9]/g, '');
@@ -2053,7 +2069,7 @@
             if (isAdminUser) {
                 if (!isRec) {
                     recorderButtonsHtml = `
-                        <button type="button" class="btn btn-sm" id="btnDockStartRecord" style="background: rgba(0, 153, 153, 0.18); border: 1.5px solid var(--siemens-teal); color: var(--siemens-teal-light); padding: 7px 14px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: 0.2s;" title="Iniciar Grabación en Cloudflare R2">
+                        <button type="button" class="btn btn-sm" id="btnDockStartRecord" style="background: rgba(0, 153, 153, 0.18); border: 1.5px solid var(--siemens-teal); color: var(--siemens-teal-light); padding: 7px 14px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: 0.2s;" title="Iniciar Grabación de Clase">
                             <i class="fa-solid fa-record-vinyl" style="color: #38bdf8;"></i> <span>Grabar Clase</span>
                         </button>
                     `;
@@ -2063,7 +2079,7 @@
                             <i class="fa-solid ${isPaused ? 'fa-play' : 'fa-pause'}" style="color: ${isPaused ? '#38bdf8' : '#e2e8f0'};"></i>
                             <span>${isPaused ? 'Reanudar' : 'Pausar'}</span>
                         </button>
-                        <button type="button" class="btn btn-sm" id="btnDockRecStop" style="background: var(--siemens-teal); border: 1.5px solid var(--siemens-teal); color: #fff; padding: 7px 14px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="Finalizar grabación y subir a R2">
+                        <button type="button" class="btn btn-sm" id="btnDockRecStop" style="background: var(--siemens-teal); border: 1.5px solid var(--siemens-teal); color: #fff; padding: 7px 14px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="Finalizar grabación y guardar en el curso">
                             <i class="fa-solid fa-cloud-arrow-up"></i> <span>Detener y Guardar</span>
                         </button>
                     `;
@@ -2075,7 +2091,7 @@
                     <div id="dockRecInfoStrip" style="display: flex; align-items: center; justify-content: space-between; background: rgba(0, 0, 0, 0.45); border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; font-size: 0.8rem; border-left: 3.5px solid ${isPaused ? '#eab308' : 'var(--siemens-teal)'};">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span id="dockRecDot" style="width: 8px; height: 8px; border-radius: 50%; background: ${isPaused ? '#eab308' : '#38bdf8'}; display: inline-block; ${isPaused ? '' : 'animation: blinkREC 1.2s infinite alternate;'}"></span>
-                            <span style="font-weight: 700; color: ${isPaused ? '#facc15' : 'var(--siemens-teal-light)'}; font-size: 0.76rem; letter-spacing: 0.04em;">${isPaused ? 'GRABACIÓN EN PAUSA' : 'GRABANDO EN R2 (480p)'}</span>
+                            <span style="font-weight: 700; color: ${isPaused ? '#facc15' : 'var(--siemens-teal-light)'}; font-size: 0.76rem; letter-spacing: 0.04em;">${isPaused ? 'GRABACIÓN EN PAUSA' : 'GRABANDO CLASE'}</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px; font-family: monospace; font-size: 0.84rem; color: #fff;">
                             <span id="recTimerDisplay">${timerStr}</span>
