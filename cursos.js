@@ -980,6 +980,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             actionLabel: 'Ver en YouTube'
         });
     } else if (isDirectVideo) {
+        const downloadUrl = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 'download=1';
         mediaList.push({
             id: 'video',
             type: 'html5_video',
@@ -987,7 +988,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             icon: 'fa-solid fa-video',
             iconColor: 'var(--siemens-teal)',
             directUrl: videoUrl,
-            downloadUrl: videoUrl,
+            downloadUrl: downloadUrl,
             aspectRatio: '56.25%',
             actionLabel: 'Abrir Video'
         });
@@ -1075,6 +1076,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                         </div>
                         <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
                             <video controls playsinline preload="metadata" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${m.directUrl}">
+                                <source src="${m.directUrl}" type="video/webm">
                                 Tu navegador no soporta reproducción directa de video.
                             </video>
                         </div>
@@ -1130,6 +1132,7 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                 </div>
                 <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
                     <video controls playsinline preload="metadata" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${item.directUrl}">
+                        <source src="${item.directUrl}" type="video/webm">
                         Tu navegador no soporta reproducción directa de video.
                     </video>
                 </div>
