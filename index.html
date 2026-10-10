@@ -924,15 +924,22 @@
             currentMetadata: null, // { courseId, weekId, courseTitle, weekTitle }
             workerUploadUrl: 'https://ubuntu-grabaciones-uploader.asoc-ubuntuperu.workers.dev/',
 
-            // Verificar si el usuario actual es admin
+            // Verificar si el usuario actual tiene permisos de grabación (profesores y administradores)
+            canRecord() {
+                if (typeof currentUserRole === 'undefined' || !currentUserRole) return false;
+                const role = String(currentUserRole).toLowerCase().trim();
+                return role === 'admin' || role === 'profesor' || role === 'docente' || role === 'instructor' || role === 'teacher';
+            },
+
             isAdmin() {
-                return (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin');
+                return this.canRecord();
             },
 
             // Iniciar grabación 480p "pluma"
             async startRecording(metadata = {}) {
-                if (!this.isAdmin()) {
-                    console.warn("Grabación restringida: Solo el rol admin puede grabar en esta fase de prueba.");
+                if (!this.canRecord()) {
+                    console.warn("Grabación restringida: Solo profesores y administradores pueden grabar clases.");
+                    showToast("Solo los profesores y administradores pueden iniciar grabaciones.", "normal");
                     return false;
                 }
 
@@ -1341,8 +1348,8 @@
             const ok = confirm('¿Estás seguro de que deseas dar por finalizada esta clase en vivo para todos los alumnos? La transmisión se cerrará en la plataforma.');
             if (!ok) return;
 
-            // Procesar grabación si el Admin estaba grabando la clase
-            if (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin' && window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording) {
+            // Procesar grabación si estaba grabando la clase
+            if (window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording) {
                 const liveObj = liveClassesData.find(c => String(c.id) === String(id));
                 const saveOk = confirm('🔴 Grabación activa detectada.\n\n¿Deseas guardar y subir la grabación para publicarla en el curso?');
                 if (saveOk) {
@@ -2112,7 +2119,7 @@
             const session = window.currentActiveCourseLive || {};
             const title = session.title || 'Clase en Vivo';
             const roomName = session.roomName || '';
-            const isAdminUser = (typeof currentUserRole !== 'undefined' && currentUserRole === 'admin');
+            const canRecord = window.UbuntuClassRecorder ? window.UbuntuClassRecorder.canRecord() : (['admin', 'profesor', 'docente', 'instructor', 'teacher'].includes(String(currentUserRole || '').toLowerCase().trim()));
             const isRec = window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording;
             const isPaused = window.UbuntuClassRecorder && window.UbuntuClassRecorder.isPaused;
 
@@ -2132,7 +2139,7 @@
             const remS = String(remaining % 60).padStart(2, '0');
 
             let recorderButtonsHtml = '';
-            if (isAdminUser) {
+            if (canRecord) {
                 if (!isRec) {
                     recorderButtonsHtml = `
                         <button type="button" class="btn btn-sm" id="btnDockStartRecord" style="background: rgba(0, 153, 153, 0.18); border: 1.5px solid var(--siemens-teal); color: var(--siemens-teal-light); padding: 7px 14px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: 0.2s;" title="Iniciar Grabación de Clase">
