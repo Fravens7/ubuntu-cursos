@@ -1271,7 +1271,7 @@
                 }
             },
 
-            // Temporizador
+            // Temporizador con seguro inteligente (Límite 1h 20m + 10m de aviso -> 1h 30m auto-guardado)
             startTimer() {
                 const timerEl = document.getElementById('recTimerDisplay');
                 if (this.timerInterval) clearInterval(this.timerInterval);
@@ -1282,6 +1282,30 @@
                         const m = String(Math.floor((this.elapsedSeconds % 3600) / 60)).padStart(2, '0');
                         const s = String(this.elapsedSeconds % 60).padStart(2, '0');
                         if (timerEl) timerEl.textContent = `${h}:${m}:${s}`;
+
+                        // Constantes del límite pedagógico acordado con dirección:
+                        const WARN_SECONDS = 80 * 60; // 1h 20min (4800s)
+                        const MAX_SECONDS = 90 * 60;  // 1h 30min (5400s)
+
+                        if (this.elapsedSeconds === WARN_SECONDS) {
+                            showToast("⏳ Tiempo de clase cumplido (1h 20m). La grabación finalizará en 10 minutos.", "normal");
+                            if (window.renderFloatingDock) window.renderFloatingDock();
+                        }
+
+                        if (this.elapsedSeconds > WARN_SECONDS && this.elapsedSeconds < MAX_SECONDS) {
+                            const remaining = MAX_SECONDS - this.elapsedSeconds;
+                            const remM = String(Math.floor(remaining / 60)).padStart(2, '0');
+                            const remS = String(remaining % 60).padStart(2, '0');
+                            const warnBadge = document.getElementById('dockRecWarningCountdown');
+                            if (warnBadge) {
+                                warnBadge.textContent = `${remM}:${remS}`;
+                            }
+                        }
+
+                        if (this.elapsedSeconds >= MAX_SECONDS) {
+                            showToast("⏰ Límite de 1h 30m alcanzado. Guardando grabación automáticamente...", "success");
+                            this.stopAndUpload(this.currentMetadata || window.currentActiveCourseLive);
+                        }
                     }
                 }, 1000);
             },
@@ -1952,15 +1976,33 @@
                     try { liveAppWindow.focus(); } catch(e) {}
                 }
 
-                // Detectar si la ventana emergente se cierra (no borramos la transmisión)
+                // Detectar si la ventana emergente se cierra
                 if (window.liveWindowMonitor) clearInterval(window.liveWindowMonitor);
                 window.liveWindowMonitor = setInterval(() => {
                     if (window.liveAppWindow && window.liveAppWindow.closed) {
                         clearInterval(window.liveWindowMonitor);
                         window.liveWindowMonitor = null;
-                        const dock = document.getElementById('floatingLiveDock');
-                        if (dock) dock.remove();
-                        showToast('Ventana de clase cerrada. La transmisión sigue activa si deseas reingresar.', 'normal');
+
+                        // Si la grabación estaba activa, no eliminar el dock y proteger con seguro de 2 minutos
+                        if (window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording) {
+                            showToast('Ventana de clase cerrada. Presiona "Detener y Guardar" para procesar la grabación.', 'normal');
+                            if (window.renderFloatingDock) window.renderFloatingDock();
+                            if (!window.liveCloseAutoSaveTimer) {
+                                window.liveCloseAutoSaveTimer = setTimeout(async () => {
+                                    if (window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording && (!window.liveAppWindow || window.liveAppWindow.closed)) {
+                                        showToast('Grabación finalizada y guardada automáticamente por cierre de clase.', 'success');
+                                        await window.UbuntuClassRecorder.stopAndUpload();
+                                        const dock = document.getElementById('floatingLiveDock');
+                                        if (dock) dock.remove();
+                                    }
+                                    window.liveCloseAutoSaveTimer = null;
+                                }, 120000); // 2 minutos
+                            }
+                        } else {
+                            const dock = document.getElementById('floatingLiveDock');
+                            if (dock) dock.remove();
+                            showToast('Ventana de clase cerrada. La transmisión sigue activa si deseas reingresar.', 'normal');
+                        }
                     }
                 }, 1500);
 
@@ -2005,6 +2047,11 @@
 
         // Traer clase al frente / maximizar
         function focusLiveClass(title, instructor, roomName) {
+            if (window.liveCloseAutoSaveTimer) {
+                clearTimeout(window.liveCloseAutoSaveTimer);
+                window.liveCloseAutoSaveTimer = null;
+            }
+
             // 1. Si el modal interno de la página está abierto o minimizado
             const modal = document.getElementById('liveRoomModal');
             if (modal && modal.classList.contains('active')) {
@@ -2027,23 +2074,34 @@
         }
         window.focusLiveClass = focusLiveClass;
 
-        // Colgar / salir de la llamada en vivo localmente (sin borrar la clase de Firestore)
-        function hangupLiveClass() {
-            if (window.liveWindowMonitor) {
-                clearInterval(window.liveWindowMonitor);
-                window.liveWindowMonitor = null;
+        // Colgar / finalizar la llamada en vivo (docente/admin finaliza para todos; estudiante solo sale)
+        async function hangupLiveClass() {
+            if (window.liveCloseAutoSaveTimer) {
+                clearTimeout(window.liveCloseAutoSaveTimer);
+                window.liveCloseAutoSaveTimer = null;
             }
 
-            if (window.liveAppWindow && !window.liveAppWindow.closed) {
-                try { window.liveAppWindow.close(); } catch(e) {}
+            const isTeacher = (currentUserRole === 'admin' || currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor');
+            const targetLiveId = currentLiveSessionId || (liveClassesData && liveClassesData.length > 0 ? liveClassesData[0].id : null);
+
+            if (isTeacher && targetLiveId) {
+                // Si es docente o admin, finalizar la clase en vivo para todos los alumnos y limpiar Firestore
+                await endLiveClass(targetLiveId);
+            } else {
+                // Si es estudiante, simplemente salir localmente
+                if (window.liveWindowMonitor) {
+                    clearInterval(window.liveWindowMonitor);
+                    window.liveWindowMonitor = null;
+                }
+                if (window.liveAppWindow && !window.liveAppWindow.closed) {
+                    try { window.liveAppWindow.close(); } catch(e) {}
+                }
+                window.liveAppWindow = null;
+                closeLiveRoom();
+                const dock = document.getElementById('floatingLiveDock');
+                if (dock) dock.remove();
+                showToast('Has salido de la llamada.', 'normal');
             }
-            window.liveAppWindow = null;
-
-            closeLiveRoom();
-
-            const dock = document.getElementById('floatingLiveDock');
-            if (dock) dock.remove();
-            showToast('Has salido de la llamada. La transmisión sigue activa en el catálogo si deseas reingresar.', 'normal');
         }
         window.hangupLiveClass = hangupLiveClass;
 
@@ -2064,6 +2122,14 @@
             const timerStr = `${h}:${m}:${s}`;
             const totalBytes = window.UbuntuClassRecorder ? window.UbuntuClassRecorder.recordedChunks.reduce((acc, c) => acc + c.size, 0) : 0;
             const mbStr = (totalBytes / (1024 * 1024)).toFixed(1);
+
+            const elapsed = window.UbuntuClassRecorder ? window.UbuntuClassRecorder.elapsedSeconds : 0;
+            const WARN_SECONDS = 80 * 60; // 1h 20m
+            const MAX_SECONDS = 90 * 60;  // 1h 30m
+            const isWarning = isRec && elapsed >= WARN_SECONDS && elapsed < MAX_SECONDS;
+            const remaining = Math.max(0, MAX_SECONDS - elapsed);
+            const remM = String(Math.floor(remaining / 60)).padStart(2, '0');
+            const remS = String(remaining % 60).padStart(2, '0');
 
             let recorderButtonsHtml = '';
             if (isAdminUser) {
@@ -2088,10 +2154,14 @@
 
             dock.innerHTML = `
                 ${isRec ? `
-                    <div id="dockRecInfoStrip" style="display: flex; align-items: center; justify-content: space-between; background: rgba(0, 0, 0, 0.45); border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; font-size: 0.8rem; border-left: 3.5px solid ${isPaused ? '#eab308' : 'var(--siemens-teal)'};">
+                    <div id="dockRecInfoStrip" style="display: flex; align-items: center; justify-content: space-between; background: ${isWarning ? 'rgba(234, 179, 8, 0.16)' : 'rgba(0, 0, 0, 0.45)'}; border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; font-size: 0.8rem; border-left: 3.5px solid ${isWarning ? '#eab308' : (isPaused ? '#eab308' : 'var(--siemens-teal)')}; ${isWarning ? 'border: 1px solid rgba(234, 179, 8, 0.4);' : ''}">
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <span id="dockRecDot" style="width: 8px; height: 8px; border-radius: 50%; background: ${isPaused ? '#eab308' : '#38bdf8'}; display: inline-block; ${isPaused ? '' : 'animation: blinkREC 1.2s infinite alternate;'}"></span>
-                            <span style="font-weight: 700; color: ${isPaused ? '#facc15' : 'var(--siemens-teal-light)'}; font-size: 0.76rem; letter-spacing: 0.04em;">${isPaused ? 'GRABACIÓN EN PAUSA' : 'GRABANDO CLASE'}</span>
+                            <span id="dockRecDot" style="width: 8px; height: 8px; border-radius: 50%; background: ${isPaused ? '#eab308' : (isWarning ? '#facc15' : '#38bdf8')}; display: inline-block; ${isPaused ? '' : 'animation: blinkREC 1.2s infinite alternate;'}"></span>
+                            <span style="font-weight: 700; color: ${isPaused ? '#facc15' : (isWarning ? '#facc15' : 'var(--siemens-teal-light)')}; font-size: 0.76rem; letter-spacing: 0.04em;">
+                                ${isWarning 
+                                    ? `CIERRE EN <span id="dockRecWarningCountdown">${remM}:${remS}</span>` 
+                                    : (isPaused ? 'GRABACIÓN EN PAUSA' : 'GRABANDO CLASE')}
+                            </span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px; font-family: monospace; font-size: 0.84rem; color: #fff;">
                             <span id="recTimerDisplay">${timerStr}</span>
