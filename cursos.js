@@ -33,6 +33,8 @@ export function setCursosUser(user, role, name) {
 export function canUserEditCourse(course) {
     if (!currentAuthUser) return false;
     if (currentUserRole === 'admin') return true;
+    // Si el curso fue creado por un admin, ningún otro rol puede editarlo o gestionarlo
+    if (course && course.creatorRole === 'admin') return false;
     const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher');
     if (!isTeacher) return false;
     
@@ -593,10 +595,16 @@ export function renderCourses() {
     const currentUserId = currentAuthUser ? currentAuthUser.uid : null;
 
     // Filtrar cursos:
+    // Si el curso fue creado por un rol admin, SOLO un rol admin puede verlo (oculta pruebas/testeos de producción a estudiantes y profesores)
     // Si es admin: ve todos los cursos (activos y ocultos) para gestión y supervisión general
     // Si es profesor: solo sus propios cursos (impartidos por él)
     // Si es estudiante: cursos activos del catálogo general
     let filtered = coursesList.filter(c => {
+        // Regla estricta: Si el curso fue creado por un admin, solo un admin puede verlo
+        if (c.creatorRole === 'admin' && !isAdmin) {
+            return false;
+        }
+
         if (isAdmin) {
             // El administrador visualiza todos los cursos existentes
         } else if (isTeacher) {
@@ -646,6 +654,7 @@ export function renderCourses() {
                         <span class="course-badge">${course.category || 'General'}</span>
                         <span class="course-level-badge">${course.level || 'Principiante'}</span>
                         ${isHidden ? '<span style="position: absolute; bottom: 8px; left: 8px; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.05em;"><i class="fa-solid fa-eye-slash"></i> OCULTO</span>' : ''}
+                        ${(isAdmin && course.creatorRole === 'admin') ? '<span style="position: absolute; top: 8px; left: 8px; background: #6366f1; color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.05em;"><i class="fa-solid fa-flask"></i> SOLO ADMIN</span>' : ''}
                     </div>
                     <div class="course-body">
                         <div class="course-category">${course.category || ''} • ${course.duration || '20 horas'}</div>
@@ -693,6 +702,7 @@ export function renderCourses() {
     // Renderizar Mis Cursos Inscritos (Para estudiantes y profesores)
     const myEnrolled = coursesList.filter(c => {
         if (!currentUserId) return false;
+        if (c.creatorRole === 'admin' && !isAdmin) return false;
         return Array.isArray(c.inscritos) && c.inscritos.includes(currentUserId);
     });
 
@@ -741,6 +751,11 @@ export async function toggleEnroll(id) {
 
     const course = coursesList.find(c => c.id === id);
     if (!course) return;
+
+    if (course.creatorRole === 'admin' && currentUserRole !== 'admin') {
+        if (window.showToast) window.showToast('No puedes inscribirte a cursos exclusivos de administración.', 'warning');
+        return;
+    }
 
     const currentUserId = currentAuthUser.uid;
     const isEnrolled = Array.isArray(course.inscritos) && course.inscritos.includes(currentUserId);
@@ -1340,6 +1355,11 @@ export function openCourseDetail(id) {
     const course = coursesList.find(c => c.id === id);
     if (!course) return;
 
+    if (course.creatorRole === 'admin' && currentUserRole !== 'admin') {
+        if (window.showToast) window.showToast('Este curso es exclusivo de administración/pruebas.', 'warning');
+        return;
+    }
+
     currentOpenCourseId = id;
 
     const modal = document.getElementById('courseDetailModal');
@@ -1388,7 +1408,11 @@ export function openCourseDetail(id) {
         }
 
         // Renderizar barra de navegación de semanas (Píldoras)
-        const liveList = (window.liveClassesData || []);
+        const isAdminUser = currentUserRole === 'admin';
+        const liveList = (window.liveClassesData || []).filter(c => {
+            if (c.creatorRole === 'admin' && !isAdminUser) return false;
+            return true;
+        });
 
         if (weeksNavEl) {
             weeksNavEl.innerHTML = `
@@ -1847,6 +1871,7 @@ export async function handleCreateCourse(e) {
         instructor,
         authorId,
         authorEmail,
+        creatorRole: currentUserRole,
         duration,
         description,
         icon,
