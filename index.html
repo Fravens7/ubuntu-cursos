@@ -1406,15 +1406,24 @@
             const sidebarBadge = document.getElementById('sidebarLiveBadge');
 
             const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher' || currentUserRole === 'admin');
+            const isAdmin = currentUserRole === 'admin';
 
-            // 1. Badge "LIVE" en Sidebar (solo si hay transmisiones activas)
+            // Filtrar transmisiones en vivo: Si fue creada por admin, SOLO los administradores pueden verla
+            const visibleLives = (liveClassesData || []).filter(live => {
+                if (live.creatorRole === 'admin' && !isAdmin) {
+                    return false;
+                }
+                return true;
+            });
+
+            // 1. Badge "LIVE" en Sidebar (solo si hay transmisiones activas visibles)
             if (sidebarBadge) {
-                sidebarBadge.style.display = (liveClassesData && liveClassesData.length > 0) ? 'inline-block' : 'none';
+                sidebarBadge.style.display = (visibleLives && visibleLives.length > 0) ? 'inline-block' : 'none';
             }
 
             // 2. Grid de Sesiones Activas
             if (activeGrid) {
-                if (!liveClassesData || liveClassesData.length === 0) {
+                if (!visibleLives || visibleLives.length === 0) {
                     activeGrid.innerHTML = `
                         <div style="grid-column: 1/-1; text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-lg); border: 1.5px dashed var(--border-color);">
                             <i class="fa-solid fa-tower-broadcast" style="font-size: 2.4rem; margin-bottom: 12px; display: block; color: var(--siemens-teal); opacity: 0.6;"></i>
@@ -1434,7 +1443,7 @@
                         </div>
                     `;
                 } else {
-                    activeGrid.innerHTML = liveClassesData.map(live => `
+                    activeGrid.innerHTML = visibleLives.map(live => `
                         <div class="live-card active-now">
                             <div class="live-card-body">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1445,6 +1454,7 @@
                                 <div class="live-instructor">
                                     <i class="fa-solid fa-user-tie" style="color: var(--siemens-teal);"></i>
                                     <span>${escapeHtml(live.instructor)}</span>
+                                    ${isAdmin && live.creatorRole === 'admin' ? '<span style="margin-left: 6px; background: #6366f1; color: #fff; font-size: 0.62rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;"><i class="fa-solid fa-flask"></i> SALA DE TEST (ADMIN)</span>' : ''}
                                 </div>
                                 <div class="live-time-info">
                                     <i class="fa-regular fa-clock"></i>
@@ -1515,6 +1525,7 @@
         let currentUser = null;
         let userDisplayName = 'Usuario';
         let currentUserRole = 'estudiante';
+        window.currentUserRole = currentUserRole;
 
         // Escuchar estado de autenticación (Protección de ruta)
         onAuthStateChanged(auth, async (user) => {
@@ -1589,6 +1600,7 @@
                 console.warn("Aviso: No se pudo leer el documento de Firestore, usando datos de sesión:", err);
             }
 
+            window.currentUserRole = currentUserRole;
             applyUserRoleUI(userDisplayName, currentUserRole);
             setCursosUser(user, currentUserRole, userDisplayName);
             setReportsUser(user, currentUserRole);
@@ -1834,6 +1846,7 @@
                 title: title,
                 instructor: instructor,
                 instructorId: currentUser ? currentUser.uid : null,
+                creatorRole: currentUserRole,
                 roomName: roomName,
                 courseId: courseId,
                 weekId: weekId,
@@ -1889,6 +1902,7 @@
                 title: title,
                 instructor: instructor,
                 instructorId: currentUser ? currentUser.uid : null,
+                creatorRole: currentUserRole,
                 roomName: roomName,
                 courseId: courseId,
                 weekId: weekId,
@@ -1958,6 +1972,13 @@
 
         // ================= ENTER LIVE ROOM (POP-UP ILIMITADO O MODAL) =================
         async function enterLiveRoom(title, instructor, roomName, mode = 'popup', courseId = null, weekId = null) {
+            // Protección: Si la sala fue creada por un administrador, sólo un administrador puede acceder
+            const currentLiveObj = (liveClassesData || []).find(c => (roomName && c.roomName === roomName) || (courseId && c.courseId === courseId));
+            if (currentLiveObj && currentLiveObj.creatorRole === 'admin' && currentUserRole !== 'admin') {
+                showToast('Esta sala de transmisión es de prueba y exclusiva de administradores.', 'warning');
+                return;
+            }
+
             const finalRoomName = roomName || 'UbuntuPeru_Live_' + Math.floor(Math.random() * 100000);
             const userTag = currentUserRole === 'admin' 
                 ? `${userDisplayName} (Administrador)` 
