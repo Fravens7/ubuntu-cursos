@@ -65,6 +65,11 @@
                 <i class="fa-solid fa-plus-circle"></i>
                 <span>Crear Nuevo Curso</span>
             </div>
+            <div class="nav-item role-teacher-only" onclick="openTeacherGuideModal()">
+                <i class="fa-solid fa-book-bookmark" style="color: var(--siemens-teal);"></i>
+                <span>Guía del Docente</span>
+                <span style="margin-left: auto; font-size: 0.65rem; background: rgba(0, 153, 153, 0.12); color: var(--siemens-teal); padding: 2px 7px; border-radius: 999px; font-weight: 700;">PDF</span>
+            </div>
 
             <div class="nav-section-title role-admin-only">Administración</div>
             <div class="nav-item role-admin-only" onclick="switchView('view-reports', this)">
@@ -132,6 +137,9 @@
                             </button>
                             <button class="btn btn-orange" onclick="switchView('view-live', document.querySelectorAll('.nav-item')[1])">
                                 <i class="fa-solid fa-tower-broadcast"></i> Ver Clases en Vivo
+                            </button>
+                            <button class="btn btn-outline role-teacher-only" onclick="openTeacherGuideModal()" style="border-color: rgba(255, 255, 255, 0.35); color: #fff; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(4px);">
+                                <i class="fa-solid fa-book-bookmark"></i> Guía del Docente
                             </button>
                             <button class="btn btn-outline role-student-only" onclick="openStudentGuideModal()" style="border-color: rgba(255, 255, 255, 0.35); color: #fff; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(4px);">
                                 <i class="fa-solid fa-book-open-reader"></i> Guía del Estudiante
@@ -336,6 +344,44 @@
                     <span>No volver a mostrar automáticamente al iniciar sesión</span>
                 </label>
                 <button type="button" class="btn btn-primary btn-sm" onclick="closeStudentGuideModal()">
+                    ¡Entendido! Explorar Plataforma
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: GUÍA DE USUARIO DOCENTE / PROFESOR ================= -->
+    <div class="modal-overlay" id="teacherGuideModal" onclick="if(event.target === this) closeTeacherGuideModal()">
+        <div class="modal-box modal-guide-box">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(0, 153, 153, 0.25); display: flex; align-items: center; justify-content: center; color: var(--siemens-teal); flex-shrink: 0;">
+                        <i class="fa-solid fa-chalkboard-user" style="font-size: 1.2rem;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.05rem; color: #fff; font-weight: 700;">Guía de Usuario para Docentes</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: rgba(255, 255, 255, 0.75);">Manual de inducción y gestión docente paso a paso</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a id="teacherGuideExtLink" href="https://drive.google.com/file/d/1Bcu_j5oYwukGu6NyiZ8atTpRVOxlr6t1/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="color: #fff; border-color: rgba(255,255,255,0.3); padding: 5px 12px; font-size: 0.78rem; text-decoration: none;" title="Abrir en pestaña nueva">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="hide-mobile">Abrir en Drive</span>
+                    </a>
+                    <button class="modal-close" onclick="closeTeacherGuideModal()" title="Cerrar Guía">&times;</button>
+                </div>
+            </div>
+
+            <div class="modal-body" style="padding: 0; flex: 1; display: flex; flex-direction: column;">
+                <div class="guide-tab-pane active" style="display: flex; flex-direction: column; flex: 1; height: 100%;">
+                    <iframe id="teacherGuideIframe" class="guide-iframe" src="" allow="autoplay" allowfullscreen></iframe>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.82rem; color: var(--text-secondary); user-select: none;">
+                    <input type="checkbox" id="chkDontShowTeacherGuideAgain" checked style="accent-color: var(--siemens-teal); cursor: pointer; width: 16px; height: 16px;">
+                    <span>No volver a mostrar automáticamente al iniciar sesión</span>
+                </label>
+                <button type="button" class="btn btn-primary btn-sm" onclick="closeTeacherGuideModal()">
                     ¡Entendido! Explorar Plataforma
                 </button>
             </div>
@@ -1608,6 +1654,9 @@
 
             // Disparador de Onboarding: Guía del Estudiante automática en primera visita
             checkStudentGuideOnboarding(user.uid, currentUserRole);
+
+            // Disparador de Onboarding: Guía del Docente automática en primera visita (Solo Profesores)
+            checkTeacherGuideOnboarding(user.uid, currentUserRole);
         });
 
         // Actualizar interfaz según el rol y nombre
@@ -2595,6 +2644,52 @@
             }
         }
         window.checkStudentGuideOnboarding = checkStudentGuideOnboarding;
+
+        // ================= GUÍA DEL DOCENTE / PROFESOR (MODAL Y ONBOARDING) =================
+        const TEACHER_GUIDE_PREVIEW_URL = 'https://drive.google.com/file/d/1Bcu_j5oYwukGu6NyiZ8atTpRVOxlr6t1/preview';
+        const TEACHER_GUIDE_DRIVE_EXT_URL = 'https://drive.google.com/file/d/1Bcu_j5oYwukGu6NyiZ8atTpRVOxlr6t1/view?usp=sharing';
+
+        function openTeacherGuideModal() {
+            const modal = document.getElementById('teacherGuideModal');
+            if (!modal) return;
+            const iframe = document.getElementById('teacherGuideIframe');
+            if (iframe && (!iframe.src || iframe.src === 'about:blank' || !iframe.src.includes('drive.google.com'))) {
+                iframe.src = TEACHER_GUIDE_PREVIEW_URL;
+            }
+            modal.classList.add('active');
+        }
+        window.openTeacherGuideModal = openTeacherGuideModal;
+
+        function closeTeacherGuideModal() {
+            const modal = document.getElementById('teacherGuideModal');
+            if (modal) modal.classList.remove('active');
+
+            if (currentUser && currentUser.uid) {
+                const chk = document.getElementById('chkDontShowTeacherGuideAgain');
+                if (!chk || chk.checked) {
+                    localStorage.setItem('guia_profesor_vista_' + currentUser.uid, 'true');
+                } else {
+                    localStorage.removeItem('guia_profesor_vista_' + currentUser.uid);
+                }
+            }
+        }
+        window.closeTeacherGuideModal = closeTeacherGuideModal;
+
+        function checkTeacherGuideOnboarding(uid, role) {
+            const normalizedRole = role ? role.toLowerCase().trim() : '';
+            // Regla de oro: SOLO PARA PROFESOR / DOCENTE (Estudiantes quedan estrictamente excluidos)
+            const isTeacher = (normalizedRole === 'profesor' || normalizedRole === 'docente' || normalizedRole === 'instructor' || normalizedRole === 'teacher' || normalizedRole === 'admin');
+            if (!isTeacher) return;
+
+            const hasSeenGuide = localStorage.getItem('guia_profesor_vista_' + uid);
+            if (!hasSeenGuide) {
+                // Pequeño retardo para dar tiempo a que los cursos y UI carguen fluidamente
+                setTimeout(() => {
+                    openTeacherGuideModal();
+                }, 800);
+            }
+        }
+        window.checkTeacherGuideOnboarding = checkTeacherGuideOnboarding;
 
         // Toast Helper
         function showToast(message, type = 'normal') {
