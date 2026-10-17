@@ -898,7 +898,8 @@ export async function handleSaveEditCourse(e) {
         'Programación': 'fa-code',
         'Ingeniería': 'fa-robot',
         'Ciberseguridad': 'fa-shield-halved',
-        'Cloud': 'fa-cloud'
+        'Cloud': 'fa-cloud',
+        'Idiomas': 'fa-language'
     };
     const icon = categoryIcons[category] || course.icon || 'fa-graduation-cap';
 
@@ -1847,7 +1848,8 @@ export async function handleCreateCourse(e) {
         'Programación': 'fa-code',
         'Ingeniería': 'fa-robot',
         'Ciberseguridad': 'fa-shield-halved',
-        'Cloud': 'fa-cloud'
+        'Cloud': 'fa-cloud',
+        'Idiomas': 'fa-language'
     };
     const icon = categoryIcons[category] || 'fa-graduation-cap';
 
