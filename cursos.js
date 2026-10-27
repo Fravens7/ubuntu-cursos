@@ -1017,16 +1017,13 @@ window.formatVideoDurationBadge = function(videoEl, badgeId) {
         setDurationText(videoEl.duration);
     } else {
         const onTimeUpdate = () => {
-            if (videoEl.duration && videoEl.duration !== Infinity) {
+            if (videoEl.duration && videoEl.duration !== Infinity && !isNaN(videoEl.duration)) {
                 videoEl.removeEventListener('timeupdate', onTimeUpdate);
                 setDurationText(videoEl.duration);
             }
         };
         videoEl.addEventListener('timeupdate', onTimeUpdate);
-        try {
-            videoEl.currentTime = 1e101;
-            videoEl.currentTime = 0;
-        } catch(e) {}
+        videoEl.addEventListener('loadeddata', onTimeUpdate);
     }
 };
 
