@@ -816,6 +816,8 @@
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- WebM Seek & Duration Fixer (Permite adelantar/retroceder en reproductor HTML5) -->
+    <script src="fix-webm-duration.js"></script>
 
     <!-- ================= JAVASCRIPT LOGIC (FIREBASE & PLATFORM) ================= -->
     <script type="module">
@@ -1150,7 +1152,7 @@
 
                 return new Promise((resolve) => {
                     const finalize = async () => {
-                        const blob = new Blob(this.recordedChunks, { type: this.mediaRecorder?.mimeType || 'video/webm' });
+                        let blob = new Blob(this.recordedChunks, { type: this.mediaRecorder?.mimeType || 'video/webm' });
                         this.cleanupStreams();
                         this.isRecording = false;
                         this.isPaused = false;
@@ -1160,6 +1162,16 @@
                             showToast("Grabación descartada (muy corta o vacía).", "normal");
                             resolve(null);
                             return;
+                        }
+
+                        // Inyectar metadatos de duración e índice al WebM para permitir adelantar/retroceder instantáneo
+                        const durationMs = this.recordingStartTime ? (Date.now() - this.recordingStartTime) : (this.elapsedSeconds * 1000);
+                        if (typeof window.ysFixWebmDuration === 'function' && durationMs > 0) {
+                            try {
+                                blob = await window.ysFixWebmDuration(blob, durationMs);
+                            } catch (fixErr) {
+                                console.warn("[UbuntuClassRecorder] Aviso al parchar duración WebM:", fixErr);
+                            }
                         }
 
                         // Abrir modal de progreso
@@ -1339,12 +1351,12 @@
                         const s = String(this.elapsedSeconds % 60).padStart(2, '0');
                         if (timerEl) timerEl.textContent = `${h}:${m}:${s}`;
 
-                        // Constantes del límite pedagógico acordado con dirección:
-                        const WARN_SECONDS = 80 * 60; // 1h 20min (4800s)
-                        const MAX_SECONDS = 90 * 60;  // 1h 30min (5400s)
+                        // Constantes del límite pedagógico (Hasta 3 horas continuas):
+                        const WARN_SECONDS = 165 * 60; // 2h 45min (9900s)
+                        const MAX_SECONDS = 180 * 60;  // 3h 00min (10800s)
 
                         if (this.elapsedSeconds === WARN_SECONDS) {
-                            showToast("⏳ Tiempo de clase cumplido (1h 20m). La grabación finalizará en 10 minutos.", "normal");
+                            showToast("⏳ Tiempo de clase cumplido (2h 45m). La grabación finalizará en 15 minutos.", "normal");
                             if (window.renderFloatingDock) window.renderFloatingDock();
                         }
 
@@ -1359,7 +1371,7 @@
                         }
 
                         if (this.elapsedSeconds >= MAX_SECONDS) {
-                            showToast("⏰ Límite de 1h 30m alcanzado. Guardando grabación automáticamente...", "success");
+                            showToast("⏰ Límite de 3 horas alcanzado. Guardando grabación automáticamente...", "success");
                             this.stopAndUpload(this.currentMetadata || window.currentActiveCourseLive);
                         }
                     }
@@ -2204,8 +2216,8 @@
             const mbStr = (totalBytes / (1024 * 1024)).toFixed(1);
 
             const elapsed = window.UbuntuClassRecorder ? window.UbuntuClassRecorder.elapsedSeconds : 0;
-            const WARN_SECONDS = 80 * 60; // 1h 20m
-            const MAX_SECONDS = 90 * 60;  // 1h 30m
+            const WARN_SECONDS = 165 * 60; // 2h 45m
+            const MAX_SECONDS = 180 * 60;  // 3h
             const isWarning = isRec && elapsed >= WARN_SECONDS && elapsed < MAX_SECONDS;
             const remaining = Math.max(0, MAX_SECONDS - elapsed);
             const remM = String(Math.floor(remaining / 60)).padStart(2, '0');
