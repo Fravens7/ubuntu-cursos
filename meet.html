@@ -14,6 +14,7 @@
         html, body {
             width: 100%;
             height: 100%;
+            height: 100dvh;
             background: #ffffff;
             color: #111111;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -531,6 +532,81 @@
             padding: 4px 10px;
             border-radius: 6px;
             z-index: 5;
+            max-width: 55%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stage-fullscreen-btn {
+            display: none;
+            position: absolute;
+            bottom: 16px;
+            right: 20px;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #111111;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #d1d5db;
+            padding: 6px 12px;
+            border-radius: 8px;
+            z-index: 6;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .stage-fullscreen-btn:hover {
+            background: #ffffff;
+            border-color: #9ca3af;
+        }
+
+        .stage-fullscreen-btn.is-visible {
+            display: inline-flex;
+        }
+
+        .stage-unmute-btn {
+            display: none;
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+            background: #111111;
+            border: 1px solid #111111;
+            padding: 8px 16px;
+            border-radius: 999px;
+            z-index: 7;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        .stage-unmute-btn.is-visible {
+            display: inline-flex;
+        }
+
+        .call-stage.is-pseudo-fullscreen {
+            position: fixed;
+            inset: 0;
+            max-width: none;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            border-radius: 0;
+            border: none;
+            z-index: 9999;
+        }
+
+        .call-stage:fullscreen {
+            max-width: none;
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
+            background: #f9fafb;
         }
 
         /* Bottom Control Bar (Strictly 4 buttons) */
@@ -637,13 +713,29 @@
             .lobby-right {
                 width: 100%;
             }
+            #callView {
+                padding: 8px 10px 12px 10px;
+                gap: 8px;
+            }
+            .stage-bottom-label {
+                bottom: 12px;
+                left: 12px;
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+            .stage-fullscreen-btn {
+                bottom: 12px;
+                right: 12px;
+                font-size: 12px;
+                padding: 6px 10px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- CONTENEDOR OCULTO DE AUDIOS REMOTOS -->
-    <div id="remoteAudios" style="display:none;"></div>
+    <!-- CONTENEDOR DE AUDIOS REMOTOS (OFFSCREEN PARA COMPATIBILIDAD MOVIL) -->
+    <div id="remoteAudios" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;"></div>
 
     <!-- ================= GUARD / CHIQUISEGURO ================= -->
     <div id="guardView">
@@ -772,6 +864,16 @@
         </header>
 
         <main class="call-stage" id="callStage">
+            <!-- Botón flotante si el navegador móvil pausa el audio entrante por falta de toque inicial -->
+            <button type="button" class="stage-unmute-btn" id="btnStageUnmute" onclick="MeetApp.unlockAllRemoteAudio()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                </svg>
+                <span>Activar sonido</span>
+            </button>
+
             <div class="stage-avatar-container" id="stageAvatarBox">
                 <div class="stage-avatar-circle" id="stageAvatarInitials">M</div>
             </div>
@@ -779,6 +881,17 @@
             <video id="stageVideo" autoplay playsinline muted></video>
 
             <div class="stage-bottom-label" id="stageParticipantLabel">Merby</div>
+
+            <!-- Opción Pantalla completa (Imagen 2) cuando hay transmisión activa -->
+            <button type="button" class="stage-fullscreen-btn" id="btnStageFullscreen" onclick="MeetApp.toggleStageFullscreen()" title="Pantalla completa">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                    <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                </svg>
+                <span id="stageFullscreenText">Pantalla completa</span>
+            </button>
         </main>
 
         <footer class="call-bottombar">
@@ -1224,6 +1337,7 @@
                 const stageVideo = document.getElementById('stageVideo');
                 const avatarBox = document.getElementById('stageAvatarBox');
                 const labelEl = document.getElementById('stageParticipantLabel');
+                const fsBtn = document.getElementById('btnStageFullscreen');
 
                 // Prioridad: 1) Pantalla propia, 2) Cámara propia, 3) Video remoto activo, 4) Avatar centrado
                 if (this.screenEnabled && this.screenStream) {
@@ -1235,6 +1349,7 @@
                     stageVideo.play().catch(() => {});
                     avatarBox.style.display = 'none';
                     labelEl.textContent = `${this.userName} (Compartiendo pantalla)`;
+                    if (fsBtn) fsBtn.classList.add('is-visible');
                     return;
                 }
 
@@ -1247,6 +1362,7 @@
                     stageVideo.play().catch(() => {});
                     avatarBox.style.display = 'none';
                     labelEl.textContent = this.userName;
+                    if (fsBtn) fsBtn.classList.add('is-visible');
                     return;
                 }
 
@@ -1259,6 +1375,7 @@
                     stageVideo.play().catch(() => {});
                     avatarBox.style.display = 'none';
                     labelEl.textContent = this.remoteSharingName || 'Participante';
+                    if (fsBtn) fsBtn.classList.add('is-visible');
                     return;
                 }
 
@@ -1266,8 +1383,125 @@
                 if (!this.remoteVideoStream) {
                     stageVideo.srcObject = null;
                 }
+                if (fsBtn) fsBtn.classList.remove('is-visible');
+                const callStage = document.getElementById('callStage');
+                if (callStage && callStage.classList.contains('is-pseudo-fullscreen')) {
+                    callStage.classList.remove('is-pseudo-fullscreen');
+                }
                 avatarBox.style.display = 'flex';
                 labelEl.textContent = this.userName;
+            },
+
+            unlockAllRemoteAudio() {
+                const unmuteBtn = document.getElementById('btnStageUnmute');
+                if (unmuteBtn) unmuteBtn.classList.remove('is-visible');
+
+                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume().catch(() => {});
+                }
+
+                const audioContainer = document.getElementById('remoteAudios');
+                if (audioContainer) {
+                    const audios = audioContainer.querySelectorAll('audio');
+                    audios.forEach(a => {
+                        a.muted = false;
+                        a.volume = 1.0;
+                        a.play().catch(() => {});
+                    });
+                }
+            },
+
+            async toggleStageFullscreen() {
+                this.unlockAllRemoteAudio();
+                const callStage = document.getElementById('callStage');
+                const stageVideo = document.getElementById('stageVideo');
+                const fsText = document.getElementById('stageFullscreenText');
+                if (!callStage) return;
+
+                const isNativeFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+                const isPseudoFs = callStage.classList.contains('is-pseudo-fullscreen');
+
+                if (isNativeFs || isPseudoFs) {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen().catch(() => {});
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                    callStage.classList.remove('is-pseudo-fullscreen');
+                    try { screen.orientation?.unlock?.(); } catch (e) {}
+                    if (fsText) fsText.textContent = 'Pantalla completa';
+                    return;
+                }
+
+                try {
+                    if (callStage.requestFullscreen) {
+                        await callStage.requestFullscreen();
+                        try { await screen.orientation?.lock?.('landscape'); } catch (e) {}
+                        if (fsText) fsText.textContent = 'Salir de pantalla completa';
+                        return;
+                    } else if (callStage.webkitRequestFullscreen) {
+                        callStage.webkitRequestFullscreen();
+                        if (fsText) fsText.textContent = 'Salir de pantalla completa';
+                        return;
+                    } else if (stageVideo && stageVideo.webkitEnterFullscreen) {
+                        stageVideo.webkitEnterFullscreen();
+                        return;
+                    }
+                } catch (e) {}
+
+                callStage.classList.toggle('is-pseudo-fullscreen');
+                if (fsText) {
+                    fsText.textContent = callStage.classList.contains('is-pseudo-fullscreen')
+                        ? 'Salir de pantalla completa'
+                        : 'Pantalla completa';
+                }
+            },
+
+            async syncOutgoingAudio() {
+                if (!this.pc) return false;
+
+                const micTrack = (this.micEnabled && this.micStream) ? this.micStream.getAudioTracks()[0] : null;
+                const screenAudioTrack = (this.screenEnabled && this.screenStream) ? this.screenStream.getAudioTracks()[0] : null;
+
+                let targetTrack = null;
+                let targetStream = null;
+
+                if (micTrack && screenAudioTrack) {
+                    try {
+                        this.ensureAudioContext();
+                        const dest = this.audioCtx.createMediaStreamDestination();
+                        const s1 = this.audioCtx.createMediaStreamSource(new MediaStream([micTrack]));
+                        const s2 = this.audioCtx.createMediaStreamSource(new MediaStream([screenAudioTrack]));
+                        s1.connect(dest);
+                        s2.connect(dest);
+                        targetTrack = dest.stream.getAudioTracks()[0];
+                        targetStream = dest.stream;
+                    } catch (e) {
+                        targetTrack = screenAudioTrack;
+                        targetStream = this.screenStream;
+                    }
+                } else if (screenAudioTrack) {
+                    targetTrack = screenAudioTrack;
+                    targetStream = this.screenStream;
+                } else if (micTrack) {
+                    targetTrack = micTrack;
+                    targetStream = this.micStream;
+                }
+
+                if (targetTrack) {
+                    if (this.audioSender) {
+                        await this.audioSender.replaceTrack(targetTrack);
+                        return false;
+                    } else {
+                        this.audioSender = this.pc.addTrack(targetTrack, targetStream || new MediaStream([targetTrack]));
+                        return true;
+                    }
+                } else {
+                    if (this.audioSender) {
+                        await this.audioSender.replaceTrack(null).catch(() => {});
+                    }
+                    return false;
+                }
             },
 
             connectSignaling() {
@@ -1330,17 +1564,30 @@
                         }
                         const stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream([e.track]);
                         audioEl.srcObject = stream;
+                        audioEl.muted = false;
+                        audioEl.volume = 1.0;
                         this.attachRemoteAudioAnalyser(stream);
-                        audioEl.play().catch(() => {
-                            const resumeAudio = () => {
-                                audioEl.play().catch(() => {});
-                                if (this.audioCtx && this.audioCtx.state === 'suspended') {
-                                    this.audioCtx.resume().catch(() => {});
-                                }
-                                window.removeEventListener('click', resumeAudio);
-                            };
-                            window.addEventListener('click', resumeAudio, { once: true });
-                        });
+
+                        const tryPlayAudio = () => {
+                            const playPromise = audioEl.play();
+                            if (playPromise !== undefined) {
+                                playPromise.then(() => {
+                                    const unmuteBtn = document.getElementById('btnStageUnmute');
+                                    if (unmuteBtn) unmuteBtn.classList.remove('is-visible');
+                                }).catch(() => {
+                                    const unmuteBtn = document.getElementById('btnStageUnmute');
+                                    if (unmuteBtn) unmuteBtn.classList.add('is-visible');
+                                    const resumeOnGesture = () => {
+                                        this.unlockAllRemoteAudio();
+                                        window.removeEventListener('click', resumeOnGesture);
+                                        window.removeEventListener('touchend', resumeOnGesture);
+                                    };
+                                    window.addEventListener('click', resumeOnGesture, { once: true });
+                                    window.addEventListener('touchend', resumeOnGesture, { once: true });
+                                });
+                            }
+                        };
+                        tryPlayAudio();
                         return;
                     }
 
@@ -1538,9 +1785,7 @@
                 if (this.micEnabled) {
                     this.stopMicStream();
                     this.micEnabled = false;
-                    if (this.audioSender) {
-                        await this.audioSender.replaceTrack(null).catch(() => {});
-                    }
+                    await this.syncOutgoingAudio();
                     if (!this.camEnabled && !this.screenEnabled && this.ws && this.ws.readyState === WebSocket.OPEN) {
                         this.ws.send(JSON.stringify({ type: 'stop-share' }));
                     }
@@ -1551,10 +1796,8 @@
                         this.attachLocalAudioAnalyser(this.micStream);
                         if (audioTrack && this.pc) {
                             this.micEnabled = true;
-                            if (this.audioSender) {
-                                await this.audioSender.replaceTrack(audioTrack);
-                            } else {
-                                this.audioSender = this.pc.addTrack(audioTrack, this.micStream);
+                            const needsOffer = await this.syncOutgoingAudio();
+                            if (needsOffer) {
                                 await this.sendOffer();
                             }
                         }
@@ -1582,6 +1825,7 @@
                         if (this.screenEnabled) {
                             this.stopScreenStream();
                             this.screenEnabled = false;
+                            await this.syncOutgoingAudio();
                         }
                         this.camStream = await navigator.mediaDevices.getUserMedia({
                             video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24 } }
@@ -1634,15 +1878,17 @@
                     }
 
                     if (this.pc && screenVideoTrack) {
+                        let needsOffer = false;
                         if (this.videoSender) {
                             await this.videoSender.replaceTrack(screenVideoTrack);
                             this.sendRoomNotice('__VIDEO_ON__:screen');
                         } else {
                             this.videoSender = this.pc.addTrack(screenVideoTrack, stream);
-                            const screenAudioTrack = stream.getAudioTracks()[0];
-                            if (screenAudioTrack && !this.audioSender) {
-                                this.audioSender = this.pc.addTrack(screenAudioTrack, stream);
-                            }
+                            needsOffer = true;
+                        }
+
+                        const audioNeedsOffer = await this.syncOutgoingAudio();
+                        if (needsOffer || audioNeedsOffer) {
                             await this.sendOffer();
                         }
                     }
@@ -1662,6 +1908,8 @@
                     await this.videoSender.replaceTrack(null).catch(() => {});
                     this.sendRoomNotice('__VIDEO_OFF__');
                 }
+                await this.syncOutgoingAudio();
+
                 if (!this.micEnabled && !this.camEnabled && this.ws && this.ws.readyState === WebSocket.OPEN) {
                     this.ws.send(JSON.stringify({ type: 'stop-share' }));
                 }
