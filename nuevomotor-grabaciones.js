@@ -196,19 +196,16 @@
                 return;
             }
 
-            const totalBytes = this.recordedChunks.reduce((acc, c) => acc + (c.size || 0), 0);
-            const mbStr = (totalBytes / (1024 * 1024)).toFixed(1);
             const timeStr = formatClock(this.elapsedSeconds);
             const stateLabel = this.isPaused ? 'En pausa' : 'Grabando';
 
             bar.innerHTML = `
-                <div style="display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 10px;border:1px solid #111111;border-radius:999px;background:#f9fafb;color:#111111;font-size:12px;font-weight:600;">
+                <div style="display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border:1px solid #111111;border-radius:999px;background:#f9fafb;color:#111111;font-size:12px;font-weight:600;">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="${this.isPaused ? '#6b7280' : '#111111'}" stroke="none">
                         <circle cx="12" cy="12" r="10"></circle>
                     </svg>
                     <span>${stateLabel}</span>
-                    <span id="nuevoMotorTimerText" style="font-family:monospace;font-weight:600;">${timeStr}</span>
-                    <span id="nuevoMotorSizeText" style="color:#6b7280;font-weight:400;">(${mbStr} MB)</span>
+                    <span id="nuevoMotorTimerText" style="font-size:13.5px;font-weight:400;font-variant-numeric:tabular-nums;letter-spacing:0.01em;">${timeStr}</span>
                 </div>
 
                 <button type="button" id="btnNuevoMotorPause" style="display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px;border:1px solid #d1d5db;border-radius:999px;background:#ffffff;color:#111111;font-size:12px;font-weight:500;cursor:pointer;">
@@ -303,6 +300,10 @@
             this.combinedStream = new MediaStream(tracks);
 
             const mimeCandidates = [
+                'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+                'video/mp4;codecs=avc1,mp4a.40.2',
+                'video/mp4;codecs=avc1,opus',
+                'video/mp4',
                 'video/webm;codecs=vp8,opus',
                 'video/webm;codecs=vp9,opus',
                 'video/webm;codecs=h264,opus',
@@ -463,12 +464,6 @@
         updateLiveStatsUI() {
             const timerEl = document.getElementById('nuevoMotorTimerText');
             if (timerEl) timerEl.textContent = formatClock(this.elapsedSeconds);
-
-            const sizeEl = document.getElementById('nuevoMotorSizeText');
-            if (sizeEl) {
-                const totalBytes = this.recordedChunks.reduce((acc, c) => acc + (c.size || 0), 0);
-                sizeEl.textContent = `(${(totalBytes / (1024 * 1024)).toFixed(1)} MB)`;
-            }
         },
 
         togglePause() {
@@ -526,17 +521,19 @@
                         return;
                     }
 
-                    // Inyectar duración exacta y puntos de búsqueda (seek) en el contenedor WebM
+                    // Inyectar duración exacta y reparar encabezados en contenedores MP4 o WebM
                     if (typeof window.ysFixWebmDuration === 'function') {
                         try {
                             blob = await window.ysFixWebmDuration(blob, durationMs);
                         } catch (e) {}
                     }
 
+                    const isMp4 = String(mimeType).toLowerCase().includes('mp4') || String(blob.type).toLowerCase().includes('mp4');
+                    const ext = isMp4 ? 'mp4' : 'webm';
                     const roomCode = (this.meetApp && this.meetApp.roomCode) ? this.meetApp.roomCode : 'sala-meet';
                     const instructor = (this.meetApp && this.meetApp.userName) ? this.meetApp.userName : 'Admin';
                     const now = Date.now();
-                    const filename = `clase_meet_${roomCode.replace(/[^a-z0-9_-]/gi, '')}_${now}.webm`;
+                    const filename = `clase_meet_${roomCode.replace(/[^a-z0-9_-]/gi, '')}_${now}.${ext}`;
 
                     this.showMeetUploadProgress(0, blob.size, 'Subiendo grabación de clase...');
 
@@ -804,6 +801,62 @@
             }
         },
 
+        async downloadRecording(recId, btnEl) {
+            const rec = this.recordingsList.find(r => r.id === recId) || this.recordingsList[0];
+            if (!rec || !rec.url) return;
+
+            const spanEl = btnEl ? btnEl.querySelector('span') : null;
+            const origText = spanEl ? spanEl.textContent : 'Descargar';
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.style.opacity = '0.65';
+            }
+            if (spanEl) spanEl.textContent = 'Descargando...';
+
+            try {
+                const resp = await fetch(rec.url, { mode: 'cors', credentials: 'omit' });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const arrayBuf = await resp.arrayBuffer();
+                let u8 = new Uint8Array(arrayBuf);
+                const durationMs = Math.max(1, Number(rec.durationSeconds || 0)) * 1000;
+
+                if (typeof window.ysRepairVideoBuffer === 'function') {
+                    try {
+                        u8 = window.ysRepairVideoBuffer(u8, durationMs);
+                    } catch (e) {}
+                }
+
+                const isMp4 = (u8.length >= 12 && u8[4] === 0x66 && u8[5] === 0x74 && u8[6] === 0x79 && u8[7] === 0x70) ||
+                              String(rec.url).toLowerCase().endsWith('.mp4');
+                const mimeType = isMp4 ? 'video/mp4' : 'video/webm';
+                const ext = isMp4 ? 'mp4' : 'webm';
+                const blob = new Blob([u8.buffer], { type: mimeType });
+
+                let rawName = String(rec.url).split('/').pop().split('?')[0] || `clase_meet_${rec.roomCode || 'ubuntu'}.${ext}`;
+                rawName = rawName.replace(/\.(webm|mp4)$/i, '') + '.' + ext;
+
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = rawName;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    try { document.body.removeChild(a); } catch (e) {}
+                    try { URL.revokeObjectURL(blobUrl); } catch (e) {}
+                }, 4000);
+            } catch (err) {
+                console.error('[NuevoMotorGrabaciones] Error en descarga directa:', err);
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.style.opacity = '1';
+                }
+                if (spanEl) spanEl.textContent = origText;
+            }
+        },
+
         renderActivePlayerUI() {
             const area = document.getElementById('nuevoMotorPlayerArea');
             if (!area) return;
@@ -821,6 +874,8 @@
             this.activePlayingId = rec.id;
             const mbStr = rec.sizeBytes ? `${(rec.sizeBytes / (1024 * 1024)).toFixed(2)} MB` : '';
             const durStr = rec.durationSeconds ? formatClock(rec.durationSeconds) : '';
+            const isMp4Url = String(rec.url || '').toLowerCase().includes('.mp4');
+            const videoMime = isMp4Url ? 'video/mp4' : 'video/webm';
 
             area.innerHTML = `
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
@@ -835,21 +890,21 @@
                             <button type="button" class="nm-speed-btn" onclick="window.NuevoMotorGrabaciones.setPlaybackSpeed(1.5, this)" style="border:none;border-left:1px solid #d1d5db;background:#ffffff;color:#111111;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;">1.5x</button>
                             <button type="button" class="nm-speed-btn" onclick="window.NuevoMotorGrabaciones.setPlaybackSpeed(2, this)" style="border:none;border-left:1px solid #d1d5db;background:#ffffff;color:#111111;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;">2x</button>
                         </div>
-                        <a href="${escapeHtml(rec.url)}" target="_blank" download style="border:1px solid #d1d5db;background:#ffffff;color:#111111;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+                        <button type="button" id="btnNuevoMotorDownload" onclick="window.NuevoMotorGrabaciones.downloadRecording('${escapeHtml(rec.id)}', this)" style="border:1px solid #d1d5db;background:#ffffff;color:#111111;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
                             <span>Descargar</span>
-                        </a>
+                        </button>
                         <a href="${escapeHtml(rec.url)}" target="_blank" style="border:1px solid #d1d5db;background:#ffffff;color:#111111;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;text-decoration:none;">Abrir enlace</a>
                     </div>
                 </div>
 
                 <div style="border-radius:10px;overflow:hidden;border:1px solid #d1d5db;background:#111111;">
                     <video id="nuevoMotorMainVideo" controls playsinline preload="metadata" style="width:100%;max-height:460px;display:block;background:#111111;outline:none;" src="${escapeHtml(rec.url)}">
-                        <source src="${escapeHtml(rec.url)}" type="video/webm">
+                        <source src="${escapeHtml(rec.url)}" type="${videoMime}">
                     </video>
                 </div>
             `;
