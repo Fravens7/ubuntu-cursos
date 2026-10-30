@@ -422,7 +422,7 @@
             position: absolute;
             top: 42px;
             right: 0;
-            width: 240px;
+            width: 280px;
             background: #ffffff;
             border: 1px solid #d1d5db;
             border-radius: 12px;
@@ -452,11 +452,266 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 8px;
             border-bottom: 1px solid #f3f4f6;
         }
 
         .peer-row:last-child {
             border-bottom: none;
+        }
+
+        .peer-group-select {
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #111111;
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .peer-group-select:hover {
+            border-color: #111111;
+        }
+
+        /* Botón y Popover de Salas Grupales (Breakout Rooms) */
+        .breakout-trigger-btn {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            height: 32px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #111111;
+            font-size: 12px;
+            font-weight: 600;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .breakout-trigger-btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .breakout-trigger-btn.is-active {
+            border-color: #111111;
+            background: #111111;
+            color: #ffffff;
+        }
+
+        .breakout-popover {
+            display: none;
+            position: absolute;
+            top: 42px;
+            right: 54px;
+            width: 260px;
+            background: #ffffff;
+            border: 1px solid #111111;
+            border-radius: 12px;
+            padding: 14px;
+            z-index: 55;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .breakout-popover.open {
+            display: block;
+        }
+
+        .breakout-pop-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111111;
+            margin-bottom: 4px;
+        }
+
+        .breakout-pop-sub {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+
+        .breakout-count-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .breakout-num-btn {
+            flex: 1;
+            height: 32px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #111111;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.12s;
+        }
+
+        .breakout-num-btn:hover {
+            border-color: #9ca3af;
+            background: #f9fafb;
+        }
+
+        .breakout-num-btn.is-selected {
+            border-color: #111111;
+            background: #111111;
+            color: #ffffff;
+        }
+
+        .breakout-go-btn {
+            width: 100%;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid #111111;
+            background: #111111;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 600;
+            transition: opacity 0.15s;
+        }
+
+        .breakout-go-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Barra de Paseo entre Grupos para el Profesor */
+        .breakout-hopper-bar {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            padding: 4px 8px;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            margin: 0 auto;
+            flex-shrink: 0;
+        }
+
+        .breakout-hopper-bar.is-visible {
+            display: inline-flex;
+        }
+
+        .hopper-pill-btn {
+            height: 28px;
+            padding: 0 11px;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #111111;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.12s;
+        }
+
+        .hopper-pill-btn:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .hopper-pill-btn.is-current {
+            background: #111111;
+            color: #ffffff;
+            border-color: #111111;
+            font-weight: 600;
+        }
+
+        .hopper-end-btn {
+            height: 28px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid #111111;
+            background: #ffffff;
+            color: #111111;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 4px;
+            transition: all 0.12s;
+        }
+
+        .hopper-end-btn:hover {
+            background: #111111;
+            color: #ffffff;
+        }
+
+        /* Chiquiaviso de compartir pantalla sin audio del sistema */
+        .stage-noaudio-notice {
+            display: none;
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.96);
+            color: #111111;
+            border: 1px solid #111111;
+            border-radius: 999px;
+            padding: 6px 10px 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 8;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .stage-noaudio-notice.is-visible {
+            display: inline-flex;
+        }
+
+        .stage-noaudio-action {
+            border: 1px solid #111111;
+            background: #111111;
+            color: #ffffff;
+            border-radius: 999px;
+            padding: 3px 9px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .stage-noaudio-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            color: #6b7280;
+        }
+
+        .stage-noaudio-close:hover {
+            color: #111111;
+            background: #f3f4f6;
+        }
+
+        /* Indicador sutil de Grupo actual para el estudiante */
+        .stage-group-badge {
+            display: none;
+            position: absolute;
+            top: 14px;
+            left: 16px;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.94);
+            color: #111111;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 6;
+        }
+
+        .stage-group-badge.is-visible {
+            display: inline-flex;
         }
 
         /* Central Stage */
@@ -865,6 +1120,31 @@
             </div>
 
             <div class="call-top-right">
+                <!-- Botón Salas Grupales (Solo Admin/Profesor) -->
+                <button type="button" class="breakout-trigger-btn" id="btnBreakoutTrigger" onclick="MeetApp.toggleBreakoutPopover()" title="Salas grupales">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                    </svg>
+                    <span>Salas</span>
+                </button>
+
+                <!-- Popover rápido de 2 clics para crear grupos -->
+                <div class="breakout-popover" id="breakoutPopover">
+                    <div class="breakout-pop-title">Salas grupales</div>
+                    <div class="breakout-pop-sub">Elige cuántos grupos formar al azar</div>
+                    <div class="breakout-count-row" id="breakoutCountRow">
+                        <button type="button" class="breakout-num-btn is-selected" data-count="2" onclick="MeetApp.selectBreakoutCount(2)">2</button>
+                        <button type="button" class="breakout-num-btn" data-count="3" onclick="MeetApp.selectBreakoutCount(3)">3</button>
+                        <button type="button" class="breakout-num-btn" data-count="4" onclick="MeetApp.selectBreakoutCount(4)">4</button>
+                        <button type="button" class="breakout-num-btn" data-count="5" onclick="MeetApp.selectBreakoutCount(5)">5</button>
+                        <button type="button" class="breakout-num-btn" data-count="6" onclick="MeetApp.selectBreakoutCount(6)">6</button>
+                    </div>
+                    <button type="button" class="breakout-go-btn" id="btnBreakoutStartNow" onclick="MeetApp.startBreakoutRooms()">Repartir ahora</button>
+                </div>
+
                 <button type="button" class="peers-pill-btn" onclick="MeetApp.togglePeersDropdown()" title="Participantes en la sala">
                     <span class="peers-pill-avatar" id="callTopAvatar">M</span>
                     <span id="callPeerCount">1</span>
@@ -876,7 +1156,37 @@
             </div>
         </header>
 
+        <!-- Barra de Paseo entre Grupos (Visible para el profesor cuando hay grupos activos) -->
+        <div class="breakout-hopper-bar" id="breakoutHopperBar"></div>
+
         <main class="call-stage" id="callStage">
+            <!-- Indicador sutil de grupo actual para el alumno -->
+            <div class="stage-group-badge" id="stageGroupBadge">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span id="stageGroupBadgeText">Estás en el Grupo 1</span>
+            </div>
+
+            <!-- Chiquiaviso discreto si el profesor comparte pantalla sin audio del sistema -->
+            <div class="stage-noaudio-notice" id="stageNoAudioNotice">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <line x1="23" y1="9" x2="17" y2="15"></line>
+                    <line x1="17" y1="9" x2="23" y2="15"></line>
+                </svg>
+                <span>Compartiendo sin audio del sistema</span>
+                <button type="button" class="stage-noaudio-action" onclick="MeetApp.reshareWithAudio()">Activar audio</button>
+                <button type="button" class="stage-noaudio-close" onclick="MeetApp.hideNoAudioNotice()" title="Cerrar aviso">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
             <!-- Botón flotante si el navegador móvil pausa el audio entrante por falta de toque inicial -->
             <button type="button" class="stage-unmute-btn" id="btnStageUnmute" onclick="MeetApp.unlockAllRemoteAudio()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1043,10 +1353,20 @@
         const MeetApp = {
             wsUrl: 'wss://clases.ubuntuafroperuana.org/ws',
             roomCode: resolveRoomCode(),
-            peerId: 'adm_' + Math.random().toString(36).substring(2, 8),
+            activeRoomCode: '',
+            peerId: '',
             userName: 'Admin',
             userEmail: '',
             userRole: 'estudiante',
+
+            // Estado de Salas Grupales (Breakout Rooms)
+            breakoutActive: false,
+            breakoutGroupCount: 0,
+            selectedBreakoutCount: 2,
+            currentGroupIndex: 0,
+            allFamilyPeers: [],
+            currentRoomPeers: [],
+            badgeFadeTimeout: null,
 
             // Media state
             micEnabled: false,
@@ -1200,6 +1520,11 @@
             initUIForUser(name, email) {
                 this.userName = name || 'Admin';
                 this.userEmail = email || '';
+                if (!this.activeRoomCode) this.activeRoomCode = this.roomCode;
+                if (!this.peerId) {
+                    const prefix = this.isHostUser() ? 'adm_' : 'est_';
+                    this.peerId = prefix + Math.random().toString(36).substring(2, 8);
+                }
                 const initial = (this.userName.trim()[0] || 'A').toUpperCase();
 
                 document.getElementById('lobbyUserEmail').textContent = this.userEmail;
@@ -1211,6 +1536,11 @@
                 document.getElementById('callTopAvatar').textContent = initial;
                 document.getElementById('stageAvatarInitials').textContent = initial;
                 document.getElementById('stageParticipantLabel').textContent = this.userName;
+
+                const btnBreakout = document.getElementById('btnBreakoutTrigger');
+                if (btnBreakout) {
+                    btnBreakout.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                }
 
                 this.updateClock();
                 if (!this.clockInterval) {
@@ -1551,16 +1881,21 @@
 
             connectSignaling() {
                 this.cleanupConnectionOnly();
-                const prefix = this.userRole === 'admin' ? 'adm_' : 'est_';
-                this.peerId = prefix + Math.random().toString(36).substring(2, 8);
+                if (!this.peerId) {
+                    const prefix = this.isHostUser() ? 'adm_' : 'est_';
+                    this.peerId = prefix + Math.random().toString(36).substring(2, 8);
+                }
+                if (!this.activeRoomCode) {
+                    this.activeRoomCode = this.roomCode;
+                }
                 this.initPeerConnection();
 
-                const url = `${this.wsUrl}?room=${encodeURIComponent(this.roomCode)}&peer=${encodeURIComponent(this.peerId)}&name=${encodeURIComponent(this.userName)}&role=${encodeURIComponent(this.userRole || 'estudiante')}`;
+                const url = `${this.wsUrl}?room=${encodeURIComponent(this.activeRoomCode)}&peer=${encodeURIComponent(this.peerId)}&name=${encodeURIComponent(this.userName)}&role=${encodeURIComponent(this.userRole || 'estudiante')}`;
                 this.ws = new WebSocket(url);
 
                 this.ws.onopen = async () => {
-                    // Si el usuario activó micrófono o cámara en el lobby, publicar al entrar
-                    if (this.micEnabled || this.camEnabled) {
+                    // Si el usuario tiene micrófono, cámara o pantalla activa (al entrar o al cambiar de grupo), publicar de inmediato
+                    if (this.micEnabled || this.camEnabled || this.screenEnabled) {
                         await this.publishInitialLobbyTracks();
                     }
                 };
@@ -1671,15 +2006,18 @@
                 if (!this.pc) return;
                 let added = false;
 
-                if (this.micEnabled && this.micStream) {
-                    const audioTrack = this.micStream.getAudioTracks()[0];
-                    if (audioTrack) {
-                        this.audioSender = this.pc.addTrack(audioTrack, this.micStream);
-                        added = true;
-                    }
+                if (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0)) {
+                    const audioAdded = await this.syncOutgoingAudio();
+                    if (audioAdded) added = true;
                 }
 
-                if (this.camEnabled && this.camStream) {
+                if (this.screenEnabled && this.screenStream) {
+                    const screenTrack = this.screenStream.getVideoTracks()[0];
+                    if (screenTrack) {
+                        this.videoSender = this.pc.addTrack(screenTrack, this.screenStream);
+                        added = true;
+                    }
+                } else if (this.camEnabled && this.camStream) {
                     const videoTrack = this.camStream.getVideoTracks()[0];
                     if (videoTrack) {
                         this.videoSender = this.pc.addTrack(videoTrack, this.camStream);
@@ -1707,7 +2045,12 @@
                     case 'joined':
                     case 'peer-joined':
                     case 'peer-left':
+                        if (typeof msg.groupIndex === 'number') {
+                            this.currentGroupIndex = msg.groupIndex;
+                            this.updateRoomHeaderAndBadge();
+                        }
                         if (msg.peers) {
+                            this.currentRoomPeers = msg.peers;
                             this.renderPeers(msg.peers);
                             const activeSharer = msg.peers.find(p => p.peerId !== this.peerId && p.isSharing);
                             if (activeSharer && !this.remoteSharingName) {
@@ -1716,6 +2059,22 @@
                         }
                         if (msg.type === 'peer-joined' && (this.camEnabled || this.screenEnabled)) {
                             this.sendRoomNotice(this.screenEnabled ? '__VIDEO_ON__:screen' : '__VIDEO_ON__:cam');
+                        }
+                        break;
+
+                    case 'breakout-state':
+                        this.breakoutActive = !!msg.breakoutActive;
+                        this.breakoutGroupCount = Number(msg.groupCount || 0);
+                        if (Array.isArray(msg.allPeers)) {
+                            this.allFamilyPeers = msg.allPeers;
+                        }
+                        this.renderBreakoutUI();
+                        this.renderPeers(this.currentRoomPeers);
+                        break;
+
+                    case 'switch-room':
+                        if (msg.targetRoom) {
+                            await this.switchToRoom(msg.targetRoom, Number(msg.groupIndex || 0));
                         }
                         break;
 
@@ -1803,26 +2162,214 @@
                 }
             },
 
+            isHostUser() {
+                const r = String(this.userRole || '').toLowerCase().trim();
+                return r === 'admin' || r === 'profesor' || r === 'docente' || r === 'instructor';
+            },
+
+            updateRoomHeaderAndBadge() {
+                const roomTextEl = document.getElementById('callRoomCodeText');
+                if (roomTextEl) {
+                    roomTextEl.textContent = this.currentGroupIndex > 0
+                        ? `${this.roomCode} • Grupo ${this.currentGroupIndex}`
+                        : this.roomCode;
+                }
+
+                const badgeEl = document.getElementById('stageGroupBadge');
+                const badgeTextEl = document.getElementById('stageGroupBadgeText');
+                if (!badgeEl || !badgeTextEl) return;
+
+                if (this.badgeFadeTimeout) {
+                    clearTimeout(this.badgeFadeTimeout);
+                    this.badgeFadeTimeout = null;
+                }
+
+                if (this.currentGroupIndex > 0) {
+                    badgeTextEl.textContent = `Estás en el Grupo ${this.currentGroupIndex}`;
+                    badgeEl.classList.add('is-visible');
+                } else if (this._wasInSubgroup) {
+                    this._wasInSubgroup = false;
+                    badgeTextEl.textContent = 'De vuelta en la Sala Principal';
+                    badgeEl.classList.add('is-visible');
+                    this.badgeFadeTimeout = setTimeout(() => {
+                        badgeEl.classList.remove('is-visible');
+                    }, 3200);
+                } else {
+                    badgeEl.classList.remove('is-visible');
+                }
+            },
+
+            toggleBreakoutPopover() {
+                const pop = document.getElementById('breakoutPopover');
+                if (pop) pop.classList.toggle('open');
+                const dd = document.getElementById('peersDropdown');
+                if (dd) dd.classList.remove('open');
+            },
+
+            selectBreakoutCount(n) {
+                this.selectedBreakoutCount = Number(n) || 2;
+                document.querySelectorAll('#breakoutCountRow .breakout-num-btn').forEach(btn => {
+                    const c = Number(btn.getAttribute('data-count'));
+                    btn.classList.toggle('is-selected', c === this.selectedBreakoutCount);
+                });
+            },
+
+            startBreakoutRooms() {
+                if (!this.isHostUser() || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                const pop = document.getElementById('breakoutPopover');
+                if (pop) pop.classList.remove('open');
+
+                this.ws.send(JSON.stringify({
+                    type: 'breakout-start',
+                    groupCount: this.selectedBreakoutCount || 2
+                }));
+            },
+
+            hopToGroup(groupIdx) {
+                if (!this.isHostUser()) return;
+                const g = Number(groupIdx || 0);
+                const targetRoom = g > 0 ? `${this.roomCode}--g${g}` : this.roomCode;
+                this.switchToRoom(targetRoom, g);
+            },
+
+            movePeerToGroup(targetPeerId, groupIdx) {
+                if (!this.isHostUser() || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                this.ws.send(JSON.stringify({
+                    type: 'breakout-move',
+                    targetPeerId: String(targetPeerId),
+                    groupIndex: Number(groupIdx || 0)
+                }));
+            },
+
+            endBreakoutRooms() {
+                if (!this.isHostUser() || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                this.ws.send(JSON.stringify({
+                    type: 'breakout-end'
+                }));
+                if (this.currentGroupIndex > 0) {
+                    this.switchToRoom(this.roomCode, 0);
+                }
+            },
+
+            async switchToRoom(targetRoom, groupIndex) {
+                const nextGroup = Number(groupIndex || 0);
+                if (this.currentGroupIndex > 0 && nextGroup === 0) {
+                    this._wasInSubgroup = true;
+                }
+                this.activeRoomCode = targetRoom;
+                this.currentGroupIndex = nextGroup;
+                this.updateRoomHeaderAndBadge();
+                this.renderBreakoutUI();
+                this.connectSignaling();
+                this.updateStageDisplay();
+            },
+
+            renderBreakoutUI() {
+                const triggerBtn = document.getElementById('btnBreakoutTrigger');
+                if (triggerBtn) {
+                    triggerBtn.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                    triggerBtn.classList.toggle('is-active', !!this.breakoutActive);
+                }
+
+                const bar = document.getElementById('breakoutHopperBar');
+                if (!bar) return;
+
+                if (!this.isHostUser() || !this.breakoutActive || this.breakoutGroupCount < 2) {
+                    bar.classList.remove('is-visible');
+                    bar.innerHTML = '';
+                    return;
+                }
+
+                const counts = {};
+                for (let i = 0; i <= this.breakoutGroupCount; i++) counts[i] = 0;
+                (this.allFamilyPeers || []).forEach(p => {
+                    const g = Number(p.groupIndex || 0);
+                    counts[g] = (counts[g] || 0) + 1;
+                });
+
+                let html = `
+                    <button type="button" class="hopper-pill-btn ${this.currentGroupIndex === 0 ? 'is-current' : ''}" onclick="MeetApp.hopToGroup(0)">
+                        <span>Principal (${counts[0] || 0})</span>
+                    </button>
+                `;
+                for (let g = 1; g <= this.breakoutGroupCount; g++) {
+                    html += `
+                        <button type="button" class="hopper-pill-btn ${this.currentGroupIndex === g ? 'is-current' : ''}" onclick="MeetApp.hopToGroup(${g})">
+                            <span>G${g} (${counts[g] || 0})</span>
+                        </button>
+                    `;
+                }
+                html += `
+                    <button type="button" class="hopper-end-btn" onclick="MeetApp.endBreakoutRooms()">
+                        Finalizar grupos
+                    </button>
+                `;
+
+                bar.innerHTML = html;
+                bar.classList.add('is-visible');
+            },
+
             renderPeers(peers) {
-                if (!Array.isArray(peers)) return;
+                const roomPeers = Array.isArray(peers) ? peers : (this.currentRoomPeers || []);
+                const displayPeers = (this.isHostUser() && this.breakoutActive && this.allFamilyPeers.length > 0)
+                    ? this.allFamilyPeers
+                    : roomPeers;
+
                 const countEl = document.getElementById('callPeerCount');
-                if (countEl) countEl.textContent = String(peers.length || 1);
+                if (countEl) countEl.textContent = String(roomPeers.length || 1);
 
                 const listEl = document.getElementById('peersDropdownList');
-                if (listEl) {
-                    listEl.innerHTML = peers.map(p => {
-                        const isSelf = p.peerId === this.peerId;
-                        return `<div class="peer-row">
-                            <span>${escapeHtml(p.name || p.peerId)}${isSelf ? ' (Tú)' : ''}</span>
-                            <span style="color:#6b7280;font-size:11px;">${escapeHtml(p.role || '')}</span>
-                        </div>`;
-                    }).join('');
-                }
+                if (!listEl) return;
+
+                listEl.innerHTML = displayPeers.map(p => {
+                    const isSelf = p.peerId === this.peerId;
+                    const pRole = String(p.role || '').toLowerCase().trim();
+                    const isPeerHost = (pRole === 'admin' || pRole === 'profesor' || pRole === 'docente' || pRole === 'instructor');
+                    const curG = Number(p.groupIndex || 0);
+
+                    let rightControl = `<span style="color:#6b7280;font-size:11px;">${escapeHtml(p.role || '')}</span>`;
+                    if (this.isHostUser() && this.breakoutActive && this.breakoutGroupCount >= 2 && !isPeerHost) {
+                        let opts = `<option value="0" ${curG === 0 ? 'selected' : ''}>Principal</option>`;
+                        for (let g = 1; g <= this.breakoutGroupCount; g++) {
+                            opts += `<option value="${g}" ${curG === g ? 'selected' : ''}>G${g}</option>`;
+                        }
+                        rightControl = `
+                            <select class="peer-group-select" onchange="MeetApp.movePeerToGroup('${escapeHtml(p.peerId)}', this.value)">
+                                ${opts}
+                            </select>
+                        `;
+                    }
+
+                    return `<div class="peer-row">
+                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name || p.peerId)}${isSelf ? ' (Tú)' : ''}</span>
+                        ${rightControl}
+                    </div>`;
+                }).join('');
             },
 
             togglePeersDropdown() {
                 const dd = document.getElementById('peersDropdown');
                 if (dd) dd.classList.toggle('open');
+                const pop = document.getElementById('breakoutPopover');
+                if (pop) pop.classList.remove('open');
+            },
+
+            showNoAudioNotice() {
+                const el = document.getElementById('stageNoAudioNotice');
+                if (el) el.classList.add('is-visible');
+            },
+
+            hideNoAudioNotice() {
+                const el = document.getElementById('stageNoAudioNotice');
+                if (el) el.classList.remove('is-visible');
+            },
+
+            async reshareWithAudio() {
+                this.hideNoAudioNotice();
+                if (this.screenEnabled) {
+                    await this.stopCallShare();
+                }
+                await this.toggleCallShare();
             },
 
             // ================= IN-CALL DOCK BUTTONS (4 BOTONES) =================
@@ -1902,8 +2449,22 @@
 
                 try {
                     const stream = await navigator.mediaDevices.getDisplayMedia({
-                        video: { frameRate: { ideal: 24, max: 30 } },
-                        audio: true
+                        video: {
+                            width: { ideal: 1920, max: 1920 },
+                            height: { ideal: 1080, max: 1080 },
+                            frameRate: { ideal: 24, max: 30 },
+                            displaySurface: 'monitor'
+                        },
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false
+                        },
+                        preferCurrentTab: false,
+                        selfBrowserSurface: 'exclude',
+                        systemAudio: 'include',
+                        surfaceSwitching: 'include',
+                        monitorTypeSurfaces: 'include'
                     });
 
                     // Si tenía cámara encendida, apagar cámara para mostrar la pantalla
@@ -1915,8 +2476,18 @@
                     this.screenStream = stream;
                     this.screenEnabled = true;
 
+                    // Chiquiaviso inmediato si el profesor olvidó activar la pastilla "Share with system audio"
+                    if (stream.getAudioTracks().length === 0) {
+                        this.showNoAudioNotice();
+                    } else {
+                        this.hideNoAudioNotice();
+                    }
+
                     const screenVideoTrack = stream.getVideoTracks()[0];
                     if (screenVideoTrack) {
+                        if ('contentHint' in screenVideoTrack) {
+                            try { screenVideoTrack.contentHint = 'detail'; } catch (e) {}
+                        }
                         screenVideoTrack.onended = () => {
                             if (this.screenEnabled) this.stopCallShare();
                         };
@@ -1946,6 +2517,7 @@
             },
 
             async stopCallShare() {
+                this.hideNoAudioNotice();
                 this.stopScreenStream();
                 this.screenEnabled = false;
 
