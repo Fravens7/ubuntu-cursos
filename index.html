@@ -106,6 +106,9 @@
                 </div>
             </div>
             <div class="topbar-right">
+                <button class="btn btn-sm role-admin-only" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.openRecordingsModal()" style="background: #ffffff; color: #111111; border: 1px solid #9ca3af; font-weight: 600;">
+                    <span>ver grabaciones</span>
+                </button>
                 <button class="btn btn-sm role-admin-only" onclick="openAdminGoLiveRoom()" style="background: #ffffff; color: #111111; border: 1px solid #9ca3af; font-weight: 600;">
                     <span>new class</span>
                 </button>
@@ -821,6 +824,8 @@
 
     <!-- WebM Seek & Duration Fixer (Permite adelantar/retroceder en reproductor HTML5) -->
     <script src="fix-webm-duration.js"></script>
+    <!-- Nuevo Motor de Grabaciones y Reproductor Fino (Plan A Admin) -->
+    <script src="/nuevomotor-grabaciones.js"></script>
 
     <!-- ================= JAVASCRIPT LOGIC (FIREBASE & PLATFORM) ================= -->
     <script type="module">
@@ -847,6 +852,12 @@
         // Inicializar módulos de Cursos y Reportes con Firestore
         initCursosModule(db);
         initReportsModule(db);
+        if (window.NuevoMotorGrabaciones) {
+            window.NuevoMotorGrabaciones.init({
+                db,
+                firestoreFns: { doc, getDoc, setDoc, deleteDoc, collection, onSnapshot }
+            });
+        }
 
         // Global Jitsi API Instance
         let currentJitsiApi = null;
