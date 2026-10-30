@@ -511,13 +511,26 @@
             object-fit: contain;
             background: #f9fafb;
             opacity: 0;
-            pointer-events: none;
+            pointer-events: none !important;
+            user-select: none;
+            -webkit-touch-callout: none;
             z-index: 1;
         }
 
         #stageVideo.is-visible {
             opacity: 1;
-            pointer-events: auto;
+            pointer-events: none !important;
+        }
+
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-enclosure,
+        video::-webkit-media-controls-panel,
+        video::-webkit-media-controls-play-button,
+        video::-webkit-media-controls-start-playback-button {
+            display: none !important;
+            -webkit-appearance: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
 
         .stage-bottom-label {
@@ -878,7 +891,7 @@
                 <div class="stage-avatar-circle" id="stageAvatarInitials">M</div>
             </div>
 
-            <video id="stageVideo" autoplay playsinline muted></video>
+            <video id="stageVideo" autoplay playsinline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback"></video>
 
             <div class="stage-bottom-label" id="stageParticipantLabel">Merby</div>
 
@@ -1193,6 +1206,27 @@
                     this.clockInterval = setInterval(() => this.updateClock(), 15000);
                 }
 
+                const stageVideo = document.getElementById('stageVideo');
+                if (stageVideo) {
+                    stageVideo.onpause = () => {
+                        if (this.inCall && (this.remoteVideoActive || this.screenEnabled || this.camEnabled)) {
+                            stageVideo.play().catch(() => {});
+                        }
+                    };
+                }
+
+                const onFsChange = () => {
+                    const fsText = document.getElementById('stageFullscreenText');
+                    const callStage = document.getElementById('callStage');
+                    const isNativeFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+                    const isPseudoFs = callStage ? callStage.classList.contains('is-pseudo-fullscreen') : false;
+                    if (fsText) {
+                        fsText.textContent = (isNativeFs || isPseudoFs) ? 'Salir de pantalla completa' : 'Pantalla completa';
+                    }
+                };
+                document.addEventListener('fullscreenchange', onFsChange);
+                document.addEventListener('webkitfullscreenchange', onFsChange);
+
                 document.getElementById('guardView').style.display = 'none';
                 document.getElementById('lobbyView').style.display = 'flex';
             },
@@ -1414,7 +1448,6 @@
             async toggleStageFullscreen() {
                 this.unlockAllRemoteAudio();
                 const callStage = document.getElementById('callStage');
-                const stageVideo = document.getElementById('stageVideo');
                 const fsText = document.getElementById('stageFullscreenText');
                 if (!callStage) return;
 
@@ -1442,9 +1475,6 @@
                     } else if (callStage.webkitRequestFullscreen) {
                         callStage.webkitRequestFullscreen();
                         if (fsText) fsText.textContent = 'Salir de pantalla completa';
-                        return;
-                    } else if (stageVideo && stageVideo.webkitEnterFullscreen) {
-                        stageVideo.webkitEnterFullscreen();
                         return;
                     }
                 } catch (e) {}
