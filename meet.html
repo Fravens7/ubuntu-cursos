@@ -970,11 +970,15 @@
         </div>
     </div>
 
+    <!-- WebM Duration Fixer + Nuevo Motor de Grabaciones (Plan A) -->
+    <script src="/fix-webm-duration.js"></script>
+    <script src="/nuevomotor-grabaciones.js"></script>
+
     <!-- ================= LOGICA FIREBASE + WEBRTC ================= -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAplMdumdxbNTm9ySnkgKINGLoUDtkuXY8",
@@ -988,6 +992,13 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        if (window.NuevoMotorGrabaciones) {
+            window.NuevoMotorGrabaciones.init({
+                db,
+                firestoreFns: { doc, getDoc, setDoc, deleteDoc, collection, onSnapshot }
+            });
+        }
 
         function generateMeetCode() {
             return 'fhr-nrxp-swz';
@@ -1361,6 +1372,10 @@
                 document.getElementById('endedView').style.display = 'none';
                 document.getElementById('callView').style.display = 'flex';
                 this.inCall = true;
+
+                if (window.NuevoMotorGrabaciones) {
+                    window.NuevoMotorGrabaciones.mountMeetControls(this);
+                }
 
                 this.syncControlButtonsUI();
                 this.updateStageDisplay();
@@ -1948,7 +1963,11 @@
                 this.updateStageDisplay();
             },
 
-            hangupCall() {
+            async hangupCall() {
+                if (window.NuevoMotorGrabaciones && (window.NuevoMotorGrabaciones.isRecording || window.NuevoMotorGrabaciones.isSaving)) {
+                    await window.NuevoMotorGrabaciones.stopAndSave();
+                }
+
                 this.inCall = false;
                 this.stopMicStream();
                 this.stopCamStream();
