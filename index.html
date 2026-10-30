@@ -2770,6 +2770,15 @@
                 if (el) el.textContent = text;
             },
 
+            showVideoStage(hasStream) {
+                const videoEl = document.getElementById('goLiveVideo');
+                const emptyBox = document.getElementById('goLiveEmptyBox');
+                const stageBox = document.getElementById('goLiveStageContainer');
+                if (videoEl) videoEl.style.display = hasStream ? 'block' : 'none';
+                if (emptyBox) emptyBox.style.display = hasStream ? 'none' : 'flex';
+                if (stageBox) stageBox.style.background = hasStream ? '#111111' : '#ffffff';
+            },
+
             renderPeers(peers) {
                 const listEl = document.getElementById('goLivePeersList');
                 if (!listEl || !Array.isArray(peers)) return;
@@ -2782,6 +2791,14 @@
                     const selfTag = p.peerId === this.peerId ? ' (Tu)' : '';
                     return `<div style="padding:6px 0;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111111;">${escapeHtml(p.name || p.peerId)}${selfTag}<span style="color:#4b5563;font-weight:600;">${sharingTag}</span></div>`;
                 }).join('');
+
+                const otherSharing = peers.find(p => p.isSharing && p.peerId !== this.peerId);
+                if (otherSharing && !this.isSharing) {
+                    this.setStreamLabel(`Recibiendo pantalla de: ${otherSharing.name || otherSharing.peerId}`);
+                } else if (!otherSharing && !this.isSharing) {
+                    this.setStreamLabel('Sala activa — Sin pantalla compartida');
+                    this.showVideoStage(false);
+                }
             },
 
             connect(roomName) {
@@ -2792,7 +2809,8 @@
 
                 const displayName = (typeof userDisplayName !== 'undefined' && userDisplayName) ? userDisplayName : 'Admin';
                 this.setStatus('Conectando...');
-                this.setStreamLabel('Esperando transmision de pantalla...');
+                this.setStreamLabel('Sala activa — Sin pantalla compartida');
+                this.showVideoStage(false);
 
                 this.initPeerConnection();
 
@@ -2851,11 +2869,25 @@
                             this.remoteStream = new MediaStream();
                         }
                         this.remoteStream.addTrack(e.track);
+                        videoEl.srcObject = null;
                         videoEl.srcObject = this.remoteStream;
                     }
-                    videoEl.muted = false;
-                    videoEl.play().catch(() => {});
-                    this.setStreamLabel('Recibiendo pantalla en vivo');
+
+                    this.showVideoStage(true);
+                    this.setStreamLabel('Viendo pantalla en vivo');
+
+                    const tryPlay = () => {
+                        videoEl.muted = false;
+                        const playPromise = videoEl.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(() => {
+                                videoEl.muted = true;
+                                videoEl.play().catch(() => {});
+                            });
+                        }
+                    };
+                    videoEl.onloadedmetadata = tryPlay;
+                    tryPlay();
                 };
             },
 
@@ -2870,6 +2902,7 @@
                     case 'screen-share-started':
                         if (msg.peerId !== this.peerId) {
                             this.setStreamLabel(`Pantalla compartida por: ${msg.name || msg.peerId}`);
+                            this.showVideoStage(true);
                         }
                         break;
 
@@ -2880,7 +2913,10 @@
                                 videoEl.srcObject = null;
                             }
                             this.remoteStream = null;
-                            this.setStreamLabel('Esperando transmision de pantalla...');
+                            if (!this.isSharing) {
+                                this.showVideoStage(false);
+                                this.setStreamLabel('Sala activa — Sin pantalla compartida');
+                            }
                         }
                         break;
 
@@ -2948,6 +2984,7 @@
                     this.localStream = stream;
                     this.isSharing = true;
                     this.updateShareButton();
+                    this.showVideoStage(true);
 
                     const videoEl = document.getElementById('goLiveVideo');
                     if (videoEl) {
@@ -3000,7 +3037,8 @@
 
                 const videoEl = document.getElementById('goLiveVideo');
                 if (videoEl) videoEl.srcObject = null;
-                this.setStreamLabel('Esperando transmision de pantalla...');
+                this.showVideoStage(false);
+                this.setStreamLabel('Sala activa — Sin pantalla compartida');
 
                 if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                     this.ws.send(JSON.stringify({ type: 'stop-share' }));
@@ -3047,6 +3085,7 @@
                 }
                 const videoEl = document.getElementById('goLiveVideo');
                 if (videoEl) videoEl.srcObject = null;
+                this.showVideoStage(false);
             }
         };
 
@@ -3066,7 +3105,7 @@
                 <div style="display:flex;align-items:center;gap:8px;">
                     <label for="goLiveRoomInput" style="font-size:12px;color:#4b5563;">Sala:</label>
                     <input id="goLiveRoomInput" type="text" value="ubuntu-admin-live" style="border:1px solid #d1d5db;padding:5px 8px;font-size:13px;color:#111111;background:#ffffff;width:160px;" />
-                    <button type="button" onclick="UbuntuGoLive.connect(document.getElementById('goLiveRoomInput').value)" style="border:1px solid #d1d5db;background:#f3f4f6;color:#111111;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;">Conectar</button>
+                    <button type="button" onclick="UbuntuGoLive.connect(document.getElementById('goLiveRoomInput').value)" style="border:1px solid #d1d5db;background:#f3f4f6;color:#111111;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;">Cambiar sala</button>
                     <button type="button" id="btnGoLiveShare" onclick="UbuntuGoLive.toggleShareScreen()" style="border:1px solid #111111;background:#111111;color:#ffffff;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;">Compartir pantalla</button>
                     <button type="button" onclick="UbuntuGoLive.close()" style="border:1px solid #d1d5db;background:#ffffff;color:#111111;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;">Salir</button>
                 </div>
@@ -3075,9 +3114,13 @@
             <div style="flex:1;display:flex;min-height:0;background:#ffffff;">
                 <!-- Video Stage -->
                 <div style="flex:1;display:flex;flex-direction:column;padding:16px;background:#f9fafb;min-width:0;">
-                    <div id="goLiveStreamLabel" style="font-size:12px;color:#4b5563;margin-bottom:8px;">Esperando transmision de pantalla...</div>
-                    <div style="flex:1;background:#111111;border:1px solid #d1d5db;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0;">
-                        <video id="goLiveVideo" autoplay playsinline controls style="width:100%;height:100%;object-fit:contain;background:#111111;"></video>
+                    <div id="goLiveStreamLabel" style="font-size:12px;color:#4b5563;margin-bottom:8px;">Sala activa — Sin pantalla compartida</div>
+                    <div id="goLiveStageContainer" style="flex:1;background:#ffffff;border:1px solid #d1d5db;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0;">
+                        <div id="goLiveEmptyBox" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;">
+                            <div style="font-size:14px;color:#4b5563;">Nadie esta compartiendo pantalla en este momento.</div>
+                            <button type="button" onclick="UbuntuGoLive.toggleShareScreen()" style="border:1px solid #111111;background:#111111;color:#ffffff;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;">Compartir mi pantalla ahora</button>
+                        </div>
+                        <video id="goLiveVideo" autoplay playsinline controls style="display:none;width:100%;height:100%;object-fit:contain;background:#111111;"></video>
                     </div>
                 </div>
                 <!-- Sidebar Participantes -->
