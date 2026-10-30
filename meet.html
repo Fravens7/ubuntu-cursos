@@ -490,7 +490,7 @@
             height: 96px;
             border-radius: 50%;
             background: #ffffff;
-            border: 1px solid #d1d5db;
+            border: 1.5px solid #d1d5db;
             color: #111111;
             display: flex;
             align-items: center;
@@ -498,6 +498,8 @@
             font-size: 34px;
             font-weight: 500;
             user-select: none;
+            transition: box-shadow 0.06s ease-out, transform 0.06s ease-out, border-color 0.1s ease;
+            will-change: box-shadow, transform;
         }
 
         #stageVideo {
@@ -862,9 +864,7 @@
         const db = getFirestore(app);
 
         function generateMeetCode() {
-            const chars = 'abcdefghijklmnopqrstuvwxyz';
-            const part = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-            return `${part(3)}-${part(4)}-${part(3)}`;
+            return 'fhr-nrxp-swz';
         }
 
         function resolveRoomCode() {
@@ -931,6 +931,135 @@
             inCall: false,
             clockInterval: null,
 
+            // Audio Meter (Chiquiborde / Latido reactivo a voz)
+            audioCtx: null,
+            localAnalyser: null,
+            localSourceNode: null,
+            remoteAnalyser: null,
+            remoteSourceNode: null,
+            voiceDataArray: null,
+            smoothedVoiceLevel: 0,
+            voiceLoopRunning: false,
+
+            ensureAudioContext() {
+                if (!this.audioCtx) {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    if (Ctx) {
+                        this.audioCtx = new Ctx();
+                        this.voiceDataArray = new Uint8Array(128);
+                    }
+                }
+                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume().catch(() => {});
+                }
+                if (!this.voiceLoopRunning) {
+                    this.voiceLoopRunning = true;
+                    this.runVoicePulseLoop();
+                }
+            },
+
+            attachLocalAudioAnalyser(stream) {
+                try {
+                    this.ensureAudioContext();
+                    if (!this.audioCtx || !stream) return;
+                    if (this.localSourceNode) {
+                        try { this.localSourceNode.disconnect(); } catch (e) {}
+                    }
+                    this.localAnalyser = this.audioCtx.createAnalyser();
+                    this.localAnalyser.fftSize = 256;
+                    this.localAnalyser.smoothingTimeConstant = 0.5;
+                    this.localSourceNode = this.audioCtx.createMediaStreamSource(stream);
+                    this.localSourceNode.connect(this.localAnalyser);
+                } catch (e) {}
+            },
+
+            detachLocalAudioAnalyser() {
+                if (this.localSourceNode) {
+                    try { this.localSourceNode.disconnect(); } catch (e) {}
+                    this.localSourceNode = null;
+                }
+                this.localAnalyser = null;
+            },
+
+            attachRemoteAudioAnalyser(stream) {
+                try {
+                    this.ensureAudioContext();
+                    if (!this.audioCtx || !stream) return;
+                    if (this.remoteSourceNode) {
+                        try { this.remoteSourceNode.disconnect(); } catch (e) {}
+                    }
+                    this.remoteAnalyser = this.audioCtx.createAnalyser();
+                    this.remoteAnalyser.fftSize = 256;
+                    this.remoteAnalyser.smoothingTimeConstant = 0.5;
+                    this.remoteSourceNode = this.audioCtx.createMediaStreamSource(stream);
+                    this.remoteSourceNode.connect(this.remoteAnalyser);
+                } catch (e) {}
+            },
+
+            readAnalyserRms(analyser) {
+                if (!analyser || !this.voiceDataArray) return 0;
+                analyser.getByteTimeDomainData(this.voiceDataArray);
+                let sumSq = 0;
+                const len = this.voiceDataArray.length;
+                for (let i = 0; i < len; i++) {
+                    const norm = (this.voiceDataArray[i] - 128) / 128;
+                    sumSq += norm * norm;
+                }
+                return Math.sqrt(sumSq / len);
+            },
+
+            runVoicePulseLoop() {
+                const step = () => {
+                    let maxRms = 0;
+                    if (this.micEnabled && this.localAnalyser) {
+                        maxRms = Math.max(maxRms, this.readAnalyserRms(this.localAnalyser));
+                    }
+                    if (this.remoteAnalyser) {
+                        maxRms = Math.max(maxRms, this.readAnalyserRms(this.remoteAnalyser));
+                    }
+
+                    const rawLevel = maxRms < 0.01 ? 0 : Math.min(1, (maxRms - 0.01) * 8.0);
+                    if (rawLevel > this.smoothedVoiceLevel) {
+                        this.smoothedVoiceLevel = this.smoothedVoiceLevel * 0.4 + rawLevel * 0.6;
+                    } else {
+                        this.smoothedVoiceLevel = this.smoothedVoiceLevel * 0.82 + rawLevel * 0.18;
+                    }
+
+                    const lvl = this.smoothedVoiceLevel;
+                    const avatarEl = document.getElementById('stageAvatarInitials');
+                    if (avatarEl) {
+                        if (lvl > 0.025) {
+                            const ring1 = (3 + lvl * 13).toFixed(1);
+                            const ring2 = (7 + lvl * 25).toFixed(1);
+                            const alpha1 = (0.12 + lvl * 0.18).toFixed(3);
+                            const alpha2 = (0.05 + lvl * 0.10).toFixed(3);
+                            const scale = (1 + lvl * 0.055).toFixed(3);
+                            avatarEl.style.borderColor = lvl > 0.18 ? '#111111' : '#6b7280';
+                            avatarEl.style.boxShadow = `0 0 0 ${ring1}px rgba(17, 17, 17, ${alpha1}), 0 0 0 ${ring2}px rgba(17, 17, 17, ${alpha2})`;
+                            avatarEl.style.transform = `scale(${scale})`;
+                        } else {
+                            avatarEl.style.borderColor = '#d1d5db';
+                            avatarEl.style.boxShadow = '0 0 0 0px rgba(17, 17, 17, 0)';
+                            avatarEl.style.transform = 'scale(1)';
+                        }
+                    }
+
+                    // Efecto sutil de latido también en el botón de micrófono activo
+                    const activeMicBtn = this.inCall ? document.getElementById('btnCallMic') : document.getElementById('btnLobbyMic');
+                    if (activeMicBtn) {
+                        if (this.micEnabled && lvl > 0.03) {
+                            const mRing = (2 + lvl * 7).toFixed(1);
+                            activeMicBtn.style.boxShadow = `0 0 0 ${mRing}px rgba(17, 17, 17, 0.16)`;
+                        } else {
+                            activeMicBtn.style.boxShadow = 'none';
+                        }
+                    }
+
+                    requestAnimationFrame(step);
+                };
+                requestAnimationFrame(step);
+            },
+
             initUIForUser(name, email) {
                 this.userName = name || 'Admin';
                 this.userEmail = email || '';
@@ -972,6 +1101,7 @@
                     try {
                         this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         this.micEnabled = true;
+                        this.attachLocalAudioAnalyser(this.micStream);
                     } catch (err) {
                         console.warn('Permiso de micrófono denegado o no disponible:', err);
                         this.micEnabled = false;
@@ -1012,6 +1142,7 @@
             },
 
             stopMicStream() {
+                this.detachLocalAudioAnalyser();
                 if (this.micStream) {
                     this.micStream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
                     this.micStream = null;
@@ -1141,10 +1272,11 @@
 
             connectSignaling() {
                 this.cleanupConnectionOnly();
-                this.peerId = 'adm_' + Math.random().toString(36).substring(2, 8);
+                const prefix = this.userRole === 'admin' ? 'adm_' : 'est_';
+                this.peerId = prefix + Math.random().toString(36).substring(2, 8);
                 this.initPeerConnection();
 
-                const url = `${this.wsUrl}?room=${encodeURIComponent(this.roomCode)}&peer=${encodeURIComponent(this.peerId)}&name=${encodeURIComponent(this.userName)}&role=admin`;
+                const url = `${this.wsUrl}?room=${encodeURIComponent(this.roomCode)}&peer=${encodeURIComponent(this.peerId)}&name=${encodeURIComponent(this.userName)}&role=${encodeURIComponent(this.userRole || 'estudiante')}`;
                 this.ws = new WebSocket(url);
 
                 this.ws.onopen = async () => {
@@ -1198,7 +1330,17 @@
                         }
                         const stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream([e.track]);
                         audioEl.srcObject = stream;
-                        audioEl.play().catch(() => {});
+                        this.attachRemoteAudioAnalyser(stream);
+                        audioEl.play().catch(() => {
+                            const resumeAudio = () => {
+                                audioEl.play().catch(() => {});
+                                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                                    this.audioCtx.resume().catch(() => {});
+                                }
+                                window.removeEventListener('click', resumeAudio);
+                            };
+                            window.addEventListener('click', resumeAudio, { once: true });
+                        });
                         return;
                     }
 
@@ -1273,7 +1415,13 @@
                     case 'joined':
                     case 'peer-joined':
                     case 'peer-left':
-                        if (msg.peers) this.renderPeers(msg.peers);
+                        if (msg.peers) {
+                            this.renderPeers(msg.peers);
+                            const activeSharer = msg.peers.find(p => p.peerId !== this.peerId && p.isSharing);
+                            if (activeSharer && !this.remoteSharingName) {
+                                this.remoteSharingName = activeSharer.name || 'Participante';
+                            }
+                        }
                         if (msg.type === 'peer-joined' && (this.camEnabled || this.screenEnabled)) {
                             this.sendRoomNotice(this.screenEnabled ? '__VIDEO_ON__:screen' : '__VIDEO_ON__:cam');
                         }
@@ -1400,6 +1548,7 @@
                     try {
                         this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         const audioTrack = this.micStream.getAudioTracks()[0];
+                        this.attachLocalAudioAnalyser(this.micStream);
                         if (audioTrack && this.pc) {
                             this.micEnabled = true;
                             if (this.audioSender) {
@@ -1547,6 +1696,11 @@
                 this.remoteVideoStream = null;
                 this.audioSender = null;
                 this.videoSender = null;
+                if (this.remoteSourceNode) {
+                    try { this.remoteSourceNode.disconnect(); } catch (e) {}
+                    this.remoteSourceNode = null;
+                }
+                this.remoteAnalyser = null;
 
                 const audioContainer = document.getElementById('remoteAudios');
                 if (audioContainer) audioContainer.innerHTML = '';
@@ -1599,15 +1753,23 @@
                 console.warn('Error consultando rol en Firestore:', err);
             }
 
-            if (role !== 'admin') {
+            const normalizedEmail = String(user.email || '').toLowerCase().trim();
+            const isAllowedTestEmail = (normalizedEmail === 'test@gmail.com');
+
+            if (role !== 'admin' && !isAllowedTestEmail) {
                 guardTitle.textContent = 'Acceso restringido';
-                guardSub.textContent = 'Esta sala de reuniones está habilitada únicamente para cuentas con rol administrador.';
+                guardSub.textContent = 'Esta sala de reuniones está habilitada únicamente para cuentas autorizadas.';
                 guardBtn.style.display = 'inline-block';
                 return;
             }
 
             MeetApp.userRole = role;
             MeetApp.initUIForUser(displayName, user.email || '');
+
+            // Chiquifiltro: test@gmail.com entra directamente a la reunión para visualizar la transmisión
+            if (isAllowedTestEmail) {
+                MeetApp.joinMeeting();
+            }
         });
     </script>
 </body>
