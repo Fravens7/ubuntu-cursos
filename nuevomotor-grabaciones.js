@@ -252,11 +252,15 @@
             this.connectedTrackIds = new Set();
             this.sourceNodes = [];
 
-            // 1. Crear Canvas interno 1280x720 (HD 16:9) que captura todo el escenario sin pedir permisos
+            // 1. Crear Canvas interno 1920x1080 (Full HD 16:9) que captura todo el escenario con nitidez de texto
             this.canvas = document.createElement('canvas');
-            this.canvas.width = 1280;
-            this.canvas.height = 720;
-            this.ctx = this.canvas.getContext('2d');
+            this.canvas.width = 1920;
+            this.canvas.height = 1080;
+            this.ctx = this.canvas.getContext('2d', { alpha: false });
+            if (this.ctx) {
+                this.ctx.imageSmoothingEnabled = true;
+                this.ctx.imageSmoothingQuality = 'high';
+            }
 
             // Dibujar primer fotograma de inmediato
             this.drawStageFrameToCanvas();
@@ -294,18 +298,24 @@
 
             // 3. Combinar pista de video del Canvas + pista de audio del Mezclador
             const videoTrack = this.canvasStream.getVideoTracks()[0];
+            if (videoTrack && 'contentHint' in videoTrack) {
+                try { videoTrack.contentHint = 'detail'; } catch (e) {}
+            }
             const audioTrack = this.audioDest.stream.getAudioTracks()[0];
             const tracks = [videoTrack];
             if (audioTrack) tracks.push(audioTrack);
             this.combinedStream = new MediaStream(tracks);
 
             const mimeCandidates = [
-                'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+                'video/mp4;codecs=avc1.64002A,mp4a.40.2',
+                'video/mp4;codecs=avc1.640028,mp4a.40.2',
+                'video/mp4;codecs=avc1.4D402A,mp4a.40.2',
+                'video/mp4;codecs=avc1.4D4028,mp4a.40.2',
                 'video/mp4;codecs=avc1,mp4a.40.2',
                 'video/mp4;codecs=avc1,opus',
                 'video/mp4',
-                'video/webm;codecs=vp8,opus',
                 'video/webm;codecs=vp9,opus',
+                'video/webm;codecs=vp8,opus',
                 'video/webm;codecs=h264,opus',
                 'video/webm'
             ];
@@ -313,8 +323,8 @@
 
             this.mediaRecorder = new MediaRecorder(this.combinedStream, {
                 mimeType,
-                videoBitsPerSecond: 450000,
-                audioBitsPerSecond: 48000
+                videoBitsPerSecond: 2500000,
+                audioBitsPerSecond: 64000
             });
 
             this.mediaRecorder.ondataavailable = (e) => {
@@ -392,6 +402,8 @@
                 const dy = (H - dh) / 2;
 
                 ctx.save();
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
                 if (this.meetApp && this.meetApp.camEnabled && !this.meetApp.screenEnabled) {
                     ctx.translate(W, 0);
                     ctx.scale(-1, 1);
