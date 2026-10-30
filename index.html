@@ -2731,15 +2731,15 @@
             renderLiveClasses();
         });
 
-        // ================= UBUNTU MEET (ADMIN NEW TAB LAUNCHER) =================
+        // ================= UBUNTU MEET (ADMIN + TEST@GMAIL.COM NEW TAB LAUNCHER) =================
         function generateMeetCode() {
-            const chars = 'abcdefghijklmnopqrstuvwxyz';
-            const part = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-            return `${part(3)}-${part(4)}-${part(3)}`;
+            return 'fhr-nrxp-swz';
         }
 
         window.openAdminGoLiveRoom = function () {
-            if (String(currentUserRole || '').toLowerCase().trim() !== 'admin') {
+            const role = String(currentUserRole || '').toLowerCase().trim();
+            const email = (typeof currentUser !== 'undefined' && currentUser && currentUser.email) ? String(currentUser.email).toLowerCase().trim() : '';
+            if (role !== 'admin' && email !== 'test@gmail.com') {
                 return;
             }
             let code = '';
