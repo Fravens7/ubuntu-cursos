@@ -4,346 +4,360 @@
     } else if (typeof module !== 'undefined' && module.exports) {
         module.exports = definition();
     } else {
-        window.ysFixWebmDuration = definition();
+        var api = definition();
+        window.ysFixWebmDuration = api;
+        window.ysRepairVideoBuffer = api.repairBuffer;
     }
 })('fix-webm-duration', function () {
-    var sections = {
-        0xa45dfa3: { name: 'EBML', type: 'Container' },
-        0x286: { name: 'EBMLVersion', type: 'Uint' },
-        0x2f7: { name: 'EBMLReadVersion', type: 'Uint' },
-        0x2f2: { name: 'EBMLMaxIDLength', type: 'Uint' },
-        0x2f3: { name: 'EBMLMaxSizeLength', type: 'Uint' },
-        0x282: { name: 'DocType', type: 'String' },
-        0x287: { name: 'DocTypeVersion', type: 'Uint' },
-        0x285: { name: 'DocTypeReadVersion', type: 'Uint' },
-        0x6c: { name: 'Void', type: 'Binary' },
-        0x3f: { name: 'CRC-32', type: 'Binary' },
-        0xb538667: { name: 'SignatureSlot', type: 'Container' },
-        0x3e8a: { name: 'SignatureAlgo', type: 'Uint' },
-        0x3e9a: { name: 'SignatureHash', type: 'Uint' },
-        0x3ea5: { name: 'SignaturePublicKey', type: 'Binary' },
-        0x3eb5: { name: 'Signature', type: 'Binary' },
-        0x3e5b: { name: 'SignatureElements', type: 'Container' },
-        0x3e7b: { name: 'SignatureElementList', type: 'Container' },
-        0x2532: { name: 'SignedElement', type: 'Binary' },
-        0x8538067: { name: 'Segment', type: 'Container' },
-        0x14d9b74: { name: 'SeekHead', type: 'Container' },
-        0xdbb: { name: 'Seek', type: 'Container' },
-        0x13ab: { name: 'SeekID', type: 'Binary' },
-        0x13ac: { name: 'SeekPosition', type: 'Uint' },
-        0x549a966: { name: 'Info', type: 'Container' },
-        0x33a4: { name: 'SegmentUID', type: 'Binary' },
-        0x3384: { name: 'SegmentFilename', type: 'String' },
-        0x1cb923: { name: 'PrevUID', type: 'Binary' },
-        0x1c83ab: { name: 'PrevFilename', type: 'String' },
-        0x1eb923: { name: 'NextUID', type: 'Binary' },
-        0x1e83bb: { name: 'NextFilename', type: 'String' },
-        0x444: { name: 'SegmentFamily', type: 'Binary' },
-        0x2924: { name: 'ChapterTranslate', type: 'Container' },
-        0x29fc: { name: 'ChapterTranslateEditionUID', type: 'Uint' },
-        0x29bf: { name: 'ChapterTranslateCodec', type: 'Uint' },
-        0x29a5: { name: 'ChapterTranslateID', type: 'Binary' },
-        0xad7b1: { name: 'TimecodeScale', type: 'Uint' },
-        0x489: { name: 'Duration', type: 'Float' },
-        0x461: { name: 'DateUTC', type: 'Date' },
-        0x3ba9: { name: 'Title', type: 'String' },
-        0xd80: { name: 'MuxingApp', type: 'String' },
-        0x1741: { name: 'WritingApp', type: 'String' },
-        0x67: { name: 'Timecode', type: 'Uint' },
-        0x1854: { name: 'SilentTracks', type: 'Container' },
-        0x18d7: { name: 'SilentTrackNumber', type: 'Uint' },
-        0x27: { name: 'Position', type: 'Uint' },
-        0x2b: { name: 'PrevSize', type: 'Uint' },
-        0x23: { name: 'SimpleBlock', type: 'Binary' },
-        0x20: { name: 'BlockGroup', type: 'Container' },
-        0x21: { name: 'Block', type: 'Binary' },
-        0x22: { name: 'BlockVirtual', type: 'Binary' },
-        0x35a1: { name: 'BlockAdditions', type: 'Container' },
-        0x26: { name: 'BlockMore', type: 'Container' },
-        0x6e: { name: 'BlockAddID', type: 'Uint' },
-        0x25: { name: 'BlockAdditional', type: 'Binary' },
-        0x1b: { name: 'BlockDuration', type: 'Uint' },
-        0x7a: { name: 'ReferencePriority', type: 'Uint' },
-        0x7b: { name: 'ReferenceBlock', type: 'Int' },
-        0x7d: { name: 'ReferenceVirtual', type: 'Int' },
-        0x24: { name: 'CodecState', type: 'Binary' },
-        0x35a2: { name: 'DiscardPadding', type: 'Int' },
-        0xe: { name: 'Slices', type: 'Container' },
-        0x68: { name: 'TimeSlice', type: 'Container' },
-        0x4c: { name: 'LaceNumber', type: 'Uint' },
-        0x4d: { name: 'FrameNumber', type: 'Uint' },
-        0x4b: { name: 'BlockAdditionID', type: 'Uint' },
-        0x4e: { name: 'Delay', type: 'Uint' },
-        0x4f: { name: 'SliceDuration', type: 'Uint' },
-        0x48: { name: 'ReferenceFrame', type: 'Container' },
-        0x49: { name: 'ReferenceOffset', type: 'Uint' },
-        0x4a: { name: 'ReferenceTimeCode', type: 'Uint' },
-        0x2f: { name: 'EncryptedBlock', type: 'Binary' },
-        0x654ae6b: { name: 'Tracks', type: 'Container' },
-        0x2e: { name: 'TrackEntry', type: 'Container' },
-        0x57: { name: 'TrackNumber', type: 'Uint' },
-        0x33c5: { name: 'TrackUID', type: 'Uint' },
-        0x3: { name: 'TrackType', type: 'Uint' },
-        0x39: { name: 'FlagEnabled', type: 'Uint' },
-        0x8: { name: 'FlagDefault', type: 'Uint' },
-        0x15aa: { name: 'FlagForced', type: 'Uint' },
-        0x1c: { name: 'FlagLacing', type: 'Uint' },
-        0x2beb: { name: 'DefaultDuration', type: 'Uint' },
-        0x1338a: { name: 'MaxBlockAdditionID', type: 'Uint' },
-        0x137e: { name: 'Name', type: 'String' },
-        0x2b59c: { name: 'Language', type: 'String' },
-        0x6: { name: 'CodecID', type: 'String' },
-        0x23a2: { name: 'CodecPrivate', type: 'Binary' },
-        0x58688: { name: 'CodecName', type: 'String' },
-        0x3446: { name: 'AttachmentLink', type: 'Uint' },
-        0x1a9697: { name: 'CodecSettings', type: 'String' },
-        0x1b4040: { name: 'CodecInfoURL', type: 'String' },
-        0x1c8427: { name: 'CodecDownloadURL', type: 'String' },
-        0x2a: { name: 'CodecDecodeAll', type: 'Uint' },
-        0x2fab: { name: 'TrackOverlay', type: 'Uint' },
-        0x16aa: { name: 'CodecDelay', type: 'Uint' },
-        0x16bb: { name: 'SeekPreRoll', type: 'Uint' },
-        0x60: { name: 'Video', type: 'Container' },
-        0x1a: { name: 'FlagInterlaced', type: 'Uint' },
-        0x13b8: { name: 'StereoMode', type: 'Uint' },
-        0x13c0: { name: 'AlphaMode', type: 'Uint' },
-        0x30: { name: 'PixelWidth', type: 'Uint' },
-        0x3a: { name: 'PixelHeight', type: 'Uint' },
-        0x14aa: { name: 'PixelCropBottom', type: 'Uint' },
-        0x14bb: { name: 'PixelCropTop', type: 'Uint' },
-        0x14cc: { name: 'PixelCropLeft', type: 'Uint' },
-        0x14dd: { name: 'PixelCropRight', type: 'Uint' },
-        0x14b0: { name: 'DisplayWidth', type: 'Uint' },
-        0x14ba: { name: 'DisplayHeight', type: 'Uint' },
-        0x14b2: { name: 'DisplayUnit', type: 'Uint' },
-        0x14b3: { name: 'AspectRatioType', type: 'Uint' },
-        0xeb524: { name: 'ColourSpace', type: 'Binary' },
-        0x61: { name: 'Audio', type: 'Container' },
-        0x35: { name: 'SamplingFrequency', type: 'Float' },
-        0x38b5: { name: 'OutputSamplingFrequency', type: 'Float' },
-        0x1f: { name: 'Channels', type: 'Uint' },
-        0x3d7b: { name: 'ChannelPositions', type: 'Binary' },
-        0x2264: { name: 'BitDepth', type: 'Uint' },
-        0x1c53bb6b: { name: 'Cues', type: 'Container' },
-        0x3b: { name: 'CuePoint', type: 'Container' },
-        0x33: { name: 'CueTime', type: 'Uint' },
-        0x37: { name: 'CueTrackPositions', type: 'Container' },
-        0x77: { name: 'CueTrack', type: 'Uint' },
-        0x71: { name: 'CueClusterPosition', type: 'Uint' },
-        0x70: { name: 'CueRelativePosition', type: 'Uint' },
-        0x32: { name: 'CueDuration', type: 'Uint' },
-        0x1378: { name: 'CueBlockNumber', type: 'Uint' },
-        0x6a: { name: 'CueCodecState', type: 'Uint' },
-        0x5b: { name: 'CueReference', type: 'Container' },
-        0x16: { name: 'CueRefTime', type: 'Uint' }
-    };
 
-    function doInherit(subClass, superClass) {
-        subClass.prototype = Object.create(superClass.prototype);
-        subClass.prototype.constructor = subClass;
+    // =========================================================================
+    // 1. PARCHEADOR DE DURACIÓN PARA MP4 (ftyp / moov -> mvhd, tkhd, mdhd, mehd)
+    // =========================================================================
+    function isMp4Buffer(u8) {
+        return u8 && u8.length >= 12 &&
+            u8[4] === 0x66 && u8[5] === 0x74 && u8[6] === 0x79 && u8[7] === 0x70; // 'ftyp'
     }
 
-    function WebmBase(name, type) {
-        this.name = name || 'Unknown';
-        this.type = type || 'Unknown';
+    function patchMp4BufferDuration(u8, durationMs) {
+        if (!isMp4Buffer(u8) || !(durationMs > 0)) return u8;
+        var out = new Uint8Array(u8.length);
+        out.set(u8);
+        var view = new DataView(out.buffer, out.byteOffset, out.byteLength);
+        var containers = { moov: 1, trak: 1, mdia: 1, mvex: 1 };
+        var movieTimescale = 1000;
+
+        function writeUint64BE(byteOffset, valNumber) {
+            var v = Math.max(0, Math.round(valNumber));
+            var hi = Math.floor(v / 4294967296);
+            var lo = (v >>> 0);
+            view.setUint32(byteOffset, hi, false);
+            view.setUint32(byteOffset + 4, lo, false);
+        }
+
+        function walk(start, end) {
+            var off = start;
+            while (off + 8 <= end) {
+                var size = view.getUint32(off, false);
+                var type = String.fromCharCode(out[off + 4], out[off + 5], out[off + 6], out[off + 7]);
+                if (size < 8 || off + size > end) break;
+
+                if (type === 'mvhd') {
+                    var ver = out[off + 8];
+                    if (ver === 1 && off + 40 <= end) {
+                        movieTimescale = view.getUint32(off + 28, false) || 1000;
+                        writeUint64BE(off + 32, (durationMs / 1000) * movieTimescale);
+                    } else if (ver === 0 && off + 28 <= end) {
+                        movieTimescale = view.getUint32(off + 20, false) || 1000;
+                        view.setUint32(off + 24, Math.round((durationMs / 1000) * movieTimescale), false);
+                    }
+                } else if (type === 'tkhd') {
+                    var verTk = out[off + 8];
+                    var scaledTk = (durationMs / 1000) * movieTimescale;
+                    if (verTk === 1 && off + 44 <= end) {
+                        writeUint64BE(off + 36, scaledTk);
+                    } else if (verTk === 0 && off + 32 <= end) {
+                        view.setUint32(off + 28, Math.round(scaledTk), false);
+                    }
+                } else if (type === 'mdhd') {
+                    var verMd = out[off + 8];
+                    if (verMd === 1 && off + 40 <= end) {
+                        var ts1 = view.getUint32(off + 28, false) || 1000;
+                        writeUint64BE(off + 32, (durationMs / 1000) * ts1);
+                    } else if (verMd === 0 && off + 28 <= end) {
+                        var ts0 = view.getUint32(off + 20, false) || 1000;
+                        view.setUint32(off + 24, Math.round((durationMs / 1000) * ts0), false);
+                    }
+                } else if (type === 'mehd') {
+                    var verMe = out[off + 8];
+                    var scaledMe = (durationMs / 1000) * movieTimescale;
+                    if (verMe === 1 && off + 20 <= end) {
+                        writeUint64BE(off + 12, scaledMe);
+                    } else if (verMe === 0 && off + 16 <= end) {
+                        view.setUint32(off + 12, Math.round(scaledMe), false);
+                    }
+                }
+
+                if (containers[type]) {
+                    walk(off + 8, off + size);
+                }
+                off += size;
+            }
+        }
+
+        try {
+            walk(0, out.length);
+        } catch (e) {}
+        return out;
     }
 
-    WebmBase.prototype.setSource = function(source) {
-        this.source = source;
-    };
-
-    function WebmUint(name, type) {
-        WebmBase.call(this, name, type);
+    // =========================================================================
+    // 2. REPARADOR DE CLUSTERS Y DURACIÓN PARA WEBM (EBML / Matroska)
+    // =========================================================================
+    function isWebmBuffer(u8) {
+        return u8 && u8.length >= 4 &&
+            u8[0] === 0x1a && u8[1] === 0x45 && u8[2] === 0xdf && u8[3] === 0xa3;
     }
-    doInherit(WebmUint, WebmBase);
 
-    WebmUint.prototype.setValue = function(value) {
-        var bytes = [];
+    function getVintLength(firstByte) {
+        if (!firstByte) return 0;
+        var len = 1;
+        var mask = 0x80;
+        while ((firstByte & mask) === 0 && len < 8) {
+            len++;
+            mask >>= 1;
+        }
+        return len;
+    }
+
+    function writeVintInPlace(u8, offset, vintLen, value) {
+        var maxVal = Math.pow(2, 7 * vintLen) - 2;
+        if (value > maxVal) return false;
         var val = value;
-        while (val > 0) {
-            bytes.unshift(val % 256);
+        for (var i = vintLen - 1; i >= 0; i--) {
+            u8[offset + i] = val % 256;
             val = Math.floor(val / 256);
         }
-        if (bytes.length === 0) bytes.push(0);
-        this.source = new Uint8Array(bytes);
-    };
-
-    function WebmFloat(name, type) {
-        WebmBase.call(this, name, type);
+        u8[offset] |= (1 << (8 - vintLen));
+        return true;
     }
-    doInherit(WebmFloat, WebmBase);
 
-    WebmFloat.prototype.setValue = function(value) {
-        var buffer = new ArrayBuffer(8);
-        var view = new DataView(buffer);
-        view.setFloat64(0, value, false); // Big endian
-        this.source = new Uint8Array(buffer);
-    };
-    WebmFloat.prototype.getValue = function() {
-        if (!this.source) return 0;
-        var view = new DataView(this.source.buffer, this.source.byteOffset, this.source.byteLength);
-        if (this.source.byteLength === 4) {
-            return view.getFloat32(0, false);
-        } else if (this.source.byteLength === 8) {
-            return view.getFloat64(0, false);
+    // Corrige el tamaño VINT de todos los Clusters (1F 43 B6 75) para que ningún
+    // reproductor de escritorio (Windows Media Player / VLC) corte el video a los 2-3s.
+    function repairWebmClustersInPlace(u8, startOffset) {
+        var clusters = [];
+        var limit = u8.length - 6;
+        for (var i = startOffset || 0; i <= limit; i++) {
+            if (u8[i] === 0x1f && u8[i + 1] === 0x43 && u8[i + 2] === 0xb6 && u8[i + 3] === 0x75) {
+                var vLen = getVintLength(u8[i + 4]);
+                if (vLen >= 1 && vLen <= 8 && (i + 4 + vLen) < u8.length && u8[i + 4 + vLen] === 0xe7) {
+                    clusters.push({
+                        offset: i,
+                        vintOffset: i + 4,
+                        vintLen: vLen,
+                        dataStart: i + 4 + vLen
+                    });
+                    i += 3 + vLen;
+                }
+            }
         }
-        return 0;
-    };
 
-    function WebmContainer(name, type) {
-        WebmBase.call(this, name, type);
-        this.data = [];
+        for (var c = 0; c < clusters.length; c++) {
+            var cur = clusters[c];
+            var nextOff = (c + 1 < clusters.length) ? clusters[c + 1].offset : u8.length;
+            var payloadSize = nextOff - cur.dataStart;
+            if (payloadSize >= 0) {
+                writeVintInPlace(u8, cur.vintOffset, cur.vintLen, payloadSize);
+            }
+        }
+        return u8;
     }
-    doInherit(WebmContainer, WebmBase);
 
-    WebmContainer.prototype.readByte = function() {
-        return this.source[this.offset++];
+    var sections = {
+        0xa45dfa3: { name: 'EBML', type: 'Container' },
+        0x8538067: { name: 'Segment', type: 'Container' },
+        0x549a966: { name: 'Info', type: 'Container' },
+        0xad7b1: { name: 'TimecodeScale', type: 'Uint' },
+        0x489: { name: 'Duration', type: 'Float' }
     };
-    WebmContainer.prototype.readUint = function() {
-        var firstByte = this.readByte();
-        var bytes = 8 - Math.floor(Math.log2(firstByte));
-        var value = firstByte - (1 << (8 - bytes));
+
+    function readEbmlVint(u8, offset) {
+        if (offset >= u8.length) return null;
+        var firstByte = u8[offset];
+        if (firstByte === 0) return null;
+        var bytes = getVintLength(firstByte);
+        if (offset + bytes > u8.length) return null;
+        var mask = (1 << (8 - bytes)) - 1;
+        var value = firstByte & mask;
+        var allOnes = (value === mask);
         for (var i = 1; i < bytes; i++) {
-            value = (value * 256) + this.readByte();
+            var b = u8[offset + i];
+            if (b !== 0xff) allOnes = false;
+            value = (value * 256) + b;
         }
-        return { length: bytes, value: value };
-    };
-    WebmContainer.prototype.readSection = function() {
-        if (this.offset >= this.source.length) return null;
-        var id = this.readUint();
-        var size = this.readUint();
-        var section = sections[id.value] || { name: 'Unknown', type: 'Unknown' };
-        var constructor = WebmBase;
-        if (section.type === 'Container') {
-            constructor = WebmContainer;
-        } else if (section.type === 'Uint') {
-            constructor = WebmUint;
-        } else if (section.type === 'Float') {
-            constructor = WebmFloat;
-        }
+        return { length: bytes, value: allOnes ? -1 : value, rawValue: value };
+    }
 
-        var instance = new constructor(section.name, section.type);
-        instance.setSource(this.source.subarray(this.offset, this.offset + size.value));
-        this.offset += size.value;
-        return { id: id.value, data: instance };
-    };
-    WebmContainer.prototype.setSource = function(source) {
-        this.source = source;
-        this.offset = 0;
-        this.data = [];
-        var section;
-        while ((section = this.readSection()) !== null) {
-            this.data.push(section);
-        }
-    };
-    WebmContainer.prototype.writeUint = function(value, draft) {
+    function encodeEbmlVint(value) {
         var bytes = 1;
         var limit = 128;
-        while (value >= (limit - 1) && limit <= 0x80000000) {
+        while (value >= (limit - 1) && bytes < 8) {
             bytes++;
-            limit = limit << 7;
+            limit *= 128;
         }
-        if (!draft) {
-            var val = value + (1 << (7 * bytes));
-            for (var i = bytes - 1; i >= 0; i--) {
-                this.source[this.offset + i] = val % 256;
-                val = Math.floor(val / 256);
-            }
+        var out = new Uint8Array(bytes);
+        var val = value;
+        for (var i = bytes - 1; i >= 0; i--) {
+            out[i] = val % 256;
+            val = Math.floor(val / 256);
         }
-        this.offset += bytes;
-    };
-    WebmContainer.prototype.writeSections = function(draft) {
-        this.offset = 0;
-        for (var i = 0; i < this.data.length; i++) {
-            var section = this.data[i];
-            var content = section.data.source;
-            var contentLength = content ? content.length : 0;
-            this.writeUint(section.id, draft);
-            this.writeUint(contentLength, draft);
-            if (!draft && content) {
-                this.source.set(content, this.offset);
-            }
-            this.offset += contentLength;
-        }
-        return this.offset;
-    };
-    WebmContainer.prototype.updateByData = function() {
-        var length = this.writeSections('draft');
-        this.source = new Uint8Array(length);
-        this.writeSections();
-    };
-    WebmContainer.prototype.getSectionById = function(id) {
-        for (var i = 0; i < this.data.length; i++) {
-            var section = this.data[i];
-            if (section.id === id) {
-                return section.data;
-            }
-        }
-        return null;
-    };
-
-    function WebmFile(source) {
-        WebmContainer.call(this, 'File', 'File');
-        this.setSource(source);
+        out[0] |= (1 << (8 - bytes));
+        return out;
     }
-    doInherit(WebmFile, WebmContainer);
 
-    WebmFile.prototype.fixDuration = function(duration, options) {
-        var segmentSection = this.getSectionById(0x8538067);
-        if (!segmentSection) return false;
+    function patchInfoSection(infoPayload, durationMs) {
+        // Parse children of Info (0x549a966)
+        var off = 0;
+        var children = [];
+        var hasTimecodeScale = false;
+        var hasDuration = false;
 
-        var infoSection = segmentSection.getSectionById(0x549a966);
-        if (!infoSection) return false;
+        while (off < infoPayload.length) {
+            var id = readEbmlVint(infoPayload, off);
+            if (!id) break;
+            var sz = readEbmlVint(infoPayload, off + id.length);
+            if (!sz || sz.value < 0) break;
+            var bodyStart = off + id.length + sz.length;
+            var bodyEnd = Math.min(infoPayload.length, bodyStart + sz.value);
+            var body = infoPayload.subarray(bodyStart, bodyEnd);
 
-        var timeScaleSection = infoSection.getSectionById(0xad7b1);
-        if (!timeScaleSection) return false;
+            if (id.rawValue === 0xad7b1) {
+                hasTimecodeScale = true;
+                body = new Uint8Array([0x0f, 0x42, 0x40]); // 1,000,000 (1ms)
+            } else if (id.rawValue === 0x489) {
+                hasDuration = true;
+                var dBuf = new ArrayBuffer(8);
+                new DataView(dBuf).setFloat64(0, durationMs, false);
+                body = new Uint8Array(dBuf);
+            }
 
-        var durationSection = infoSection.getSectionById(0x489);
-        if (durationSection) {
-            durationSection.setValue(duration);
-        } else {
-            durationSection = new WebmFloat('Duration', 'Float');
-            durationSection.setValue(duration);
-            infoSection.data.push({
-                id: 0x489,
-                data: durationSection
+            children.push({
+                idBytes: infoPayload.subarray(off, off + id.length),
+                body: body
+            });
+            off = bodyEnd;
+        }
+
+        if (!hasTimecodeScale) {
+            children.unshift({
+                idBytes: new Uint8Array([0x2a, 0xd7, 0xb1]),
+                body: new Uint8Array([0x0f, 0x42, 0x40])
+            });
+        }
+        if (!hasDuration) {
+            var durBuf = new ArrayBuffer(8);
+            new DataView(durBuf).setFloat64(0, durationMs, false);
+            children.push({
+                idBytes: new Uint8Array([0x44, 0x89]),
+                body: new Uint8Array(durBuf)
             });
         }
 
-        timeScaleSection.setValue(1000000); // 1 ms scale
-        infoSection.updateByData();
-        segmentSection.updateByData();
-        this.updateByData();
-        return true;
-    };
+        var totalLen = 0;
+        var encodedChildren = children.map(function (ch) {
+            var szBytes = encodeEbmlVint(ch.body.length);
+            totalLen += ch.idBytes.length + szBytes.length + ch.body.length;
+            return { idBytes: ch.idBytes, szBytes: szBytes, body: ch.body };
+        });
 
-    WebmFile.prototype.toBlob = function(mimeType) {
-        return new Blob([this.source.buffer], { type: mimeType || 'video/webm' });
-    };
+        var out = new Uint8Array(totalLen);
+        var ptr = 0;
+        for (var i = 0; i < encodedChildren.length; i++) {
+            var item = encodedChildren[i];
+            out.set(item.idBytes, ptr); ptr += item.idBytes.length;
+            out.set(item.szBytes, ptr); ptr += item.szBytes.length;
+            out.set(item.body, ptr); ptr += item.body.length;
+        }
+        return out;
+    }
+
+    function fixWebmBuffer(u8, durationMs) {
+        if (!isWebmBuffer(u8)) return u8;
+        try {
+            // 1. Leer encabezado EBML
+            var ebmlId = readEbmlVint(u8, 0);
+            if (!ebmlId || ebmlId.rawValue !== 0xa45dfa3) return repairWebmClustersInPlace(new Uint8Array(u8), 0);
+            var ebmlSize = readEbmlVint(u8, ebmlId.length);
+            if (!ebmlSize || ebmlSize.value < 0) return repairWebmClustersInPlace(new Uint8Array(u8), 0);
+            var segOffset = ebmlId.length + ebmlSize.length + ebmlSize.value;
+
+            // 2. Leer encabezado Segment (0x18538067)
+            var segId = readEbmlVint(u8, segOffset);
+            if (!segId || segId.rawValue !== 0x8538067) return repairWebmClustersInPlace(new Uint8Array(u8), 0);
+            var segSize = readEbmlVint(u8, segOffset + segId.length);
+            if (!segSize) return repairWebmClustersInPlace(new Uint8Array(u8), 0);
+            var segBodyStart = segOffset + segId.length + segSize.length;
+
+            // 3. Buscar Info (0x1549A966) al inicio del Segment
+            var infoId = readEbmlVint(u8, segBodyStart);
+            if (!infoId || infoId.rawValue !== 0x549a966) {
+                return repairWebmClustersInPlace(new Uint8Array(u8), segBodyStart);
+            }
+            var infoSize = readEbmlVint(u8, segBodyStart + infoId.length);
+            if (!infoSize || infoSize.value < 0) {
+                return repairWebmClustersInPlace(new Uint8Array(u8), segBodyStart);
+            }
+            var infoBodyStart = segBodyStart + infoId.length + infoSize.length;
+            var afterInfoOffset = infoBodyStart + infoSize.value;
+
+            var newInfoBody = (durationMs > 0)
+                ? patchInfoSection(u8.subarray(infoBodyStart, afterInfoOffset), durationMs)
+                : u8.subarray(infoBodyStart, afterInfoOffset);
+            var newInfoSizeBytes = encodeEbmlVint(newInfoBody.length);
+            var infoIdBytes = u8.subarray(segBodyStart, segBodyStart + infoId.length);
+
+            // 4. Copiar el resto del Segment (Tracks + todos los Clusters) y reparar cada Cluster individualmente
+            var tailBytes = new Uint8Array(u8.length - afterInfoOffset);
+            tailBytes.set(u8.subarray(afterInfoOffset));
+            repairWebmClustersInPlace(tailBytes, 0);
+
+            var newSegBodyLen = infoIdBytes.length + newInfoSizeBytes.length + newInfoBody.length + tailBytes.length;
+            var newSegSizeBytes = encodeEbmlVint(newSegBodyLen);
+            var segIdBytes = u8.subarray(segOffset, segOffset + segId.length);
+            var ebmlHeaderBytes = u8.subarray(0, segOffset);
+
+            var totalFileLen = ebmlHeaderBytes.length + segIdBytes.length + newSegSizeBytes.length + newSegBodyLen;
+            var finalOut = new Uint8Array(totalFileLen);
+            var p = 0;
+            finalOut.set(ebmlHeaderBytes, p); p += ebmlHeaderBytes.length;
+            finalOut.set(segIdBytes, p); p += segIdBytes.length;
+            finalOut.set(newSegSizeBytes, p); p += newSegSizeBytes.length;
+            finalOut.set(infoIdBytes, p); p += infoIdBytes.length;
+            finalOut.set(newInfoSizeBytes, p); p += newInfoSizeBytes.length;
+            finalOut.set(newInfoBody, p); p += newInfoBody.length;
+            finalOut.set(tailBytes, p);
+            return finalOut;
+        } catch (e) {
+            return repairWebmClustersInPlace(new Uint8Array(u8), 0);
+        }
+    }
+
+    function repairBuffer(u8, durationMs) {
+        if (!u8 || !u8.length) return u8;
+        if (isMp4Buffer(u8)) {
+            return durationMs > 0 ? patchMp4BufferDuration(u8, durationMs) : u8;
+        }
+        if (isWebmBuffer(u8)) {
+            return fixWebmBuffer(u8, durationMs || 0);
+        }
+        return u8;
+    }
 
     function fixWebmDuration(blob, duration, callback, options) {
-        if (typeof callback === "object") {
+        if (typeof callback === 'object') {
             options = callback;
             callback = undefined;
         }
 
         if (!callback) {
-            return new Promise(function(resolve) {
+            return new Promise(function (resolve) {
                 fixWebmDuration(blob, duration, resolve, options);
             });
         }
 
         try {
             var reader = new FileReader();
-            reader.onloadend = function() {
+            reader.onloadend = function () {
                 try {
-                    var file = new WebmFile(new Uint8Array(reader.result));
-                    if (file.fixDuration(duration, options)) {
-                        blob = file.toBlob(blob.type);
-                    }
+                    var u8 = new Uint8Array(reader.result);
+                    var fixed = repairBuffer(u8, duration);
+                    var outType = blob.type || (isMp4Buffer(fixed) ? 'video/mp4' : 'video/webm');
+                    callback(new Blob([fixed.buffer], { type: outType }));
                 } catch (ex) {
-                    console.warn("[fix-webm-duration] Warning during patch:", ex);
+                    console.warn('[fix-webm-duration] Warning during patch:', ex);
+                    callback(blob);
                 }
+            };
+            reader.onerror = function () {
                 callback(blob);
             };
             reader.readAsArrayBuffer(blob);
@@ -353,5 +367,8 @@
     }
 
     fixWebmDuration.default = fixWebmDuration;
+    fixWebmDuration.repairBuffer = repairBuffer;
+    fixWebmDuration.isMp4Buffer = isMp4Buffer;
+    fixWebmDuration.isWebmBuffer = isWebmBuffer;
     return fixWebmDuration;
 });
