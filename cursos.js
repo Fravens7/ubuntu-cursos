@@ -974,7 +974,7 @@ function isDirectVideo(url) {
 function formatRecordingDate(url) {
     if (!url) return '';
     try {
-        const match = url.match(/_(\d{13})\.webm/);
+        const match = url.match(/_(\d{13})\.(webm|mp4)/i);
         if (match && match[1]) {
             const timestamp = parseInt(match[1], 10);
             const date = new Date(timestamp);
@@ -1146,22 +1146,29 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                     ` : m.type === 'canva_notice' ? `
                         ${renderCanvaNoticeHtml(m.directUrl, isAuthor)}
                     ` : m.type === 'html5_video' ? `
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                            <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                                 <i class="${m.icon}" style="color: ${m.iconColor};"></i> ${m.title}${m.formattedDate ? ` • ${m.formattedDate}` : ''}<span id="badgeDuration_${m.id}"></span>
                             </span>
-                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <a href="${m.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
-                                    <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Grabación
-                                </a>
-                                <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <div style="display: inline-flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden;">
+                                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1, this)" style="border: none; background: #111111; color: #ffffff; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1x</button>
+                                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1.25, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.25x</button>
+                                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1.5, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.5x</button>
+                                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 2, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">2x</button>
+                                </div>
+                                <button type="button" onclick="window.NuevoMotorGrabaciones ? window.NuevoMotorGrabaciones.downloadUrlDirect('${escapeAttr(m.directUrl)}', '${escapeAttr(m.title)}', this) : window.open('${escapeAttr(m.downloadUrl)}', '_blank')" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    <span>Descargar Grabación</span>
+                                </button>
+                                <a href="${m.directUrl}" target="_blank" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; text-decoration: none;" title="${m.actionLabel}">
+                                    Abrir enlace
                                 </a>
                             </div>
                         </div>
-                        <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                            <video controls playsinline preload="metadata" onloadedmetadata="window.formatVideoDurationBadge(this, 'badgeDuration_${m.id}')" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${m.directUrl}">
-                                <source src="${m.directUrl}" type="video/webm">
+                        <div style="margin-bottom: 20px; border-radius: 10px; overflow: hidden; background: #111111; border: 1px solid #d1d5db;">
+                            <video id="courseVideo_${m.id}" controls playsinline preload="metadata" onloadedmetadata="window.formatVideoDurationBadge(this, 'badgeDuration_${m.id}')" style="width: 100%; display: block; max-height: 480px; outline: none; background: #111111;" src="${m.directUrl}">
+                                <source src="${m.directUrl}" type="${String(m.directUrl || '').toLowerCase().includes('.mp4') ? 'video/mp4' : 'video/webm'}">
                                 Tu navegador no soporta reproducción directa de video.
                             </video>
                         </div>
@@ -1202,22 +1209,29 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             videoContainer.style.display = 'block';
         } else if (item.type === 'html5_video') {
             videoContainer.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                    <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                    <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
                         <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}${item.formattedDate ? ` • ${item.formattedDate}` : ''}<span id="badgeDuration_${item.id}"></span>
                     </span>
-                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        <a href="${item.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
-                            <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Grabación
-                        </a>
-                        <a href="${item.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${item.actionLabel}">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.actionLabel}
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <div style="display: inline-flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden;">
+                            <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${item.id}', 1, this)" style="border: none; background: #111111; color: #ffffff; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1x</button>
+                            <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${item.id}', 1.25, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.25x</button>
+                            <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${item.id}', 1.5, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.5x</button>
+                            <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${item.id}', 2, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">2x</button>
+                        </div>
+                        <button type="button" onclick="window.NuevoMotorGrabaciones ? window.NuevoMotorGrabaciones.downloadUrlDirect('${escapeAttr(item.directUrl)}', '${escapeAttr(item.title)}', this) : window.open('${escapeAttr(item.downloadUrl)}', '_blank')" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span>Descargar Grabación</span>
+                        </button>
+                        <a href="${item.directUrl}" target="_blank" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; text-decoration: none;" title="${item.actionLabel}">
+                            Abrir enlace
                         </a>
                     </div>
                 </div>
-                <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                    <video controls playsinline preload="metadata" onloadedmetadata="window.formatVideoDurationBadge(this, 'badgeDuration_${item.id}')" style="width: 100%; display: block; max-height: 480px; outline: none; background: #000;" src="${item.directUrl}">
-                        <source src="${item.directUrl}" type="video/webm">
+                <div style="margin-bottom: 20px; border-radius: 10px; overflow: hidden; background: #111111; border: 1px solid #d1d5db;">
+                    <video id="courseVideo_${item.id}" controls playsinline preload="metadata" onloadedmetadata="window.formatVideoDurationBadge(this, 'badgeDuration_${item.id}')" style="width: 100%; display: block; max-height: 480px; outline: none; background: #111111;" src="${item.directUrl}">
+                        <source src="${item.directUrl}" type="${String(item.directUrl || '').toLowerCase().includes('.mp4') ? 'video/mp4' : 'video/webm'}">
                         Tu navegador no soporta reproducción directa de video.
                     </video>
                 </div>
