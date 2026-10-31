@@ -76,18 +76,29 @@
         init(options = {}) {
             if (options.db) this.firestoreDb = options.db;
             if (options.firestoreFns) this.firestoreFns = options.firestoreFns;
+            if (options.onCourseRecordingSaved) this.onCourseRecordingSaved = options.onCourseRecordingSaved;
 
             this.loadLocalRecordings();
             this.subscribeFirestoreRecordings();
 
             if (bc) {
                 bc.onmessage = (ev) => {
-                    if (ev.data && ev.data.type === 'RECORDINGS_UPDATED') {
+                    if (!ev.data) return;
+                    if (ev.data.type === 'RECORDINGS_UPDATED') {
                         this.loadLocalRecordings();
                         this.renderRecordingsListUI();
+                    } else if (ev.data.type === 'COURSE_RECORDING_SAVED') {
+                        if (typeof this.onCourseRecordingSaved === 'function') {
+                            this.onCourseRecordingSaved(ev.data);
+                        }
                     }
                 };
             }
+        },
+
+        isHostRole(role) {
+            const r = String(role || '').toLowerCase().trim();
+            return r === 'admin' || r === 'profesor' || r === 'docente' || r === 'instructor' || r === 'teacher';
         },
 
         loadLocalRecordings() {
@@ -131,12 +142,12 @@
         },
 
         // ====================================================================
-        // PARTE 1: BARRA DE GRABACIÓN EN MEET.HTML (SOLO ROL = ADMIN)
+        // PARTE 1: BARRA DE GRABACIÓN EN MEET.HTML (PROFESOR / ADMIN)
         // ====================================================================
         mountMeetControls(meetApp) {
             this.meetApp = meetApp;
             const role = String(meetApp?.userRole || '').toLowerCase().trim();
-            if (role !== 'admin') {
+            if (!this.isHostRole(role)) {
                 const existing = document.getElementById('nuevoMotorRecBar');
                 if (existing) existing.remove();
                 return;
@@ -244,7 +255,7 @@
         startStageRecording() {
             if (this.isRecording || this.isSaving) return false;
             const role = String(this.meetApp?.userRole || '').toLowerCase().trim();
-            if (role !== 'admin') return false;
+            if (!this.isHostRole(role)) return false;
 
             this.recordedChunks = [];
             this.elapsedSeconds = 0;
@@ -338,12 +349,20 @@
             this.isRecording = true;
             this.recordingStartMs = Date.now();
 
+            const MAX_REC_SECONDS = 180 * 60; // Máximo 3 horas
             this.timerInterval = setInterval(() => {
                 if (!this.isPaused) {
                     this.elapsedSeconds++;
                     this.updateLiveStatsUI();
+                    if (this.elapsedSeconds >= MAX_REC_SECONDS) {
+                        this.stopAndSave();
+                    }
                 }
             }, 1000);
+
+            if (this.meetApp && typeof this.meetApp.broadcastRecordingState === 'function') {
+                this.meetApp.broadcastRecordingState('recording');
+            }
 
             this.renderMeetControlsUI();
             return true;
@@ -487,6 +506,9 @@
                 this.mediaRecorder.resume();
                 this.isPaused = false;
             }
+            if (this.meetApp && typeof this.meetApp.broadcastRecordingState === 'function') {
+                this.meetApp.broadcastRecordingState(this.isPaused ? 'paused' : 'recording');
+            }
             this.renderMeetControlsUI();
         },
 
@@ -501,6 +523,10 @@
             this.isSaving = true;
             this.isRecording = false;
             this.isPaused = false;
+
+            if (this.meetApp && typeof this.meetApp.broadcastRecordingState === 'function') {
+                this.meetApp.broadcastRecordingState('stopped');
+            }
 
             if (this.timerInterval) {
                 clearInterval(this.timerInterval);
@@ -554,10 +580,16 @@
                             this.showMeetUploadProgress(pct, total, `Subiendo grabación (${pct}%)...`);
                         });
 
+                        const courseId = (this.meetApp && this.meetApp.courseId) ? String(this.meetApp.courseId).trim() : '';
+                        const weekId = (this.meetApp && this.meetApp.weekId) ? String(this.meetApp.weekId).trim() : '';
+                        const customTitle = (this.meetApp && this.meetApp.classTitle) ? String(this.meetApp.classTitle).trim() : '';
+
                         const recItem = {
                             id: 'rec_' + now,
-                            title: `Clase en Vivo (${roomCode})`,
+                            title: customTitle || `Clase en Vivo (${roomCode})`,
                             roomCode: roomCode,
+                            courseId: courseId,
+                            weekId: weekId,
                             instructor: instructor,
                             url: publicUrl,
                             durationSeconds: durationSec,
@@ -671,6 +703,76 @@
                 } catch (e) {
                     console.warn('[NuevoMotorGrabaciones] Aviso guardando en Firestore:', e);
                 }
+            }
+
+            // Si la grabación pertenece a un curso y semana, vincular automáticamente la URL en la semana del curso
+            if (recItem.courseId && recItem.weekId && recItem.url) {
+                await this.saveRecordingToCourseWeek(recItem.courseId, recItem.weekId, recItem.url);
+            }
+        },
+
+        async saveRecordingToCourseWeek(courseId, weekId, publicUrl) {
+            if (!courseId || !weekId || !publicUrl) return false;
+            try {
+                // 1. Actualizar caché local de cursos (localStorage 'ubuntu_courses_v5')
+                try {
+                    const rawCourses = localStorage.getItem('ubuntu_courses_v5');
+                    if (rawCourses) {
+                        const coursesArr = JSON.parse(rawCourses);
+                        if (Array.isArray(coursesArr)) {
+                            const cIdx = coursesArr.findIndex(c => c.id === courseId);
+                            if (cIdx !== -1 && Array.isArray(coursesArr[cIdx].semanas)) {
+                                const wIdx = coursesArr[cIdx].semanas.findIndex(w => w.id === weekId);
+                                if (wIdx !== -1) {
+                                    coursesArr[cIdx].semanas[wIdx].recordingUrl = publicUrl;
+                                    const curVid = String(coursesArr[cIdx].semanas[wIdx].videoUrl || '');
+                                    if (!curVid || curVid.includes('workers.dev') || curVid.endsWith('.webm') || curVid.endsWith('.mp4')) {
+                                        coursesArr[cIdx].semanas[wIdx].videoUrl = publicUrl;
+                                    }
+                                    localStorage.setItem('ubuntu_courses_v5', JSON.stringify(coursesArr));
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {}
+
+                // 2. Actualizar documento en Firestore ('cursos/{courseId}')
+                if (this.firestoreDb && this.firestoreFns && this.firestoreFns.doc && this.firestoreFns.getDoc) {
+                    const courseRef = this.firestoreFns.doc(this.firestoreDb, 'cursos', courseId);
+                    const snap = await this.firestoreFns.getDoc(courseRef);
+                    if (snap && snap.exists()) {
+                        const data = snap.data();
+                        if (Array.isArray(data.semanas)) {
+                            const wIdx = data.semanas.findIndex(w => w.id === weekId);
+                            if (wIdx !== -1) {
+                                data.semanas[wIdx].recordingUrl = publicUrl;
+                                const curVid = String(data.semanas[wIdx].videoUrl || '');
+                                if (!curVid || curVid.includes('workers.dev') || curVid.endsWith('.webm') || curVid.endsWith('.mp4')) {
+                                    data.semanas[wIdx].videoUrl = publicUrl;
+                                }
+                                if (this.firestoreFns.updateDoc) {
+                                    await this.firestoreFns.updateDoc(courseRef, { semanas: data.semanas });
+                                } else if (this.firestoreFns.setDoc) {
+                                    await this.firestoreFns.setDoc(courseRef, data);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Notificar por BroadcastChannel para refrescar index.html si está abierto
+                if (bc) {
+                    bc.postMessage({
+                        type: 'COURSE_RECORDING_SAVED',
+                        courseId,
+                        weekId,
+                        url: publicUrl
+                    });
+                }
+                return true;
+            } catch (err) {
+                console.warn('[NuevoMotorGrabaciones] Aviso vinculando grabación a semana del curso:', err);
+                return false;
             }
         },
 
@@ -810,6 +912,79 @@
             if (btnEl) {
                 btnEl.style.background = '#111111';
                 btnEl.style.color = '#ffffff';
+            }
+        },
+
+        setCourseVideoSpeed(videoId, rate, btnEl) {
+            const videoEl = document.getElementById(videoId);
+            if (videoEl) videoEl.playbackRate = rate;
+            const group = btnEl ? btnEl.parentElement : null;
+            if (group) {
+                group.querySelectorAll('.course-speed-btn').forEach(b => {
+                    b.style.background = '#ffffff';
+                    b.style.color = '#111111';
+                });
+            }
+            if (btnEl) {
+                btnEl.style.background = '#111111';
+                btnEl.style.color = '#ffffff';
+            }
+        },
+
+        async downloadUrlDirect(videoUrl, customTitle, btnEl) {
+            if (!videoUrl) return;
+            const spanEl = btnEl ? btnEl.querySelector('span') : null;
+            const origText = spanEl ? spanEl.textContent : 'Descargar Grabación';
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.style.opacity = '0.65';
+            }
+            if (spanEl) spanEl.textContent = 'Descargando...';
+
+            try {
+                const resp = await fetch(videoUrl, { mode: 'cors', credentials: 'omit' });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const arrayBuf = await resp.arrayBuffer();
+                let u8 = new Uint8Array(arrayBuf);
+
+                const matchedRec = this.recordingsList.find(r => r.url === videoUrl);
+                const durationMs = matchedRec && matchedRec.durationSeconds ? Math.max(1, Number(matchedRec.durationSeconds)) * 1000 : 0;
+
+                if (durationMs > 0 && typeof window.ysRepairVideoBuffer === 'function') {
+                    try {
+                        u8 = window.ysRepairVideoBuffer(u8, durationMs);
+                    } catch (e) {}
+                }
+
+                const isMp4 = (u8.length >= 12 && u8[4] === 0x66 && u8[5] === 0x74 && u8[6] === 0x79 && u8[7] === 0x70) ||
+                              String(videoUrl).toLowerCase().endsWith('.mp4');
+                const mimeType = isMp4 ? 'video/mp4' : 'video/webm';
+                const ext = isMp4 ? 'mp4' : 'webm';
+                const blob = new Blob([u8.buffer], { type: mimeType });
+
+                let rawName = String(videoUrl).split('/').pop().split('?')[0] || `clase_ubuntu.${ext}`;
+                rawName = rawName.replace(/\.(webm|mp4)$/i, '') + '.' + ext;
+
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = rawName;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    try { document.body.removeChild(a); } catch (e) {}
+                    try { URL.revokeObjectURL(blobUrl); } catch (e) {}
+                }, 4000);
+            } catch (err) {
+                console.warn('[NuevoMotorGrabaciones] Aviso en descarga directa, abriendo enlace:', err);
+                window.open(videoUrl, '_blank');
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.style.opacity = '1';
+                }
+                if (spanEl) spanEl.textContent = origText;
             }
         },
 
