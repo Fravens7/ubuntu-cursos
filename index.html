@@ -852,6 +852,49 @@
         // Inicializar módulos de Cursos y Reportes con Firestore
         initCursosModule(db);
         initReportsModule(db);
+        async function onMeetLiveClassEnded(liveId, roomCode) {
+            const targetId = String(liveId || '').trim();
+            const targetRoom = String(roomCode || '').toLowerCase().trim();
+            const matchedIds = new Set();
+            if (targetId) matchedIds.add(targetId);
+
+            if (Array.isArray(liveClassesData)) {
+                liveClassesData.forEach(c => {
+                    const cId = String(c?.id || '').trim();
+                    const cRoom = String(c?.roomName || '').toLowerCase().trim();
+                    if ((targetId && cId === targetId) || (targetRoom && cRoom === targetRoom)) {
+                        if (cId) matchedIds.add(cId);
+                    }
+                });
+                liveClassesData = liveClassesData.filter(c => {
+                    const cId = String(c?.id || '').trim();
+                    const cRoom = String(c?.roomName || '').toLowerCase().trim();
+                    return !((targetId && cId === targetId) || (targetRoom && cRoom === targetRoom));
+                });
+            }
+
+            if (db) {
+                for (const id of matchedIds) {
+                    try {
+                        await deleteDoc(doc(db, 'clases_en_vivo', id));
+                    } catch (e) {}
+                }
+            }
+
+            if (currentLiveSessionId && matchedIds.has(String(currentLiveSessionId))) {
+                currentLiveSessionId = null;
+            }
+            saveLiveState();
+            renderLiveClasses();
+            if (window.refreshCurrentCourseDetail) {
+                window.refreshCurrentCourseDetail();
+            }
+            if (typeof showToast === 'function') {
+                showToast('Clase en vivo finalizada.', 'normal');
+            }
+        }
+        window.onMeetLiveClassEnded = onMeetLiveClassEnded;
+
         if (window.NuevoMotorGrabaciones) {
             window.NuevoMotorGrabaciones.init({
                 db,
@@ -877,6 +920,9 @@
                     if (typeof showToast === 'function') {
                         showToast('Grabación guardada y vinculada a la semana del curso.', 'success');
                     }
+                },
+                onLiveClassEnded: ({ liveId, roomCode }) => {
+                    onMeetLiveClassEnded(liveId, roomCode);
                 }
             });
         }
@@ -1918,7 +1964,8 @@
             const cleanTitle = courseTitle.replace(/[^a-zA-Z0-9]/g, '');
             const randomCode = Math.floor(100000 + Math.random() * 900000);
             const roomName = `Ubuntu_${cleanTitle.slice(0, 12)}_${randomCode}`;
-            const jitsiUrl = `${window.location.origin}/meet?room=${encodeURIComponent(roomName)}&courseId=${encodeURIComponent(courseId || '')}&weekId=${encodeURIComponent(weekId || '')}&title=${encodeURIComponent(title)}`;
+            const classId = `live_course_${courseId}_${Date.now()}`;
+            const jitsiUrl = `${window.location.origin}/meet?room=${encodeURIComponent(roomName)}&courseId=${encodeURIComponent(courseId || '')}&weekId=${encodeURIComponent(weekId || '')}&liveId=${encodeURIComponent(classId)}&title=${encodeURIComponent(title)}`;
 
             lastCreatedRoomUrl = jitsiUrl;
             document.getElementById('generatedJitsiUrl').value = jitsiUrl;
@@ -1940,7 +1987,6 @@
                 enterLiveRoom(title, instructor, roomName, 'popup', courseId, weekId);
             };
 
-            const classId = `live_course_${courseId}_${Date.now()}`;
             const newLive = {
                 id: classId,
                 title: title,
