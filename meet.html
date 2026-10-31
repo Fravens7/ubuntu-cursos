@@ -422,7 +422,9 @@
             position: absolute;
             top: 42px;
             right: 0;
-            width: 280px;
+            width: 300px;
+            max-height: 72vh;
+            overflow-y: auto;
             background: #ffffff;
             border: 1px solid #d1d5db;
             border-radius: 12px;
@@ -435,18 +437,54 @@
             display: block;
         }
 
-        .peers-dropdown-title {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: #6b7280;
+        .peers-dropdown-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
             padding-bottom: 8px;
             margin-bottom: 6px;
             border-bottom: 1px solid #e5e7eb;
         }
 
+        .peers-dropdown-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+
+        .peers-mute-all-btn {
+            display: none;
+            width: 100%;
+            height: 32px;
+            margin-bottom: 8px;
+            padding: 0 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #111111;
+            font-size: 12px;
+            font-weight: 600;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+
+        .peers-mute-all-btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .peers-mute-all-btn.is-locked {
+            background: #111111;
+            color: #ffffff;
+            border-color: #111111;
+        }
+
         .peer-row {
-            padding: 6px 0;
+            padding: 7px 0;
             font-size: 13px;
             color: #111111;
             display: flex;
@@ -458,6 +496,243 @@
 
         .peer-row:last-child {
             border-bottom: none;
+        }
+
+        .peer-kick-btn {
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #4b5563;
+            border-radius: 6px;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 0.12s;
+        }
+
+        .peer-kick-btn:hover {
+            border-color: #111111;
+            color: #111111;
+            background: #f3f4f6;
+        }
+
+        .peer-hand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            border: 1px solid #111111;
+            background: #f9fafb;
+            color: #111111;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* Chat en Vivo (Efímero en memoria / WebSocket) */
+        .chat-trigger-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 34px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #111111;
+            font-size: 12px;
+            font-weight: 600;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .chat-trigger-btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .chat-unread-badge {
+            display: none;
+            min-width: 17px;
+            height: 17px;
+            padding: 0 5px;
+            border-radius: 999px;
+            background: #111111;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 700;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-dropdown {
+            display: none;
+            position: absolute;
+            top: 42px;
+            right: 0;
+            width: 320px;
+            height: 400px;
+            max-height: 74vh;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            z-index: 52;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-dropdown.open {
+            display: flex;
+        }
+
+        .chat-dropdown-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            color: #111111;
+        }
+
+        .chat-messages-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #f9fafb;
+        }
+
+        .chat-msg-bubble {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            font-size: 12.5px;
+            color: #111111;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .chat-msg-bubble.is-self {
+            border-color: #9ca3af;
+            background: #f3f4f6;
+        }
+
+        .chat-msg-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            font-size: 10.5px;
+            color: #6b7280;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+
+        .chat-input-bar {
+            padding: 8px 10px;
+            border-top: 1px solid #e5e7eb;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chat-input-field {
+            flex: 1;
+            height: 32px;
+            padding: 0 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 12.5px;
+            color: #111111;
+            background: #ffffff;
+            outline: none;
+        }
+
+        .chat-input-field:focus {
+            border-color: #111111;
+        }
+
+        .chat-send-btn {
+            height: 32px;
+            padding: 0 12px;
+            border-radius: 8px;
+            border: 1px solid #111111;
+            background: #111111;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Chiquicontador de 3h para el Profesor e Indicador de Grabación para el Alumno */
+        .session-timer-pill {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #374151;
+            font-size: 11.5px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .session-timer-pill.is-warning {
+            border-color: #111111;
+            background: #111111;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .student-rec-pill {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            height: 28px;
+            padding: 0 11px;
+            border-radius: 999px;
+            border: 1px solid #111111;
+            background: #f9fafb;
+            color: #111111;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .stage-toast-pill {
+            display: none;
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.96);
+            color: #111111;
+            border: 1px solid #111111;
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 9;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .stage-toast-pill.is-visible {
+            display: inline-flex;
+        }
+
+        .dock-btn.is-locked {
+            opacity: 0.45;
+            cursor: not-allowed;
         }
 
         .peer-group-select {
@@ -1025,7 +1300,6 @@
             <div class="lobby-user-box">
                 <div class="lobby-user-meta">
                     <div class="lobby-user-email" id="lobbyUserEmail">asociacion@ubuntuafroperuana.org</div>
-                    <a href="/login" class="lobby-switch-account">Cambiar de cuenta</a>
                 </div>
                 <div class="avatar-circle-sm" id="lobbyUserAvatar">M</div>
             </div>
@@ -1117,6 +1391,23 @@
                 <span id="callClockText">00:00</span>
                 <span class="call-divider">|</span>
                 <span class="call-room-code" id="callRoomCodeText">---</span>
+
+                <!-- Chiquicontador de límite de 3h (Solo Profesor/Admin) -->
+                <div class="session-timer-pill" id="callSessionTimerPill" title="Tiempo transcurrido de la sesión (Máximo 3 horas)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span id="callSessionTimerText">00:00:00 / 03:00:00</span>
+                </div>
+
+                <!-- Indicador de Grabación en curso (Para Estudiantes) -->
+                <div class="student-rec-pill" id="studentRecBadge">
+                    <svg id="studentRecDot" width="9" height="9" viewBox="0 0 24 24" fill="#111111" stroke="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                    <span id="studentRecText">Grabando clase</span>
+                </div>
             </div>
 
             <div class="call-top-right">
@@ -1145,12 +1436,46 @@
                     <button type="button" class="breakout-go-btn" id="btnBreakoutStartNow" onclick="MeetApp.startBreakoutRooms()">Repartir ahora</button>
                 </div>
 
+                <!-- Botón Chat Efímero -->
+                <button type="button" class="chat-trigger-btn" id="btnCallChatTrigger" onclick="MeetApp.toggleChatDropdown()" title="Mensajes de la reunión">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>Chat</span>
+                    <span class="chat-unread-badge" id="chatUnreadBadge">0</span>
+                </button>
+
+                <div class="chat-dropdown" id="chatDropdown">
+                    <div class="chat-dropdown-header">
+                        <span>Mensajes de la reunión</span>
+                        <span style="font-size:10.5px;color:#6b7280;font-weight:400;">Temporal</span>
+                    </div>
+                    <div class="chat-messages-list" id="chatMessagesList">
+                        <div style="text-align:center;color:#6b7280;font-size:12px;padding:24px 10px;">Los mensajes enviados durante la llamada aparecerán aquí y se borrarán al finalizar.</div>
+                    </div>
+                    <form class="chat-input-bar" onsubmit="MeetApp.sendChatMessage(event)">
+                        <input type="text" class="chat-input-field" id="chatInputField" placeholder="Escribe un mensaje..." maxlength="400" autocomplete="off">
+                        <button type="submit" class="chat-send-btn">Enviar</button>
+                    </form>
+                </div>
+
                 <button type="button" class="peers-pill-btn" onclick="MeetApp.togglePeersDropdown()" title="Participantes en la sala">
                     <span class="peers-pill-avatar" id="callTopAvatar">M</span>
                     <span id="callPeerCount">1</span>
                 </button>
                 <div class="peers-dropdown" id="peersDropdown">
-                    <div class="peers-dropdown-title">Participantes</div>
+                    <div class="peers-dropdown-header">
+                        <div class="peers-dropdown-title">Participantes</div>
+                    </div>
+                    <button type="button" class="peers-mute-all-btn" id="btnMuteAllStudents" onclick="MeetApp.toggleMuteAllStudents()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="2" y1="2" x2="22" y2="22"></line>
+                            <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"></path>
+                            <path d="M5 10v2a7 7 0 0 0 12 5"></path>
+                            <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"></path>
+                        </svg>
+                        <span id="btnMuteAllStudentsText">Silenciar a todos</span>
+                    </button>
                     <div id="peersDropdownList"></div>
                 </div>
             </div>
@@ -1160,6 +1485,11 @@
         <div class="breakout-hopper-bar" id="breakoutHopperBar"></div>
 
         <main class="call-stage" id="callStage">
+            <!-- Aviso flotante minimalista en escenario (mano levantada / micrófono bloqueado) -->
+            <div class="stage-toast-pill" id="stageToastPill">
+                <span id="stageToastText"></span>
+            </div>
+
             <!-- Indicador sutil de grupo actual para el alumno -->
             <div class="stage-group-badge" id="stageGroupBadge">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1260,7 +1590,17 @@
                     </svg>
                 </button>
 
-                <!-- 4. Finalizar llamada -->
+                <!-- 4. Levantar la mano (Exclusivo rol Estudiante) -->
+                <button type="button" class="dock-btn is-off" id="btnCallHand" style="display:none;" onclick="MeetApp.toggleRaiseHand()" title="Levantar la mano para pedir la palabra">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+                        <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+                        <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+                        <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path>
+                    </svg>
+                </button>
+
+                <!-- 5. Finalizar llamada -->
                 <button type="button" class="dock-btn-hangup" id="btnCallHangup" onclick="MeetApp.hangupCall()" title="Finalizar llamada">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
@@ -1273,9 +1613,9 @@
 
     <!-- ================= VIEW 3: ENDED SCREEN ================= -->
     <div id="endedView">
-        <div class="ended-title">Has salido de la reunión</div>
+        <div class="ended-title" id="endedTitleText">Has salido de la reunión</div>
         <div class="ended-actions">
-            <button type="button" class="btn-outline" onclick="MeetApp.rejoinFromEnded()">Volver a unirse</button>
+            <button type="button" class="btn-outline" id="btnRejoinFromEnded" onclick="MeetApp.rejoinFromEnded()">Volver a unirse</button>
             <button type="button" class="btn-join-now" style="height:38px;min-width:140px;font-size:13px;" onclick="window.location.href='/'">Volver al inicio</button>
         </div>
     </div>
@@ -1288,7 +1628,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAplMdumdxbNTm9ySnkgKINGLoUDtkuXY8",
@@ -1306,7 +1646,7 @@
         if (window.NuevoMotorGrabaciones) {
             window.NuevoMotorGrabaciones.init({
                 db,
-                firestoreFns: { doc, getDoc, setDoc, deleteDoc, collection, onSnapshot }
+                firestoreFns: { doc, getDoc, updateDoc, setDoc, deleteDoc, collection, onSnapshot }
             });
         }
 
@@ -1318,11 +1658,11 @@
             const pathParts = window.location.pathname.split('/').filter(Boolean);
             const meetIdx = pathParts.indexOf('meet');
             if (meetIdx !== -1 && pathParts[meetIdx + 1]) {
-                return pathParts[meetIdx + 1].toLowerCase().replace(/[^a-z0-9-]/g, '');
+                return pathParts[meetIdx + 1].toLowerCase().replace(/[^a-z0-9_-]/g, '');
             }
             const params = new URLSearchParams(window.location.search);
             if (params.get('room')) {
-                return params.get('room').toLowerCase().replace(/[^a-z0-9-]/g, '');
+                return params.get('room').toLowerCase().replace(/[^a-z0-9_-]/g, '');
             }
             let stored = '';
             try {
@@ -1350,6 +1690,8 @@
                 .replace(/'/g, '&#039;');
         }
 
+        const urlParams = new URLSearchParams(window.location.search);
+
         const MeetApp = {
             wsUrl: 'wss://clases.ubuntuafroperuana.org/ws',
             roomCode: resolveRoomCode(),
@@ -1359,6 +1701,12 @@
             userEmail: '',
             userRole: 'estudiante',
 
+            // Metadatos opcionales de Curso / Semana cuando se abre desde la plataforma
+            courseId: urlParams.get('courseId') || '',
+            weekId: urlParams.get('weekId') || '',
+            liveId: urlParams.get('liveId') || '',
+            classTitle: urlParams.get('title') || '',
+
             // Estado de Salas Grupales (Breakout Rooms)
             breakoutActive: false,
             breakoutGroupCount: 0,
@@ -1367,6 +1715,17 @@
             allFamilyPeers: [],
             currentRoomPeers: [],
             badgeFadeTimeout: null,
+
+            // Moderación, Mano, Grabación y Chat Efímero
+            studentsMuted: false,
+            handRaised: false,
+            remoteRecordingState: '',
+            chatMessages: [],
+            chatUnreadCount: 0,
+            sessionStartTimeMs: 0,
+            sessionTimerInterval: null,
+            toastTimeout: null,
+            wasKicked: false,
 
             // Media state
             micEnabled: false,
@@ -1553,6 +1912,16 @@
                     btnBreakout.style.display = this.isHostUser() ? 'inline-flex' : 'none';
                 }
 
+                const btnHand = document.getElementById('btnCallHand');
+                if (btnHand) {
+                    btnHand.style.display = this.isHostUser() ? 'none' : 'flex';
+                }
+
+                const btnMuteAll = document.getElementById('btnMuteAllStudents');
+                if (btnMuteAll) {
+                    btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                }
+
                 this.updateClock();
                 if (!this.clockInterval) {
                     this.clockInterval = setInterval(() => this.updateClock(), 15000);
@@ -1581,6 +1950,79 @@
 
                 document.getElementById('guardView').style.display = 'none';
                 document.getElementById('lobbyView').style.display = 'flex';
+            },
+
+            showStageToast(text, durationMs = 3400) {
+                const pill = document.getElementById('stageToastPill');
+                const txt = document.getElementById('stageToastText');
+                if (!pill || !txt) return;
+                txt.textContent = text || '';
+                pill.classList.add('is-visible');
+                if (this.toastTimeout) clearTimeout(this.toastTimeout);
+                this.toastTimeout = setTimeout(() => {
+                    pill.classList.remove('is-visible');
+                }, durationMs);
+            },
+
+            startSessionTimer(roomCreatedMs) {
+                if (this.sessionTimerInterval) {
+                    clearInterval(this.sessionTimerInterval);
+                    this.sessionTimerInterval = null;
+                }
+                if (!this.sessionStartTimeMs) {
+                    this.sessionStartTimeMs = (roomCreatedMs && roomCreatedMs > 0) ? roomCreatedMs : Date.now();
+                }
+
+                const pillEl = document.getElementById('callSessionTimerPill');
+                const textEl = document.getElementById('callSessionTimerText');
+                if (pillEl) {
+                    pillEl.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                }
+
+                const MAX_SECONDS = 180 * 60;  // 3h 00m (10800s)
+                const WARN_SECONDS = 165 * 60; // 2h 45m (9900s)
+                let warned15Min = false;
+
+                const tick = async () => {
+                    if (!this.inCall) return;
+                    const elapsedSec = Math.max(0, Math.floor((Date.now() - this.sessionStartTimeMs) / 1000));
+                    const hh = String(Math.floor(elapsedSec / 3600)).padStart(2, '0');
+                    const mm = String(Math.floor((elapsedSec % 3600) / 60)).padStart(2, '0');
+                    const ss = String(elapsedSec % 60).padStart(2, '0');
+
+                    if (elapsedSec >= WARN_SECONDS && elapsedSec < MAX_SECONDS) {
+                        const rem = Math.max(0, MAX_SECONDS - elapsedSec);
+                        const rm = String(Math.floor(rem / 60)).padStart(2, '0');
+                        const rs = String(rem % 60).padStart(2, '0');
+                        if (pillEl) pillEl.classList.add('is-warning');
+                        if (textEl) textEl.textContent = `Cierre en ${rm}:${rs}`;
+                        if (!warned15Min && this.isHostUser()) {
+                            warned15Min = true;
+                            this.showStageToast('Quedan 15 minutos para cumplir el límite máximo de 3 horas de la reunión.', 6000);
+                        }
+                    } else {
+                        if (pillEl) pillEl.classList.remove('is-warning');
+                        if (textEl) textEl.textContent = `${hh}:${mm}:${ss} / 03:00:00`;
+                    }
+
+                    if (elapsedSec >= MAX_SECONDS && this.isHostUser()) {
+                        if (this.sessionTimerInterval) {
+                            clearInterval(this.sessionTimerInterval);
+                            this.sessionTimerInterval = null;
+                        }
+                        this.showStageToast('Límite de 3 horas alcanzado. Guardando grabación y cerrando sala...', 5000);
+                        if (window.NuevoMotorGrabaciones && (window.NuevoMotorGrabaciones.isRecording || window.NuevoMotorGrabaciones.isSaving)) {
+                            await window.NuevoMotorGrabaciones.stopAndSave();
+                        }
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            this.ws.send(JSON.stringify({ type: 'end-room' }));
+                        }
+                        await this.hangupCall('Tiempo máximo de reunión (3 horas) finalizado.');
+                    }
+                };
+
+                tick();
+                this.sessionTimerInterval = setInterval(tick, 1000);
             },
 
             updateClock() {
@@ -1684,7 +2126,9 @@
                 // In-Call Mic
                 const btnCallMic = document.getElementById('btnCallMic');
                 if (btnCallMic) {
-                    btnCallMic.className = `dock-btn ${this.micEnabled ? 'is-on' : 'is-off'}`;
+                    const lockedForStudent = (!this.isHostUser() && this.studentsMuted);
+                    btnCallMic.className = `dock-btn ${this.micEnabled ? 'is-on' : 'is-off'} ${lockedForStudent ? 'is-locked' : ''}`;
+                    btnCallMic.title = lockedForStudent ? 'Micrófono bloqueado por el profesor' : 'Micrófono';
                     document.getElementById('svgCallMicOn').style.display = this.micEnabled ? 'block' : 'none';
                     document.getElementById('svgCallMicOff').style.display = this.micEnabled ? 'none' : 'block';
                 }
@@ -1702,6 +2146,61 @@
                 if (btnCallShare) {
                     btnCallShare.className = `dock-btn ${this.screenEnabled ? 'is-on' : 'is-off'}`;
                 }
+
+                // In-Call Raise Hand (Estudiante)
+                const btnCallHand = document.getElementById('btnCallHand');
+                if (btnCallHand) {
+                    btnCallHand.style.display = this.isHostUser() ? 'none' : 'flex';
+                    btnCallHand.className = `dock-btn ${this.handRaised ? 'is-on' : 'is-off'}`;
+                    btnCallHand.title = this.handRaised ? 'Bajar la mano' : 'Levantar la mano para pedir la palabra';
+                }
+
+                this.updateMuteAllButtonUI();
+            },
+
+            updateMuteAllButtonUI() {
+                const btnMuteAll = document.getElementById('btnMuteAllStudents');
+                const txtMuteAll = document.getElementById('btnMuteAllStudentsText');
+                if (!btnMuteAll) return;
+                btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                btnMuteAll.classList.toggle('is-locked', !!this.studentsMuted);
+                if (txtMuteAll) {
+                    txtMuteAll.textContent = this.studentsMuted
+                        ? 'Micrófonos bloqueados (Permitir)'
+                        : 'Silenciar a todos';
+                }
+            },
+
+            updateStudentRecordingBadge(state) {
+                this.remoteRecordingState = (state === 'stopped') ? '' : (state || '');
+                const badgeEl = document.getElementById('studentRecBadge');
+                const dotEl = document.getElementById('studentRecDot');
+                const txtEl = document.getElementById('studentRecText');
+                if (!badgeEl) return;
+
+                if (this.isHostUser() || !this.remoteRecordingState) {
+                    badgeEl.style.display = 'none';
+                    return;
+                }
+
+                badgeEl.style.display = 'inline-flex';
+                if (this.remoteRecordingState === 'paused') {
+                    if (dotEl) dotEl.setAttribute('fill', '#6b7280');
+                    if (txtEl) txtEl.textContent = 'Grabación en pausa';
+                } else {
+                    if (dotEl) dotEl.setAttribute('fill', '#111111');
+                    if (txtEl) txtEl.textContent = 'Grabando clase';
+                }
+            },
+
+            broadcastRecordingState(state) {
+                this.remoteRecordingState = (state === 'stopped') ? '' : (state || '');
+                if (this.ws && this.ws.readyState === WebSocket.OPEN && this.isHostUser()) {
+                    this.ws.send(JSON.stringify({
+                        type: 'recording-state',
+                        recordingState: state || 'stopped'
+                    }));
+                }
             },
 
             // ================= JOIN & IN-CALL LOGIC =================
@@ -1709,6 +2208,7 @@
                 const lobbyVideo = document.getElementById('lobbyVideo');
                 if (lobbyVideo) lobbyVideo.srcObject = null;
 
+                this.wasKicked = false;
                 document.getElementById('lobbyView').style.display = 'none';
                 document.getElementById('endedView').style.display = 'none';
                 document.getElementById('callView').style.display = 'flex';
@@ -1719,7 +2219,9 @@
                     window.NuevoMotorGrabaciones.mountMeetControls(this);
                 }
 
+                this.startSessionTimer(this.sessionStartTimeMs);
                 this.syncControlButtonsUI();
+                this.renderChatMessages();
                 this.updateStageDisplay();
                 this.connectSignaling();
             },
@@ -2153,6 +2655,18 @@
                     case 'joined':
                     case 'peer-joined':
                     case 'peer-left':
+                        if (msg.type === 'joined') {
+                            if (typeof msg.studentsMuted === 'boolean') {
+                                await this.applyStudentsMuteState(msg.studentsMuted, true);
+                            }
+                            if (typeof msg.recordingState === 'string') {
+                                this.updateStudentRecordingBadge(msg.recordingState);
+                            }
+                            if (typeof msg.timestamp === 'number' && msg.timestamp > 0) {
+                                this.sessionStartTimeMs = msg.timestamp;
+                                this.startSessionTimer(msg.timestamp);
+                            }
+                        }
                         if (typeof msg.groupIndex === 'number') {
                             this.currentGroupIndex = msg.groupIndex;
                             this.updateRoomHeaderAndBadge();
@@ -2182,12 +2696,52 @@
                                             this.remoteSharingName = p.name || 'Participante';
                                         }
                                     }
+                                } else {
+                                    this.handRaised = !!p.handRaised;
+                                    this.syncControlButtonsUI();
                                 }
                             });
                         }
-                        if (msg.type === 'peer-joined' && (this.camEnabled || this.screenEnabled)) {
-                            this.sendRoomNotice(this.screenEnabled ? '__VIDEO_ON__:screen' : '__VIDEO_ON__:cam');
+                        if (msg.type === 'peer-joined') {
+                            if (this.camEnabled || this.screenEnabled) {
+                                this.sendRoomNotice(this.screenEnabled ? '__VIDEO_ON__:screen' : '__VIDEO_ON__:cam');
+                            }
+                            if (this.isHostUser() && window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.isRecording) {
+                                this.broadcastRecordingState(window.NuevoMotorGrabaciones.isPaused ? 'paused' : 'recording');
+                            }
                         }
+                        break;
+
+                    case 'students-mute-state':
+                        await this.applyStudentsMuteState(!!msg.studentsMuted, false);
+                        break;
+
+                    case 'peer-kicked':
+                        if (msg.targetPeerId === this.peerId) {
+                            this.wasKicked = true;
+                            await this.hangupCall('Has sido retirado de la reunión por el profesor.', true);
+                        }
+                        break;
+
+                    case 'room-ended':
+                        await this.hangupCall('El profesor ha finalizado la reunión.');
+                        break;
+
+                    case 'hand-state':
+                        if (msg.peerId === this.peerId) {
+                            this.handRaised = !!msg.handRaised;
+                            this.syncControlButtonsUI();
+                        } else if (msg.handRaised) {
+                            this.showStageToast(`${msg.name || 'Estudiante'} levantó la mano`, 4000);
+                        }
+                        if (msg.peers) {
+                            this.currentRoomPeers = msg.peers;
+                            this.renderPeers(msg.peers);
+                        }
+                        break;
+
+                    case 'recording-state':
+                        this.updateStudentRecordingBadge(msg.recordingState);
                         break;
 
                     case 'breakout-state':
@@ -2219,11 +2773,13 @@
                         break;
 
                     case 'chat':
-                        if (msg.peerId !== this.peerId && typeof msg.text === 'string') {
+                        if (typeof msg.text === 'string') {
                             if (msg.text === '__VIDEO_OFF__') {
-                                this.handleRemoteVideoStopped(msg.peerId);
+                                if (msg.peerId !== this.peerId) this.handleRemoteVideoStopped(msg.peerId);
                             } else if (msg.text.startsWith('__VIDEO_ON__')) {
-                                this.handleRemoteVideoStarted(msg.peerId, msg.name);
+                                if (msg.peerId !== this.peerId) this.handleRemoteVideoStarted(msg.peerId, msg.name);
+                            } else {
+                                this.receiveChatMessage(msg);
                             }
                         }
                         break;
@@ -2454,31 +3010,71 @@
                 const countEl = document.getElementById('callPeerCount');
                 if (countEl) countEl.textContent = String(roomPeers.length || 1);
 
+                this.updateMuteAllButtonUI();
+
                 const listEl = document.getElementById('peersDropdownList');
                 if (!listEl) return;
 
-                listEl.innerHTML = displayPeers.map(p => {
+                const sortedPeers = [...displayPeers].sort((a, b) => {
+                    const aRole = String(a.role || '').toLowerCase().trim();
+                    const bRole = String(b.role || '').toLowerCase().trim();
+                    const aHost = (aRole === 'admin' || aRole === 'profesor' || aRole === 'docente' || aRole === 'instructor');
+                    const bHost = (bRole === 'admin' || bRole === 'profesor' || bRole === 'docente' || bRole === 'instructor');
+                    if (aHost !== bHost) return aHost ? -1 : 1;
+                    if (!!a.handRaised !== !!b.handRaised) return a.handRaised ? -1 : 1;
+                    return String(a.name || '').localeCompare(String(b.name || ''));
+                });
+
+                listEl.innerHTML = sortedPeers.map(p => {
                     const isSelf = p.peerId === this.peerId;
                     const pRole = String(p.role || '').toLowerCase().trim();
-                    const isPeerHost = (pRole === 'admin' || pRole === 'profesor' || pRole === 'docente' || pRole === 'instructor');
+                    const isPeerHost = (pRole === 'admin' || pRole === 'profesor' || pRole === 'docente' || pRole === 'instructor' || pRole === 'teacher');
                     const curG = Number(p.groupIndex || 0);
 
-                    let rightControl = `<span style="color:#6b7280;font-size:11px;">${escapeHtml(p.role || '')}</span>`;
-                    if (this.isHostUser() && this.breakoutActive && this.breakoutGroupCount >= 2 && !isPeerHost) {
-                        let opts = `<option value="0" ${curG === 0 ? 'selected' : ''}>Principal</option>`;
-                        for (let g = 1; g <= this.breakoutGroupCount; g++) {
-                            opts += `<option value="${g}" ${curG === g ? 'selected' : ''}>G${g}</option>`;
+                    const handHtml = (!isPeerHost && p.handRaised)
+                        ? `<span class="peer-hand-badge" ${this.isHostUser() ? `style="cursor:pointer;" onclick="MeetApp.lowerStudentHand('${escapeHtml(p.peerId)}')" title="Clic para bajar la mano"` : ''}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+                                <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+                                <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+                                <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path>
+                            </svg>
+                            <span>Mano</span>
+                           </span>`
+                        : '';
+
+                    // Solo mostrar etiqueta de rol para el Profesor/Admin (cero spam para estudiantes)
+                    let rightControls = [];
+                    if (isPeerHost) {
+                        const hostLabel = pRole === 'admin' ? 'Admin' : 'Profesor';
+                        rightControls.push(`<span style="color:#6b7280;font-size:11px;font-weight:500;">${hostLabel}</span>`);
+                    }
+
+                    if (this.isHostUser() && !isPeerHost && !isSelf) {
+                        if (this.breakoutActive && this.breakoutGroupCount >= 2) {
+                            let opts = `<option value="0" ${curG === 0 ? 'selected' : ''}>Principal</option>`;
+                            for (let g = 1; g <= this.breakoutGroupCount; g++) {
+                                opts += `<option value="${g}" ${curG === g ? 'selected' : ''}>G${g}</option>`;
+                            }
+                            rightControls.push(`
+                                <select class="peer-group-select" onchange="MeetApp.movePeerToGroup('${escapeHtml(p.peerId)}', this.value)">
+                                    ${opts}
+                                </select>
+                            `);
                         }
-                        rightControl = `
-                            <select class="peer-group-select" onchange="MeetApp.movePeerToGroup('${escapeHtml(p.peerId)}', this.value)">
-                                ${opts}
-                            </select>
-                        `;
+                        rightControls.push(`
+                            <button type="button" class="peer-kick-btn" onclick="MeetApp.kickPeer('${escapeHtml(p.peerId)}', '${escapeHtml(p.name || '')}')" title="Expulsar participante">Expulsar</button>
+                        `);
                     }
 
                     return `<div class="peer-row">
-                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name || p.peerId)}${isSelf ? ' (Tú)' : ''}</span>
-                        ${rightControl}
+                        <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name || p.peerId)}${isSelf ? ' (Tú)' : ''}</span>
+                            ${handHtml}
+                        </div>
+                        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+                            ${rightControls.join('')}
+                        </div>
                     </div>`;
                 }).join('');
             },
@@ -2488,6 +3084,187 @@
                 if (dd) dd.classList.toggle('open');
                 const pop = document.getElementById('breakoutPopover');
                 if (pop) pop.classList.remove('open');
+                const chatDd = document.getElementById('chatDropdown');
+                if (chatDd) chatDd.classList.remove('open');
+            },
+
+            toggleChatDropdown() {
+                const chatDd = document.getElementById('chatDropdown');
+                if (!chatDd) return;
+                const isOpen = chatDd.classList.toggle('open');
+                const dd = document.getElementById('peersDropdown');
+                if (dd) dd.classList.remove('open');
+                const pop = document.getElementById('breakoutPopover');
+                if (pop) pop.classList.remove('open');
+
+                if (isOpen) {
+                    this.chatUnreadCount = 0;
+                    this.updateChatUnreadUI();
+                    this.renderChatMessages();
+                    const inp = document.getElementById('chatInputField');
+                    if (inp) setTimeout(() => inp.focus(), 50);
+                }
+            },
+
+            updateChatUnreadUI() {
+                const badge = document.getElementById('chatUnreadBadge');
+                if (!badge) return;
+                if (this.chatUnreadCount > 0) {
+                    badge.style.display = 'inline-flex';
+                    badge.textContent = this.chatUnreadCount > 99 ? '99+' : String(this.chatUnreadCount);
+                } else {
+                    badge.style.display = 'none';
+                }
+            },
+
+            sendChatMessage(ev) {
+                if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+                const inp = document.getElementById('chatInputField');
+                if (!inp) return;
+                const text = String(inp.value || '').trim();
+                if (!text) return;
+                if (text.startsWith('__VIDEO_')) return;
+
+                inp.value = '';
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({
+                        type: 'chat',
+                        text: text
+                    }));
+                } else {
+                    this.receiveChatMessage({
+                        peerId: this.peerId,
+                        name: this.userName,
+                        role: this.userRole,
+                        text: text,
+                        timestamp: Date.now()
+                    });
+                }
+            },
+
+            receiveChatMessage(msg) {
+                if (!msg || !msg.text) return;
+                const item = {
+                    peerId: msg.peerId || '',
+                    name: msg.name || 'Participante',
+                    role: msg.role || 'estudiante',
+                    text: String(msg.text),
+                    timestamp: msg.timestamp || Date.now()
+                };
+                this.chatMessages.push(item);
+                if (this.chatMessages.length > 200) {
+                    this.chatMessages.shift();
+                }
+                try {
+                    sessionStorage.setItem('ubuntu_meet_chat_' + this.roomCode, JSON.stringify(this.chatMessages));
+                } catch (e) {}
+
+                const chatDd = document.getElementById('chatDropdown');
+                const isOpen = chatDd && chatDd.classList.contains('open');
+                if (!isOpen && item.peerId !== this.peerId) {
+                    this.chatUnreadCount++;
+                    this.updateChatUnreadUI();
+                }
+                this.renderChatMessages();
+            },
+
+            renderChatMessages() {
+                const listEl = document.getElementById('chatMessagesList');
+                if (!listEl) return;
+
+                if (!this.chatMessages || this.chatMessages.length === 0) {
+                    listEl.innerHTML = `<div style="text-align:center;color:#6b7280;font-size:12px;padding:24px 10px;">Los mensajes enviados durante la llamada aparecerán aquí y se borrarán al finalizar.</div>`;
+                    return;
+                }
+
+                listEl.innerHTML = this.chatMessages.map(m => {
+                    const isSelf = m.peerId === this.peerId;
+                    const d = new Date(m.timestamp || Date.now());
+                    const hh = String(d.getHours()).padStart(2, '0');
+                    const mm = String(d.getMinutes()).padStart(2, '0');
+                    const senderLabel = isSelf ? `${escapeHtml(m.name)} (Tú)` : escapeHtml(m.name);
+                    return `
+                        <div class="chat-msg-bubble ${isSelf ? 'is-self' : ''}">
+                            <div class="chat-msg-meta">
+                                <span>${senderLabel}</span>
+                                <span>${hh}:${mm}</span>
+                            </div>
+                            <div>${escapeHtml(m.text)}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                listEl.scrollTop = listEl.scrollHeight;
+            },
+
+            toggleMuteAllStudents() {
+                if (!this.isHostUser() || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                const nextState = !this.studentsMuted;
+                this.studentsMuted = nextState;
+                this.updateMuteAllButtonUI();
+                this.ws.send(JSON.stringify({
+                    type: 'mute-all-students',
+                    studentsMuted: nextState
+                }));
+                this.showStageToast(
+                    nextState
+                        ? 'Has silenciado y bloqueado los micrófonos de todos los estudiantes.'
+                        : 'Has vuelto a permitir que los estudiantes activen su micrófono.',
+                    3200
+                );
+            },
+
+            async applyStudentsMuteState(muted, isInitialJoin = false) {
+                const prev = this.studentsMuted;
+                this.studentsMuted = !!muted;
+                this.updateMuteAllButtonUI();
+
+                if (!this.isHostUser()) {
+                    if (this.studentsMuted) {
+                        if (this.micEnabled) {
+                            this.stopMicStream();
+                            this.micEnabled = false;
+                            await this.syncOutgoingAudio();
+                        }
+                        if (!isInitialJoin || !prev) {
+                            this.showStageToast('El profesor ha desactivado los micrófonos de los estudiantes.', 3500);
+                        }
+                    } else if (prev && !this.studentsMuted && !isInitialJoin) {
+                        this.showStageToast('El profesor ha permitido activar los micrófonos.', 3200);
+                    }
+                    this.syncControlButtonsUI();
+                }
+            },
+
+            kickPeer(targetPeerId, targetName) {
+                if (!this.isHostUser() || !targetPeerId || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                this.ws.send(JSON.stringify({
+                    type: 'kick-peer',
+                    targetPeerId: String(targetPeerId)
+                }));
+                this.showStageToast(`Participante retirado: ${targetName || targetPeerId}`, 2800);
+            },
+
+            toggleRaiseHand() {
+                if (this.isHostUser()) return;
+                this.handRaised = !this.handRaised;
+                this.syncControlButtonsUI();
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({
+                        type: 'raise-hand',
+                        handRaised: this.handRaised
+                    }));
+                }
+                this.showStageToast(this.handRaised ? 'Has levantado la mano para pedir la palabra.' : 'Has bajado la mano.', 2400);
+            },
+
+            lowerStudentHand(targetPeerId) {
+                if (!this.isHostUser() || !targetPeerId || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                this.ws.send(JSON.stringify({
+                    type: 'raise-hand',
+                    targetPeerId: String(targetPeerId),
+                    handRaised: false
+                }));
             },
 
             showNoAudioNotice() {
@@ -2508,13 +3285,18 @@
                 await this.toggleCallShare();
             },
 
-            // ================= IN-CALL DOCK BUTTONS (4 BOTONES) =================
+            // ================= IN-CALL DOCK BUTTONS =================
             async toggleCallMic() {
                 if (this.micEnabled) {
                     this.stopMicStream();
                     this.micEnabled = false;
                     await this.syncOutgoingAudio();
                 } else {
+                    if (!this.isHostUser() && this.studentsMuted) {
+                        this.showStageToast('El profesor ha desactivado los micrófonos de los estudiantes.', 3200);
+                        this.syncControlButtonsUI();
+                        return;
+                    }
                     try {
                         this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         const audioTrack = this.micStream.getAudioTracks()[0];
@@ -2670,19 +3452,43 @@
                 this.updateStageDisplay();
             },
 
-            async hangupCall() {
+            async hangupCall(customReason = '', hideRejoin = false) {
                 if (window.NuevoMotorGrabaciones && (window.NuevoMotorGrabaciones.isRecording || window.NuevoMotorGrabaciones.isSaving)) {
                     await window.NuevoMotorGrabaciones.stopAndSave();
                 }
 
+                if (this.sessionTimerInterval) {
+                    clearInterval(this.sessionTimerInterval);
+                    this.sessionTimerInterval = null;
+                }
+
                 this.inCall = false;
+                this.handRaised = false;
                 this.stopMicStream();
                 this.stopCamStream();
                 this.stopScreenStream();
                 this.micEnabled = false;
                 this.camEnabled = false;
                 this.screenEnabled = false;
+
+                // El historial del chat muere al terminar la reunión
+                this.chatMessages = [];
+                this.chatUnreadCount = 0;
+                this.updateChatUnreadUI();
+                try {
+                    sessionStorage.removeItem('ubuntu_meet_chat_' + this.roomCode);
+                } catch (e) {}
+
                 this.cleanupConnectionOnly();
+
+                const titleEl = document.getElementById('endedTitleText');
+                if (titleEl) {
+                    titleEl.textContent = customReason || 'Has salido de la reunión';
+                }
+                const btnRejoin = document.getElementById('btnRejoinFromEnded');
+                if (btnRejoin) {
+                    btnRejoin.style.display = (hideRejoin || this.wasKicked) ? 'none' : 'inline-flex';
+                }
 
                 document.getElementById('callView').style.display = 'none';
                 document.getElementById('lobbyView').style.display = 'none';
@@ -2690,6 +3496,7 @@
             },
 
             rejoinFromEnded() {
+                if (this.wasKicked) return;
                 document.getElementById('endedView').style.display = 'none';
                 document.getElementById('lobbyView').style.display = 'flex';
                 this.syncControlButtonsUI();
@@ -2734,18 +3541,14 @@
 
         window.MeetApp = MeetApp;
 
-        // ================= CHIQUISEGURO: VERIFICACIÓN FIREBASE ADMIN =================
+        // ================= VERIFICACIÓN DE SESIÓN FIREBASE =================
         onAuthStateChanged(auth, async (user) => {
-            const guardTitle = document.getElementById('guardTitle');
-            const guardSub = document.getElementById('guardSub');
-            const guardBtn = document.getElementById('guardBtn');
-
             if (!user) {
                 window.location.href = '/login';
                 return;
             }
 
-            let displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Admin');
+            let displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Participante');
             let role = 'estudiante';
 
             try {
@@ -2771,13 +3574,6 @@
 
             const normalizedEmail = String(user.email || '').toLowerCase().trim();
             const isAllowedTestEmail = (normalizedEmail === 'test@gmail.com');
-
-            if (role !== 'admin' && !isAllowedTestEmail) {
-                guardTitle.textContent = 'Acceso restringido';
-                guardSub.textContent = 'Esta sala de reuniones está habilitada únicamente para cuentas autorizadas.';
-                guardBtn.style.display = 'inline-block';
-                return;
-            }
 
             MeetApp.userRole = role;
             MeetApp.initUIForUser(displayName, user.email || '');
