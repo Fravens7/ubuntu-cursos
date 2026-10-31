@@ -77,6 +77,7 @@
             if (options.db) this.firestoreDb = options.db;
             if (options.firestoreFns) this.firestoreFns = options.firestoreFns;
             if (options.onCourseRecordingSaved) this.onCourseRecordingSaved = options.onCourseRecordingSaved;
+            if (options.onLiveClassEnded) this.onLiveClassEnded = options.onLiveClassEnded;
 
             this.loadLocalRecordings();
             this.subscribeFirestoreRecordings();
@@ -90,6 +91,10 @@
                     } else if (ev.data.type === 'COURSE_RECORDING_SAVED') {
                         if (typeof this.onCourseRecordingSaved === 'function') {
                             this.onCourseRecordingSaved(ev.data);
+                        }
+                    } else if (ev.data.type === 'LIVE_CLASS_ENDED') {
+                        if (typeof this.onLiveClassEnded === 'function') {
+                            this.onLiveClassEnded(ev.data);
                         }
                     }
                 };
