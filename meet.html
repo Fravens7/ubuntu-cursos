@@ -3452,6 +3452,59 @@
                 this.updateStageDisplay();
             },
 
+            async cleanupLiveSessionInPlatform() {
+                const targetLiveId = String(this.liveId || '').trim();
+                const targetRoom = String(this.roomCode || '').toLowerCase().trim();
+                const idsToDelete = new Set();
+                if (targetLiveId) idsToDelete.add(targetLiveId);
+
+                try {
+                    const rawLive = localStorage.getItem('ubuntu_live_classes');
+                    if (rawLive) {
+                        const arr = JSON.parse(rawLive);
+                        if (Array.isArray(arr)) {
+                            const remaining = [];
+                            arr.forEach(item => {
+                                const itemRoom = String(item?.roomName || '').toLowerCase().trim();
+                                const itemId = String(item?.id || '').trim();
+                                if ((targetLiveId && itemId === targetLiveId) || (targetRoom && itemRoom === targetRoom)) {
+                                    if (itemId) idsToDelete.add(itemId);
+                                } else {
+                                    remaining.push(item);
+                                }
+                            });
+                            localStorage.setItem('ubuntu_live_classes', JSON.stringify(remaining));
+                        }
+                    }
+                } catch (e) {}
+
+                if (db) {
+                    for (const id of idsToDelete) {
+                        try {
+                            await deleteDoc(doc(db, 'clases_en_vivo', id));
+                        } catch (e) {}
+                    }
+                }
+
+                try {
+                    if (typeof BroadcastChannel !== 'undefined') {
+                        const syncBc = new BroadcastChannel('ubuntu_nuevomotor_sync');
+                        syncBc.postMessage({
+                            type: 'LIVE_CLASS_ENDED',
+                            liveId: targetLiveId,
+                            roomCode: this.roomCode
+                        });
+                        syncBc.close();
+                    }
+                } catch (e) {}
+
+                try {
+                    if (window.opener && !window.opener.closed && typeof window.opener.onMeetLiveClassEnded === 'function') {
+                        window.opener.onMeetLiveClassEnded(targetLiveId, this.roomCode);
+                    }
+                } catch (e) {}
+            },
+
             async hangupCall(customReason = '', hideRejoin = false) {
                 if (window.NuevoMotorGrabaciones && (window.NuevoMotorGrabaciones.isRecording || window.NuevoMotorGrabaciones.isSaving)) {
                     await window.NuevoMotorGrabaciones.stopAndSave();
@@ -3460,6 +3513,16 @@
                 if (this.sessionTimerInterval) {
                     clearInterval(this.sessionTimerInterval);
                     this.sessionTimerInterval = null;
+                }
+
+                // Si el anfitrión (Profesor/Admin) finaliza la llamada, cerrar la sala para todos y limpiar la sesión activa en la plataforma
+                if (this.isHostUser() && !this.wasKicked) {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        try {
+                            this.ws.send(JSON.stringify({ type: 'end-room' }));
+                        } catch (e) {}
+                    }
+                    await this.cleanupLiveSessionInPlatform();
                 }
 
                 this.inCall = false;
@@ -3480,6 +3543,11 @@
                 } catch (e) {}
 
                 this.cleanupConnectionOnly();
+
+                // Cerrar automáticamente el popup de la reunión para dejar todo limpio
+                try {
+                    window.close();
+                } catch (e) {}
 
                 const titleEl = document.getElementById('endedTitleText');
                 if (titleEl) {
