@@ -855,7 +855,29 @@
         if (window.NuevoMotorGrabaciones) {
             window.NuevoMotorGrabaciones.init({
                 db,
-                firestoreFns: { doc, getDoc, setDoc, deleteDoc, collection, onSnapshot }
+                firestoreFns: { doc, getDoc, updateDoc, setDoc, deleteDoc, collection, onSnapshot },
+                onCourseRecordingSaved: ({ courseId, weekId, url }) => {
+                    if (window.getCoursesList) {
+                        const list = window.getCoursesList();
+                        const course = list.find(c => c.id === courseId);
+                        if (course && Array.isArray(course.semanas)) {
+                            const w = course.semanas.find(s => s.id === weekId);
+                            if (w) {
+                                w.recordingUrl = url;
+                                const curVid = String(w.videoUrl || '');
+                                if (!curVid || curVid.includes('workers.dev') || curVid.endsWith('.webm') || curVid.endsWith('.mp4')) {
+                                    w.videoUrl = url;
+                                }
+                            }
+                        }
+                    }
+                    if (window.refreshCurrentCourseDetail) {
+                        window.refreshCurrentCourseDetail();
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast('Grabación guardada y vinculada a la semana del curso.', 'success');
+                    }
+                }
             });
         }
 
@@ -1505,7 +1527,7 @@
                             <h4 style="font-size: 1.05rem; color: var(--text-primary); margin-bottom: 6px;">No hay transmisiones en vivo en este momento</h4>
                             <p style="font-size: 0.85rem; max-width: 460px; margin: 0 auto 16px auto; color: var(--text-secondary);">
                                 ${isTeacher 
-                                    ? 'Inicia una sesión en vivo con Jitsi Meet para tus alumnos cuando lo requieras.' 
+                                    ? 'Inicia una sesión en vivo para tus alumnos cuando lo requieras.' 
                                     : 'Las sesiones en vivo y talleres prácticos aparecerán aquí en tiempo real cuando un profesor inicie una transmisión.'}
                             </p>
                             ${isTeacher ? `
@@ -1523,7 +1545,7 @@
                             <div class="live-card-body">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <span class="live-badge-now"><span class="live-dot"></span> EN VIVO</span>
-                                    <span class="live-viewers-count"><i class="fa-solid fa-video"></i> Jitsi Meet</span>
+                                    <span class="live-viewers-count"><i class="fa-solid fa-video"></i> Sala en Vivo</span>
                                 </div>
                                 <h4 class="live-topic">${escapeHtml(live.title)}</h4>
                                 <div class="live-instructor">
@@ -1896,7 +1918,7 @@
             const cleanTitle = courseTitle.replace(/[^a-zA-Z0-9]/g, '');
             const randomCode = Math.floor(100000 + Math.random() * 900000);
             const roomName = `Ubuntu_${cleanTitle.slice(0, 12)}_${randomCode}`;
-            const jitsiUrl = `https://meet.jit.si/${roomName}`;
+            const jitsiUrl = `${window.location.origin}/meet?room=${encodeURIComponent(roomName)}&courseId=${encodeURIComponent(courseId || '')}&weekId=${encodeURIComponent(weekId || '')}&title=${encodeURIComponent(title)}`;
 
             lastCreatedRoomUrl = jitsiUrl;
             document.getElementById('generatedJitsiUrl').value = jitsiUrl;
@@ -1931,7 +1953,7 @@
                 viewers: 1,
                 category: course ? (course.category || "Curso en Vivo") : "Curso en Vivo",
                 activo: true,
-                time: "Iniciada Ahora (Jitsi Activo)"
+                time: "Iniciada Ahora (En Vivo)"
             };
 
             currentLiveSessionId = classId;
@@ -1987,7 +2009,7 @@
                 viewers: 1,
                 category: "Curso en Vivo",
                 activo: true,
-                time: "Iniciada Ahora (Jitsi Activo)"
+                time: "Iniciada Ahora (En Vivo)"
             };
 
             currentLiveSessionId = classId;
@@ -2048,7 +2070,7 @@
             });
         }
 
-        // ================= ENTER LIVE ROOM (POP-UP ILIMITADO O MODAL) =================
+        // ================= ENTER LIVE ROOM (CONECTADO AL NUEVO MOTOR /MEET) =================
         async function enterLiveRoom(title, instructor, roomName, mode = 'popup', courseId = null, weekId = null) {
             // Protección: Si la sala fue creada por un administrador, sólo un administrador puede acceder
             const currentLiveObj = (liveClassesData || []).find(c => (roomName && c.roomName === roomName) || (courseId && c.courseId === courseId));
@@ -2058,62 +2080,34 @@
             }
 
             const finalRoomName = roomName || 'UbuntuPeru_Live_' + Math.floor(Math.random() * 100000);
-            const userTag = currentUserRole === 'admin' 
-                ? `${userDisplayName} (Administrador)` 
-                : (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher' 
-                    ? `${userDisplayName} (Profesor)` 
-                    : `${userDisplayName} (Estudiante)`);
-            const jitsiUrl = `https://meet.jit.si/${finalRoomName}#userInfo.displayName="${encodeURIComponent(userTag)}"&config.prejoinPageEnabled=false`;
+            const resolvedCourseId = courseId || (currentLiveObj && currentLiveObj.courseId) || '';
+            const resolvedWeekId = weekId || (currentLiveObj && currentLiveObj.weekId) || '';
+            const resolvedLiveId = (currentLiveObj && currentLiveObj.id) || currentLiveSessionId || '';
+            const resolvedTitle = title || (currentLiveObj && currentLiveObj.title) || 'Clase en Vivo';
+
+            const meetUrl = `/meet?room=${encodeURIComponent(finalRoomName)}&courseId=${encodeURIComponent(resolvedCourseId)}&weekId=${encodeURIComponent(resolvedWeekId)}&liveId=${encodeURIComponent(resolvedLiveId)}&title=${encodeURIComponent(resolvedTitle)}`;
 
             if (mode === 'popup') {
-                const width = Math.min(1250, window.screen.availWidth - 50);
-                const height = Math.min(850, window.screen.availHeight - 50);
+                const width = Math.min(1280, window.screen.availWidth - 40);
+                const height = Math.min(860, window.screen.availHeight - 40);
                 const left = (window.screen.availWidth - width) / 2;
                 const top = (window.screen.availHeight - height) / 2;
 
                 liveAppWindow = window.open(
-                    jitsiUrl,
-                    'JitsiLiveClassWindow',
+                    meetUrl,
+                    'UbuntuLiveClassWindow',
                     `popup=yes,width=${width},height=${height},top=${top},left=${left},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=no`
                 );
                 window.liveAppWindow = liveAppWindow;
 
                 if (liveAppWindow) {
                     try { liveAppWindow.focus(); } catch(e) {}
+                } else {
+                    window.open(meetUrl, '_blank');
                 }
 
-                // Detectar si la ventana emergente se cierra
-                if (window.liveWindowMonitor) clearInterval(window.liveWindowMonitor);
-                window.liveWindowMonitor = setInterval(() => {
-                    if (window.liveAppWindow && window.liveAppWindow.closed) {
-                        clearInterval(window.liveWindowMonitor);
-                        window.liveWindowMonitor = null;
-
-                        // Si la grabación estaba activa, no eliminar el dock y proteger con seguro de 2 minutos
-                        if (window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording) {
-                            showToast('Ventana de clase cerrada. Presiona "Detener y Guardar" para procesar la grabación.', 'normal');
-                            if (window.renderFloatingDock) window.renderFloatingDock();
-                            if (!window.liveCloseAutoSaveTimer) {
-                                window.liveCloseAutoSaveTimer = setTimeout(async () => {
-                                    if (window.UbuntuClassRecorder && window.UbuntuClassRecorder.isRecording && (!window.liveAppWindow || window.liveAppWindow.closed)) {
-                                        showToast('Grabación finalizada y guardada automáticamente por cierre de clase.', 'success');
-                                        await window.UbuntuClassRecorder.stopAndUpload();
-                                        const dock = document.getElementById('floatingLiveDock');
-                                        if (dock) dock.remove();
-                                    }
-                                    window.liveCloseAutoSaveTimer = null;
-                                }, 120000); // 2 minutos
-                            }
-                        } else {
-                            const dock = document.getElementById('floatingLiveDock');
-                            if (dock) dock.remove();
-                            showToast('Ventana de clase cerrada. La transmisión sigue activa si deseas reingresar.', 'normal');
-                        }
-                    }
-                }, 1500);
-
-                showFloatingCallBar(title, finalRoomName, courseId, weekId);
-                showToast(`¡Clase iniciada en ventana dedicada! Sin límite de tiempo.`, 'success');
+                showToast('Sala de clase abierta en ventana dedicada.', 'success');
+                return;
             } else {
                 document.getElementById('liveRoomTitle').innerHTML = `<i class="fa-solid fa-signal" style="color: var(--siemens-teal);"></i> ${title} — ${instructor}`;
                 const modal = document.getElementById('liveRoomModal');
