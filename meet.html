@@ -1391,6 +1391,10 @@
                 <span id="callClockText">00:00</span>
                 <span class="call-divider">|</span>
                 <span class="call-room-code" id="callRoomCodeText">---</span>
+                <button type="button" id="btnMeetTopShare" onclick="MeetApp.copyCleanRoomLink()" style="display: none; background: #ffffff; border: 1px solid #d1d5db; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #111111; cursor: pointer; align-items: center; gap: 5px; margin-left: 6px; transition: all 0.15s ease;" title="Copiar enlace limpio para alumnos">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    <span>Compartir</span>
+                </button>
 
                 <!-- Chiquicontador de límite de 3h (Solo Profesor/Admin) -->
                 <div class="session-timer-pill" id="callSessionTimerPill" title="Tiempo transcurrido de la sesión (Máximo 3 horas)">
@@ -1920,6 +1924,11 @@
                 const btnMuteAll = document.getElementById('btnMuteAllStudents');
                 if (btnMuteAll) {
                     btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                }
+
+                const btnMeetShare = document.getElementById('btnMeetTopShare');
+                if (btnMeetShare) {
+                    btnMeetShare.style.display = this.isHostUser() ? 'inline-flex' : 'none';
                 }
 
                 this.updateClock();
@@ -3450,6 +3459,21 @@
 
                 this.syncControlButtonsUI();
                 this.updateStageDisplay();
+            },
+
+            copyCleanRoomLink() {
+                const url = `${window.location.origin}/meet?room=${encodeURIComponent(this.roomCode)}`;
+                try {
+                    navigator.clipboard.writeText(url);
+                } catch(e) {
+                    const t = document.createElement('input');
+                    t.value = url;
+                    document.body.appendChild(t);
+                    t.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(t);
+                }
+                this.showStageToast('Enlace de la clase copiado al portapapeles.', 2500);
             },
 
             async cleanupLiveSessionInPlatform() {

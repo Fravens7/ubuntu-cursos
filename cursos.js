@@ -27,6 +27,9 @@ export function setCursosUser(user, role, name) {
     currentUserRole = role ? role.toLowerCase().trim() : 'estudiante';
     currentUserName = name || 'Usuario';
     renderCourses();
+    if (typeof refreshCurrentCourseDetail === 'function') {
+        refreshCurrentCourseDetail();
+    }
 }
 
 // Validar si el usuario activo tiene permisos para editar, gestionar o eliminar un curso
@@ -74,6 +77,9 @@ export function initCursosModule(db) {
             renderCourses();
             if (window.onCoursesUpdatedForReports) {
                 window.onCoursesUpdatedForReports();
+            }
+            if (typeof refreshCurrentCourseDetail === 'function') {
+                refreshCurrentCourseDetail();
             }
         }, (error) => {
             console.warn("Aviso de Firestore (Cursos):", error);
@@ -1420,11 +1426,7 @@ export function openCourseDetail(id) {
         }
 
         // Renderizar barra de navegación de semanas (Píldoras)
-        const isAdminUser = currentUserRole === 'admin';
-        const liveList = (window.liveClassesData || []).filter(c => {
-            if (c.creatorRole === 'admin' && !isAdminUser) return false;
-            return true;
-        });
+        const liveList = (window.liveClassesData || []).filter(c => c && c.activo !== false);
 
         if (weeksNavEl) {
             weeksNavEl.innerHTML = `
@@ -1469,13 +1471,17 @@ export function openCourseDetail(id) {
             if (activeCourseLive) {
                 // HAY CLASE EN VIVO ACTIVA EN ESTA SEMANA ESPECÍFICA
                 liveActionHtml = `
-                    <button type="button" class="btn-week-meet is-live-pulse" onclick="window.enterLiveRoom('${escapeAttr(activeCourseLive.title)}', '${escapeAttr(activeCourseLive.instructor)}', '${escapeAttr(activeCourseLive.roomName)}')" title="¡El profesor está transmitiendo en vivo en esta semana!">
+                    <button type="button" class="btn-week-meet is-live-pulse" onclick="window.enterLiveRoom('${escapeAttr(activeCourseLive.title)}', '${escapeAttr(activeCourseLive.instructor)}', '${escapeAttr(activeCourseLive.roomName)}', 'popup', '${escapeAttr(course.id)}', '${escapeAttr(activeWeek.id)}')" title="¡El profesor está transmitiendo en vivo en esta semana!">
                         <span class="live-dot" style="background:#fff; box-shadow: 0 0 6px #fff;"></span>
                         <strong>EN VIVO AHORA</strong> — Entrar a Clase
                     </button>
                 `;
                 if (isAuthor) {
                     liveActionHtml += `
+                        <button type="button" class="btn-share-course-live" onclick="window.openShareLiveModal('${escapeAttr(activeCourseLive.title)}', '${escapeAttr(activeCourseLive.roomName)}')" title="Compartir enlace de la clase">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                            <span>Compartir clase</span>
+                        </button>
                         <button type="button" class="btn-end-course-live" onclick="window.endLiveClass('${activeCourseLive.id}')" title="Dar por terminada la clase para todos los alumnos">
                             <i class="fa-solid fa-phone-slash"></i> Finalizar Transmisión
                         </button>

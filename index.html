@@ -806,6 +806,36 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: COMPARTIR CLASE EN VIVO (MINIMALISTA) ================= -->
+    <div id="shareLiveClassModal" style="display: none; position: fixed; inset: 0; background: rgba(17, 24, 39, 0.5); backdrop-filter: blur(2px); z-index: 100000; align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: #ffffff; width: 100%; max-width: 440px; border-radius: 14px; padding: 22px 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); position: relative; font-family: 'Inter', sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #111111;">Compartir clase en vivo</h3>
+                <button type="button" onclick="window.closeShareLiveModal()" style="border: none; background: transparent; cursor: pointer; color: #6b7280; font-size: 1.3rem; padding: 4px; line-height: 1; border-radius: 6px;" title="Cerrar">&times;</button>
+            </div>
+            <p id="shareLiveModalSubtitle" style="margin: 0 0 16px 0; font-size: 0.85rem; color: #4b5563; line-height: 1.4;">
+                Comparte este enlace con tus alumnos para que ingresen directamente a la clase:
+            </p>
+
+            <div style="display: flex; align-items: center; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; padding: 6px 10px; margin-bottom: 18px; gap: 8px;">
+                <input type="text" id="shareLiveCleanUrlInput" readonly style="flex: 1; border: none; background: transparent; font-size: 0.82rem; color: #111111; outline: none; font-family: monospace; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" value="">
+                <button type="button" id="btnShareModalIconCopy" onclick="window.copyShareLiveUrl()" title="Copiar enlace" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; border-radius: 6px; padding: 6px 9px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" id="btnShareModalCopyMain" onclick="window.copyShareLiveUrl()" style="flex: 1; background: #111111; color: #ffffff; border: none; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s ease;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span id="shareModalCopyText">Copiar enlace</span>
+                </button>
+                <button type="button" onclick="window.closeShareLiveModal()" style="background: #ffffff; color: #4b5563; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 16px; font-size: 0.88rem; font-weight: 500; cursor: pointer;">
+                    Listo
+                </button>
+            </div>
+        </div>
+    </div>
+
     <style>
         @keyframes blinkREC {
             0% { opacity: 1; transform: scale(1); }
@@ -1545,9 +1575,11 @@
             const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher' || currentUserRole === 'admin');
             const isAdmin = currentUserRole === 'admin';
 
-            // Filtrar transmisiones en vivo: Si fue creada por admin, SOLO los administradores pueden verla
+            // Transmisiones en vivo activas (visibles para estudiantes y profesores)
             const visibleLives = (liveClassesData || []).filter(live => {
-                if (live.creatorRole === 'admin' && !isAdmin) {
+                if (live.activo === false) return false;
+                if (live.courseId) return true;
+                if (live.creatorRole === 'admin' && !isAdmin && live.isPrivate) {
                     return false;
                 }
                 return true;
@@ -1602,6 +1634,10 @@
                                         <i class="fa-solid fa-video"></i> ${isTeacher ? 'Entrar / Reingresar' : 'Entrar a la Clase'}
                                     </button>
                                     ${isTeacher ? `
+                                        <button class="btn btn-outline btn-sm" style="border-color: #d1d5db; color: #111111; padding: 7px 11px; font-weight: 600;" onclick="openShareLiveModal('${escapeAttr(live.title)}', '${escapeAttr(live.roomName)}')" title="Compartir enlace de la clase">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                            Compartir
+                                        </button>
                                         <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 7px 12px; font-weight: 600;" onclick="endLiveClass('${live.id}')" title="Finalizar clase y cerrar transmisión para todos">
                                             <i class="fa-solid fa-power-off"></i> Finalizar
                                         </button>
@@ -1742,6 +1778,9 @@
             setCursosUser(user, currentUserRole, userDisplayName);
             setReportsUser(user, currentUserRole);
             renderLiveClasses();
+            if (window.refreshCurrentCourseDetail) {
+                window.refreshCurrentCourseDetail();
+            }
 
             // Disparador de Onboarding: Guía del Estudiante automática en primera visita
             checkStudentGuideOnboarding(user.uid, currentUserRole);
@@ -2072,9 +2111,59 @@
                 window.refreshCurrentCourseDetail();
             }
             showToast(`¡Transmisión iniciada para "${courseTitle}"!`, 'success');
+            openShareLiveModal(title, roomName);
             enterLiveRoom(title, instructor, roomName, 'popup', courseId, weekId);
         }
         window.executeStartCourseLiveClass = executeStartCourseLiveClass;
+
+        // ================= MODAL DE COMPARTIR CLASE EN VIVO (MINIMALISTA) =================
+        function openShareLiveModal(title, roomName) {
+            const modal = document.getElementById('shareLiveClassModal');
+            if (!modal) return;
+            const input = document.getElementById('shareLiveCleanUrlInput');
+            const subtitle = document.getElementById('shareLiveModalSubtitle');
+            const copyBtnText = document.getElementById('shareModalCopyText');
+
+            const cleanRoom = String(roomName || '').trim();
+            const cleanUrl = `${window.location.origin}/meet?room=${encodeURIComponent(cleanRoom)}`;
+
+            if (input) input.value = cleanUrl;
+            if (subtitle) {
+                subtitle.textContent = title ? `Comparte este enlace con tus alumnos para ingresar a "${title}":` : 'Comparte este enlace con tus alumnos para que ingresen directamente a la clase:';
+            }
+            if (copyBtnText) copyBtnText.textContent = 'Copiar enlace';
+
+            modal.style.display = 'flex';
+        }
+        window.openShareLiveModal = openShareLiveModal;
+
+        function closeShareLiveModal() {
+            const modal = document.getElementById('shareLiveClassModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeShareLiveModal = closeShareLiveModal;
+
+        async function copyShareLiveUrl() {
+            const input = document.getElementById('shareLiveCleanUrlInput');
+            if (!input || !input.value) return;
+
+            try {
+                await navigator.clipboard.writeText(input.value);
+            } catch (e) {
+                input.select();
+                document.execCommand('copy');
+            }
+
+            const copyBtnText = document.getElementById('shareModalCopyText');
+            if (copyBtnText) copyBtnText.textContent = '¡Copiado al portapapeles!';
+            if (typeof showToast === 'function') {
+                showToast('Enlace de la clase copiado al portapapeles.', 'success');
+            }
+            setTimeout(() => {
+                if (copyBtnText) copyBtnText.textContent = 'Copiar enlace';
+            }, 2500);
+        }
+        window.copyShareLiveUrl = copyShareLiveUrl;
 
         function copyJitsiUrl() {
             const urlInput = document.getElementById('generatedJitsiUrl');
@@ -2112,9 +2201,9 @@
 
         // ================= ENTER LIVE ROOM (CONECTADO AL NUEVO MOTOR /MEET) =================
         async function enterLiveRoom(title, instructor, roomName, mode = 'popup', courseId = null, weekId = null) {
-            // Protección: Si la sala fue creada por un administrador, sólo un administrador puede acceder
+            // Protección: Si la sala fue creada explícitamente como prueba exclusiva de admin
             const currentLiveObj = (liveClassesData || []).find(c => (roomName && c.roomName === roomName) || (courseId && c.courseId === courseId));
-            if (currentLiveObj && currentLiveObj.creatorRole === 'admin' && currentUserRole !== 'admin') {
+            if (currentLiveObj && currentLiveObj.creatorRole === 'admin' && currentLiveObj.isPrivate && currentUserRole !== 'admin') {
                 showToast('Esta sala de transmisión es de prueba y exclusiva de administradores.', 'warning');
                 return;
             }

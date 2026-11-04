@@ -262,6 +262,26 @@
     box-shadow: 0 2px 8px rgba(0, 153, 153, 0.3);
 }
 
+.btn-share-course-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #ffffff;
+    color: #111111;
+    border: 1.5px solid #d1d5db;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-share-course-live:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
 .btn-end-course-live {
     display: inline-flex;
     align-items: center;
