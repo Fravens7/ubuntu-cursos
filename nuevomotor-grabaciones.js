@@ -413,10 +413,18 @@
             ctx.fillStyle = '#f9fafb';
             ctx.fillRect(0, 0, W, H);
 
+            const wbCanvas = document.getElementById('whiteboardCanvas');
+            const isWbVisible = this.meetApp && this.meetApp.whiteboardEnabled && wbCanvas && wbCanvas.width > 0;
             const stageVideo = document.getElementById('stageVideo');
             const isVideoVisible = stageVideo && stageVideo.classList.contains('is-visible') && stageVideo.videoWidth > 0 && stageVideo.videoHeight > 0;
 
-            if (isVideoVisible) {
+            if (isWbVisible) {
+                ctx.save();
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(wbCanvas, 0, 0, W, H);
+                ctx.restore();
+            } else if (isVideoVisible) {
                 const vw = stageVideo.videoWidth;
                 const vh = stageVideo.videoHeight;
                 const scale = Math.min(W / vw, H / vh);

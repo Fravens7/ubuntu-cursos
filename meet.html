@@ -1218,6 +1218,82 @@
             background: #374151;
         }
 
+        /* ================= PIZARRA INTERACTIVA MINIMALISTA (WHITEBOARD LITE) ================= */
+        .stage-whiteboard-wrap {
+            display: none;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            z-index: 4;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .stage-whiteboard-wrap.is-visible {
+            display: block;
+        }
+
+        #whiteboardCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .whiteboard-toolbar {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 5px 10px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .wb-tool-btn {
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            background: #ffffff;
+            color: #4b5563;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+        }
+
+        .wb-tool-btn:hover {
+            background: #f3f4f6;
+            color: #111111;
+        }
+
+        .wb-tool-btn.is-active {
+            background: #111111;
+            color: #ffffff;
+            border-color: #111111;
+            font-weight: 600;
+        }
+
+        .wb-divider {
+            width: 1px;
+            height: 18px;
+            background: #e5e7eb;
+            margin: 0 2px;
+        }
+
         /* ================= VIEW 3: POST-CALL ENDED VIEW ================= */
         #endedView {
             display: none;
@@ -1479,6 +1555,13 @@
                         </svg>
                         <span id="btnMuteAllStudentsText">Silenciar a todos</span>
                     </button>
+                    <button type="button" class="peers-mute-all-btn" id="btnToggleHandSound" style="display:none;" onclick="MeetApp.toggleHandSoundMuted()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span id="btnToggleHandSoundText">Sonido de mano: Activo</span>
+                    </button>
                     <div id="peersDropdownList"></div>
                 </div>
             </div>
@@ -1536,6 +1619,33 @@
 
             <video id="stageVideo" autoplay playsinline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback"></video>
 
+            <!-- Pizarra Interactiva Minimalista (Solo Profesor) -->
+            <div class="stage-whiteboard-wrap" id="stageWhiteboardWrap">
+                <div class="whiteboard-toolbar">
+                    <button type="button" class="wb-tool-btn is-active" id="wbBtnPenBlack" onclick="MeetApp.setWhiteboardTool('pen', '#111111')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                        </svg>
+                        <span>Pluma</span>
+                    </button>
+                    <button type="button" class="wb-tool-btn" id="wbBtnPenGray" onclick="MeetApp.setWhiteboardTool('pen', '#6b7280')">
+                        <span>Gris</span>
+                    </button>
+                    <button type="button" class="wb-tool-btn" id="wbBtnEraser" onclick="MeetApp.setWhiteboardTool('eraser')">
+                        <span>Borrador</span>
+                    </button>
+                    <div class="wb-divider"></div>
+                    <button type="button" class="wb-tool-btn" onclick="MeetApp.clearWhiteboard()">
+                        <span>Limpiar</span>
+                    </button>
+                    <button type="button" class="wb-tool-btn" onclick="MeetApp.toggleWhiteboard()" title="Cerrar pizarra">
+                        <span>Cerrar</span>
+                    </button>
+                </div>
+                <canvas id="whiteboardCanvas" width="1920" height="1080"></canvas>
+            </div>
+
             <div class="stage-bottom-label" id="stageParticipantLabel">Merby</div>
 
             <!-- Opción Pantalla completa (Imagen 2) cuando hay transmisión activa -->
@@ -1590,6 +1700,16 @@
                         <line x1="12" y1="17" x2="12" y2="21"></line>
                         <polyline points="9 10 12 7 15 10"></polyline>
                         <line x1="12" y1="7" x2="12" y2="13"></line>
+                    </svg>
+                </button>
+
+                <!-- 3.5. Pizarra (Exclusivo rol Profesor/Admin) -->
+                <button type="button" class="dock-btn is-off" id="btnCallWhiteboard" style="display:none;" onclick="MeetApp.toggleWhiteboard()" title="Pizarra en blanco (Modo pluma)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                        <path d="M2 2l7.586 7.586"></path>
+                        <circle cx="11" cy="11" r="2"></circle>
                     </svg>
                 </button>
 
@@ -1722,6 +1842,10 @@
             // Moderación, Mano, Grabación y Chat Efímero
             studentsMuted: false,
             handRaised: false,
+            handCooldownUntilMs: 0,
+            handSoundMuted: false,
+            lastHandChimeByPeer: new Map(),
+            lastGlobalHandChimeMs: 0,
             remoteRecordingState: '',
             chatMessages: [],
             chatUnreadCount: 0,
@@ -1730,13 +1854,24 @@
             toastTimeout: null,
             wasKicked: false,
 
-            // Media state
+            // Media & Pizarra state
             micEnabled: false,
             camEnabled: false,
             screenEnabled: false,
+            whiteboardEnabled: false,
             micStream: null,
             camStream: null,
             screenStream: null,
+            whiteboardStream: null,
+            wbTool: 'pen',
+            wbColor: '#111111',
+            wbDrawing: false,
+            wbLastX: 0,
+            wbLastY: 0,
+            wbMidX: 0,
+            wbMidY: 0,
+            wbKeepAliveTimer: null,
+            _wbEventsBound: false,
 
             // WebRTC & Signaling state
             ws: null,
@@ -1923,6 +2058,16 @@
                 const btnMuteAll = document.getElementById('btnMuteAllStudents');
                 if (btnMuteAll) {
                     btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                }
+
+                const btnHandSound = document.getElementById('btnToggleHandSound');
+                if (btnHandSound) {
+                    btnHandSound.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                }
+
+                const btnWhiteboard = document.getElementById('btnCallWhiteboard');
+                if (btnWhiteboard) {
+                    btnWhiteboard.style.display = this.isHostUser() ? 'flex' : 'none';
                 }
 
                 const btnMeetShare = document.getElementById('btnMeetTopShare');
@@ -2155,11 +2300,19 @@
                     btnCallShare.className = `dock-btn ${this.screenEnabled ? 'is-on' : 'is-off'}`;
                 }
 
+                // In-Call Whiteboard (Profesor/Admin)
+                const btnCallWhiteboard = document.getElementById('btnCallWhiteboard');
+                if (btnCallWhiteboard) {
+                    btnCallWhiteboard.style.display = this.isHostUser() ? 'flex' : 'none';
+                    btnCallWhiteboard.className = `dock-btn ${this.whiteboardEnabled ? 'is-on' : 'is-off'}`;
+                }
+
                 // In-Call Raise Hand (Estudiante)
                 const btnCallHand = document.getElementById('btnCallHand');
                 if (btnCallHand) {
                     btnCallHand.style.display = this.isHostUser() ? 'none' : 'flex';
-                    btnCallHand.className = `dock-btn ${this.handRaised ? 'is-on' : 'is-off'}`;
+                    const onCooldown = (!this.handRaised && Date.now() < this.handCooldownUntilMs);
+                    btnCallHand.className = `dock-btn ${this.handRaised ? 'is-on' : 'is-off'} ${onCooldown ? 'is-locked' : ''}`;
                     btnCallHand.title = this.handRaised ? 'Bajar la mano' : 'Levantar la mano para pedir la palabra';
                 }
 
@@ -2169,13 +2322,26 @@
             updateMuteAllButtonUI() {
                 const btnMuteAll = document.getElementById('btnMuteAllStudents');
                 const txtMuteAll = document.getElementById('btnMuteAllStudentsText');
-                if (!btnMuteAll) return;
-                btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
-                btnMuteAll.classList.toggle('is-locked', !!this.studentsMuted);
-                if (txtMuteAll) {
-                    txtMuteAll.textContent = this.studentsMuted
-                        ? 'Micrófonos bloqueados (Permitir)'
-                        : 'Silenciar a todos';
+                if (btnMuteAll) {
+                    btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                    btnMuteAll.classList.toggle('is-locked', !!this.studentsMuted);
+                    if (txtMuteAll) {
+                        txtMuteAll.textContent = this.studentsMuted
+                            ? 'Micrófonos bloqueados (Permitir)'
+                            : 'Silenciar a todos';
+                    }
+                }
+
+                const btnHandSound = document.getElementById('btnToggleHandSound');
+                const txtHandSound = document.getElementById('btnToggleHandSoundText');
+                if (btnHandSound) {
+                    btnHandSound.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                    btnHandSound.classList.toggle('is-locked', !!this.handSoundMuted);
+                    if (txtHandSound) {
+                        txtHandSound.textContent = this.handSoundMuted
+                            ? 'Sonido de mano: Silenciado'
+                            : 'Sonido de mano: Activo';
+                    }
                 }
             },
 
@@ -2236,9 +2402,21 @@
 
             updateStageDisplay() {
                 const stageVideo = document.getElementById('stageVideo');
+                const wbWrap = document.getElementById('stageWhiteboardWrap');
                 const avatarBox = document.getElementById('stageAvatarBox');
                 const labelEl = document.getElementById('stageParticipantLabel');
                 const fsBtn = document.getElementById('btnStageFullscreen');
+
+                if (this.whiteboardEnabled && this.isHostUser()) {
+                    if (wbWrap) wbWrap.classList.add('is-visible');
+                    stageVideo.classList.remove('is-visible');
+                    avatarBox.style.display = 'none';
+                    labelEl.textContent = `${this.userName} (Pizarra activa)`;
+                    if (fsBtn) fsBtn.classList.add('is-visible');
+                    return;
+                } else if (wbWrap) {
+                    wbWrap.classList.remove('is-visible');
+                }
 
                 // Prioridad: 1) Pantalla propia, 2) Cámara propia, 3) Video remoto activo, 4) Avatar centrado
                 if (this.screenEnabled && this.screenStream) {
@@ -2627,7 +2805,13 @@
                     if (audioAdded) added = true;
                 }
 
-                if (this.screenEnabled && this.screenStream) {
+                if (this.whiteboardEnabled && this.whiteboardStream) {
+                    const wbTrack = this.whiteboardStream.getVideoTracks()[0];
+                    if (wbTrack) {
+                        this.videoSender = this.pc.addTrack(wbTrack, this.whiteboardStream);
+                        added = true;
+                    }
+                } else if (this.screenEnabled && this.screenStream) {
                     const screenTrack = this.screenStream.getVideoTracks()[0];
                     if (screenTrack) {
                         this.videoSender = this.pc.addTrack(screenTrack, this.screenStream);
@@ -2711,8 +2895,8 @@
                             });
                         }
                         if (msg.type === 'peer-joined') {
-                            if (this.camEnabled || this.screenEnabled) {
-                                this.sendRoomNotice(this.screenEnabled ? '__VIDEO_ON__:screen' : '__VIDEO_ON__:cam');
+                            if (this.camEnabled || this.screenEnabled || this.whiteboardEnabled) {
+                                this.sendRoomNotice((this.screenEnabled || this.whiteboardEnabled) ? '__VIDEO_ON__:screen' : '__VIDEO_ON__:cam');
                             }
                             if (this.isHostUser() && window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.isRecording) {
                                 this.broadcastRecordingState(window.NuevoMotorGrabaciones.isPaused ? 'paused' : 'recording');
@@ -2741,6 +2925,9 @@
                             this.syncControlButtonsUI();
                         } else if (msg.handRaised) {
                             this.showStageToast(`${msg.name || 'Estudiante'} levantó la mano`, 4000);
+                            if (this.isHostUser()) {
+                                this.playHandChime(msg.peerId);
+                            }
                         }
                         if (msg.peers) {
                             this.currentRoomPeers = msg.peers;
@@ -3255,7 +3442,19 @@
 
             toggleRaiseHand() {
                 if (this.isHostUser()) return;
+                const now = Date.now();
+                if (!this.handRaised && now < this.handCooldownUntilMs) {
+                    const remSec = Math.max(1, Math.ceil((this.handCooldownUntilMs - now) / 1000));
+                    this.showStageToast(`Espera ${remSec}s antes de volver a levantar la mano.`, 2400);
+                    return;
+                }
                 this.handRaised = !this.handRaised;
+                if (!this.handRaised) {
+                    this.handCooldownUntilMs = now + 15000;
+                    setTimeout(() => {
+                        this.syncControlButtonsUI();
+                    }, 15100);
+                }
                 this.syncControlButtonsUI();
                 if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                     this.ws.send(JSON.stringify({
@@ -3275,6 +3474,46 @@
                 }));
             },
 
+            toggleHandSoundMuted() {
+                if (!this.isHostUser()) return;
+                this.handSoundMuted = !this.handSoundMuted;
+                this.updateMuteAllButtonUI();
+                this.showStageToast(this.handSoundMuted ? 'Avisos sonoros de mano silenciados.' : 'Avisos sonoros de mano activados.', 2200);
+            },
+
+            playHandChime(peerId) {
+                if (!this.isHostUser() || this.handSoundMuted) return;
+                const now = Date.now();
+                const pid = String(peerId || 'anon');
+                const lastPeer = this.lastHandChimeByPeer.get(pid) || 0;
+                if (now - lastPeer < 10000) return;
+                if (now - this.lastGlobalHandChimeMs < 2500) return;
+
+                this.lastHandChimeByPeer.set(pid, now);
+                this.lastGlobalHandChimeMs = now;
+
+                try {
+                    this.ensureAudioContext();
+                    if (!this.audioCtx) return;
+                    if (this.audioCtx.state === 'suspended') {
+                        this.audioCtx.resume().catch(() => {});
+                    }
+                    const t0 = this.audioCtx.currentTime;
+                    const osc = this.audioCtx.createOscillator();
+                    const gain = this.audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, t0);
+                    osc.frequency.setValueAtTime(783.99, t0 + 0.08);
+                    gain.gain.setValueAtTime(0.001, t0);
+                    gain.gain.linearRampToValueAtTime(0.08, t0 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+                    osc.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+                    osc.start(t0);
+                    osc.stop(t0 + 0.24);
+                } catch (e) {}
+            },
+
             showNoAudioNotice() {
                 const el = document.getElementById('stageNoAudioNotice');
                 if (el) el.classList.add('is-visible');
@@ -3291,6 +3530,207 @@
                     await this.stopCallShare();
                 }
                 await this.toggleCallShare();
+            },
+
+            // ================= PIZARRA INTERACTIVA LITE (SOLO PROFESOR) =================
+            initWhiteboardCanvas() {
+                const canvas = document.getElementById('whiteboardCanvas');
+                if (!canvas) return null;
+                const ctx = canvas.getContext('2d', { alpha: false });
+                if (!this._wbEventsBound && ctx) {
+                    this._wbEventsBound = true;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    const getCoords = (ev) => {
+                        const rect = canvas.getBoundingClientRect();
+                        if (!rect.width || !rect.height) return { x: 0, y: 0 };
+                        const scaleX = canvas.width / rect.width;
+                        const scaleY = canvas.height / rect.height;
+                        return {
+                            x: (ev.clientX - rect.left) * scaleX,
+                            y: (ev.clientY - rect.top) * scaleY
+                        };
+                    };
+
+                    const onDown = (ev) => {
+                        if (!this.whiteboardEnabled || !this.isHostUser()) return;
+                        if (ev.button !== undefined && ev.button !== 0) return;
+                        ev.preventDefault();
+                        try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}
+                        const pt = getCoords(ev);
+                        this.wbDrawing = true;
+                        this.wbLastX = pt.x;
+                        this.wbLastY = pt.y;
+                        this.wbMidX = pt.x;
+                        this.wbMidY = pt.y;
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.fillStyle = this.wbTool === 'eraser' ? '#ffffff' : this.wbColor;
+                        const radius = this.wbTool === 'eraser' ? 16 : 2;
+                        ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    };
+
+                    const onMove = (ev) => {
+                        if (!this.wbDrawing || !this.whiteboardEnabled) return;
+                        ev.preventDefault();
+                        const pt = getCoords(ev);
+                        const midX = (this.wbLastX + pt.x) / 2;
+                        const midY = (this.wbLastY + pt.y) / 2;
+
+                        ctx.save();
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        if (this.wbTool === 'eraser') {
+                            ctx.strokeStyle = '#ffffff';
+                            ctx.lineWidth = 32;
+                        } else {
+                            ctx.strokeStyle = this.wbColor;
+                            ctx.lineWidth = 3.5;
+                        }
+                        ctx.beginPath();
+                        ctx.moveTo(this.wbMidX, this.wbMidY);
+                        ctx.quadraticCurveTo(this.wbLastX, this.wbLastY, midX, midY);
+                        ctx.stroke();
+                        ctx.restore();
+
+                        this.wbLastX = pt.x;
+                        this.wbLastY = pt.y;
+                        this.wbMidX = midX;
+                        this.wbMidY = midY;
+                    };
+
+                    const onUp = (ev) => {
+                        if (!this.wbDrawing) return;
+                        this.wbDrawing = false;
+                        try { canvas.releasePointerCapture(ev.pointerId); } catch (e) {}
+                    };
+
+                    canvas.addEventListener('pointerdown', onDown);
+                    canvas.addEventListener('pointermove', onMove);
+                    canvas.addEventListener('pointerup', onUp);
+                    canvas.addEventListener('pointercancel', onUp);
+                    canvas.addEventListener('pointerleave', onUp);
+                }
+                return canvas;
+            },
+
+            setWhiteboardTool(tool, color = '#111111') {
+                this.wbTool = tool === 'eraser' ? 'eraser' : 'pen';
+                if (this.wbTool === 'pen' && color) {
+                    this.wbColor = color;
+                }
+                const btnBlack = document.getElementById('wbBtnPenBlack');
+                const btnGray = document.getElementById('wbBtnPenGray');
+                const btnEraser = document.getElementById('wbBtnEraser');
+                if (btnBlack) btnBlack.classList.toggle('is-active', this.wbTool === 'pen' && this.wbColor === '#111111');
+                if (btnGray) btnGray.classList.toggle('is-active', this.wbTool === 'pen' && this.wbColor === '#6b7280');
+                if (btnEraser) btnEraser.classList.toggle('is-active', this.wbTool === 'eraser');
+            },
+
+            clearWhiteboard() {
+                const canvas = document.getElementById('whiteboardCanvas');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d', { alpha: false });
+                if (!ctx) return;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            },
+
+            stopWhiteboardStream() {
+                this.wbDrawing = false;
+                if (this.wbKeepAliveTimer) {
+                    clearInterval(this.wbKeepAliveTimer);
+                    this.wbKeepAliveTimer = null;
+                }
+                if (this.whiteboardStream) {
+                    this.whiteboardStream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+                    this.whiteboardStream = null;
+                }
+            },
+
+            async toggleWhiteboard() {
+                if (!this.isHostUser()) return;
+                if (this.whiteboardEnabled) {
+                    await this.stopWhiteboard();
+                    return;
+                }
+
+                const canvas = this.initWhiteboardCanvas();
+                if (!canvas || typeof canvas.captureStream !== 'function') {
+                    this.showStageToast('Tu navegador no soporta pizarra en vivo.', 2600);
+                    return;
+                }
+
+                if (this.screenEnabled) {
+                    this.hideNoAudioNotice();
+                    this.stopScreenStream();
+                    this.screenEnabled = false;
+                    await this.syncOutgoingAudio();
+                }
+                if (this.camEnabled) {
+                    this.stopCamStream();
+                    this.camEnabled = false;
+                }
+
+                this.whiteboardStream = canvas.captureStream(24);
+                this.whiteboardEnabled = true;
+
+                // Mantener refresco sutil de fotograma en navegadores que pausan captureStream estático
+                if (this.wbKeepAliveTimer) clearInterval(this.wbKeepAliveTimer);
+                this.wbKeepAliveTimer = setInterval(() => {
+                    if (!this.whiteboardEnabled) return;
+                    const c = document.getElementById('whiteboardCanvas');
+                    const ctx = c ? c.getContext('2d', { alpha: false }) : null;
+                    if (ctx) {
+                        const px = ctx.getImageData(0, 0, 1, 1);
+                        ctx.putImageData(px, 0, 0);
+                    }
+                }, 800);
+
+                const wbTrack = this.whiteboardStream.getVideoTracks()[0];
+                if (wbTrack) {
+                    wbTrack.enabled = true;
+                    if ('contentHint' in wbTrack) {
+                        try { wbTrack.contentHint = 'detail'; } catch (e) {}
+                    }
+                }
+
+                if (this.pc && wbTrack) {
+                    let needsOffer = false;
+                    if (this.videoSender) {
+                        await this.videoSender.replaceTrack(wbTrack);
+                    } else {
+                        this.videoSender = this.pc.addTrack(wbTrack, this.whiteboardStream);
+                        needsOffer = true;
+                    }
+                    if (needsOffer) {
+                        await this.sendOffer();
+                    }
+                    this.sendRoomNotice('__VIDEO_ON__:screen');
+                }
+
+                this.syncControlButtonsUI();
+                this.updateStageDisplay();
+            },
+
+            async stopWhiteboard() {
+                this.stopWhiteboardStream();
+                this.whiteboardEnabled = false;
+
+                if (this.videoSender && !this.camEnabled && !this.screenEnabled) {
+                    await this.videoSender.replaceTrack(null).catch(() => {});
+                    this.sendRoomNotice('__VIDEO_OFF__');
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({ type: 'stop-share' }));
+                    }
+                }
+
+                this.syncControlButtonsUI();
+                this.updateStageDisplay();
             },
 
             // ================= IN-CALL DOCK BUTTONS =================
@@ -3327,7 +3767,7 @@
                 if (this.camEnabled) {
                     this.stopCamStream();
                     this.camEnabled = false;
-                    if (this.videoSender && !this.screenEnabled) {
+                    if (this.videoSender && !this.screenEnabled && !this.whiteboardEnabled) {
                         await this.videoSender.replaceTrack(null).catch(() => {});
                         this.sendRoomNotice('__VIDEO_OFF__');
                         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -3336,7 +3776,11 @@
                     }
                 } else {
                     try {
-                        // Si estaba compartiendo pantalla, detener pantalla y pasar a cámara
+                        // Si estaba compartiendo pantalla o pizarra, detenerlos y pasar a cámara
+                        if (this.whiteboardEnabled) {
+                            this.stopWhiteboardStream();
+                            this.whiteboardEnabled = false;
+                        }
                         if (this.screenEnabled) {
                             this.hideNoAudioNotice();
                             this.stopScreenStream();
@@ -3392,7 +3836,11 @@
                         monitorTypeSurfaces: 'include'
                     });
 
-                    // Si tenía cámara encendida, apagar cámara para mostrar la pantalla
+                    // Si tenía pizarra o cámara encendida, apagarlas para mostrar la pantalla
+                    if (this.whiteboardEnabled) {
+                        this.stopWhiteboardStream();
+                        this.whiteboardEnabled = false;
+                    }
                     if (this.camEnabled) {
                         this.stopCamStream();
                         this.camEnabled = false;
@@ -3447,7 +3895,7 @@
                 this.stopScreenStream();
                 this.screenEnabled = false;
 
-                if (this.videoSender && !this.camEnabled) {
+                if (this.videoSender && !this.camEnabled && !this.whiteboardEnabled) {
                     await this.videoSender.replaceTrack(null).catch(() => {});
                     this.sendRoomNotice('__VIDEO_OFF__');
                     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -3553,9 +4001,11 @@
                 this.stopMicStream();
                 this.stopCamStream();
                 this.stopScreenStream();
+                this.stopWhiteboardStream();
                 this.micEnabled = false;
                 this.camEnabled = false;
                 this.screenEnabled = false;
+                this.whiteboardEnabled = false;
 
                 // El historial del chat muere al terminar la reunión
                 this.chatMessages = [];
