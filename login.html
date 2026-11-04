@@ -662,10 +662,21 @@
 
         let isRegistering = false;
 
-        // Si ya tiene sesión activa, redirigir automáticamente al dashboard (a menos que esté registrándose)
+        function getSafeRedirectUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const redirect = params.get('redirect');
+                if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+                    return redirect;
+                }
+            } catch (e) {}
+            return '/';
+        }
+
+        // Si ya tiene sesión activa, redirigir automáticamente al dashboard o url previa
         onAuthStateChanged(auth, (user) => {
             if (user && !isRegistering) {
-                window.location.href = '/';
+                window.location.href = getSafeRedirectUrl();
             }
         });
 
@@ -746,7 +757,7 @@
                 await signInWithEmailAndPassword(auth, email, password);
                 showMsg('¡Inicio de sesión exitoso! Redirigiendo...', 'success');
                 setTimeout(() => {
-                    window.location.href = '/';
+                    window.location.href = getSafeRedirectUrl();
                 }, 600);
             } catch (error) {
                 console.error("Error de autenticación:", error);
@@ -832,7 +843,7 @@
 
                 showMsg('¡Cuenta de estudiante creada con éxito! Redirigiendo...', 'success');
                 setTimeout(() => {
-                    window.location.href = '/';
+                    window.location.href = getSafeRedirectUrl();
                 }, 800);
             } catch (error) {
                 isRegistering = false;
