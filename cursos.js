@@ -942,25 +942,20 @@ let activeWeekIdByCourse = {};
 // Renderizar aviso amigable para enlaces de Canva no embebibles directamente (como canva.link)
 function renderCanvaNoticeHtml(directUrl, isAuthor = false) {
     return `
-        <div style="background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 28px 20px; text-align: center; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
-            <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(0, 196, 204, 0.12); color: #00c4cc; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 12px;">
-                <i class="fa-solid fa-palette"></i>
-            </div>
-            <h4 style="margin-bottom: 8px; color: var(--text-primary); font-size: 1.05rem;">Presentación en Canva</h4>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">
-                Esta presentación fue vinculada mediante un enlace de Canva. Puedes abrirla directamente para visualizarla o proyectarla a pantalla completa.
+        <div style="background: #ffffff; border: 1px solid #d1d5db; border-radius: 10px; padding: 24px 20px; text-align: center; margin-bottom: 18px;">
+            <h4 style="margin: 0 0 6px 0; color: #111111; font-size: 0.98rem; font-weight: 700;">Presentación en Canva</h4>
+            <p style="font-size: 0.84rem; color: #4b5563; max-width: 460px; margin: 0 auto 14px auto; line-height: 1.5;">
+                Esta presentación fue vinculada mediante un enlace externo de Canva. Puedes abrirla directamente a pantalla completa.
             </p>
             <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-                <a href="${directUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="background: #00c4cc; border-color: #00c4cc; color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Diapositivas en Canva
+                <a href="${directUrl}" target="_blank" rel="noopener noreferrer" style="background: #111111; border: 1px solid #111111; color: #ffffff; font-weight: 600; font-size: 0.82rem; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>Abrir Diapositivas en Canva</span>
                 </a>
             </div>
             ${isAuthor ? `
-                <div style="margin-top: 18px; padding: 12px 16px; background: rgba(239, 108, 0, 0.08); border-left: 3px solid var(--ubuntu-orange); border-radius: 8px; text-align: left; font-size: 0.78rem; color: var(--text-secondary); max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.4;">
-                    <strong style="color: var(--ubuntu-orange); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        <i class="fa-solid fa-lightbulb"></i> ¿Deseas previsualizarla aquí dentro sin salir?
-                    </strong>
-                    Abre tu enlace en el navegador y copia la dirección completa que aparece en la barra superior (que empieza por <code>canva.com/design/...</code>) o en Canva ve a <strong>Compartir &gt; Más &gt; Insertar</strong> y pega ese enlace al editar esta semana.
+                <div style="margin-top: 14px; padding: 10px 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-left: 3px solid #111111; border-radius: 6px; text-align: left; font-size: 0.76rem; color: #4b5563; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.45;">
+                    <strong style="color: #111111; display: block; margin-bottom: 2px;">¿Deseas previsualizarla aquí dentro sin salir?</strong>
+                    En Canva ve a <strong>Compartir &gt; Más &gt; Insertar</strong> (o copia el enlace completo <code>canva.com/design/...</code>) y pégalo al editar esta semana.
                 </div>
             ` : ''}
         </div>
@@ -1010,11 +1005,11 @@ window.formatVideoDurationBadge = function(videoEl, badgeId) {
         if (mins >= 60) {
             const hours = Math.floor(mins / 60);
             const remainMins = mins % 60;
-            durationText = ` • Duración: ${hours} h ${remainMins} min`;
+            durationText = ` • ${hours} h ${remainMins} min`;
         } else if (mins > 0) {
-            durationText = ` • Duración: ${mins} min ${secs > 0 ? secs + ' s' : ''}`;
+            durationText = ` • ${mins} min ${secs > 0 ? secs + ' s' : ''}`;
         } else {
-            durationText = ` • Duración: ${secs} s`;
+            durationText = ` • ${secs} s`;
         }
         badgeEl.textContent = durationText;
     };
@@ -1032,6 +1027,43 @@ window.formatVideoDurationBadge = function(videoEl, badgeId) {
         videoEl.addEventListener('loadeddata', onTimeUpdate);
     }
 };
+
+function renderMediaActionsHtml(m) {
+    if (m.type === 'canva_notice' || m.type === 'notebook') return '';
+    if (m.type === 'html5_video') {
+        return `
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span style="font-size: 0.75rem; color: #6b7280;">${m.formattedDate ? `${m.formattedDate}` : ''}<span id="badgeDuration_${m.id}"></span></span>
+                <div style="display: inline-flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden;">
+                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1, this)" style="border: none; background: #111111; color: #ffffff; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1x</button>
+                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1.25, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.25x</button>
+                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1.5, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.5x</button>
+                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 2, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">2x</button>
+                </div>
+                <button type="button" onclick="window.NuevoMotorGrabaciones ? window.NuevoMotorGrabaciones.downloadUrlDirect('${escapeAttr(m.directUrl)}', '${escapeAttr(m.title)}', this) : window.open('${escapeAttr(m.downloadUrl)}', '_blank')" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Descargar</span>
+                </button>
+                <a href="${m.directUrl}" target="_blank" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 500; text-decoration: none;" title="${m.actionLabel}">
+                    Abrir enlace
+                </a>
+            </div>
+        `;
+    }
+    return `
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            ${m.downloadUrl ? `
+                <a href="${m.downloadUrl}" target="_blank" download style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;" title="Descargar material en tu computadora">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Descargar</span>
+                </a>
+            ` : ''}
+            <a href="${m.directUrl}" target="_blank" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;" title="${m.actionLabel}">
+                <span>${m.actionLabel}</span>
+            </a>
+        </div>
+    `;
+}
 
 // Renderizador multimedia reusable (Video YouTube/Drive, Grabación de Clase, Diapositivas/PDF, Canva y Colab)
 function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaUrl = null, isAuthor = false, recordingUrl = null) {
@@ -1055,8 +1087,6 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             id: 'video',
             type: 'iframe',
             title: 'Video de Clase',
-            icon: 'fa-brands fa-youtube',
-            iconColor: '#ff4d4d',
             embedUrl: videoEmbedUrl,
             directUrl: standardVideoUrl,
             aspectRatio: '56.25%',
@@ -1071,8 +1101,6 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             type: 'html5_video',
             title: 'Grabación de Clase',
             formattedDate: formattedDate,
-            icon: 'fa-solid fa-video',
-            iconColor: 'var(--siemens-teal)',
             directUrl: directRecordingUrl,
             downloadUrl: downloadUrl,
             aspectRatio: '56.25%',
@@ -1085,13 +1113,11 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             id: 'doc',
             type: 'iframe',
             title: 'Diapositivas / PDF',
-            icon: 'fa-solid fa-file-powerpoint',
-            iconColor: 'var(--ubuntu-orange)',
             embedUrl: docEmbedUrl,
             directUrl: pdfUrl,
             downloadUrl: downloadUrl,
             aspectRatio: '58%',
-            actionLabel: 'Pantalla Completa'
+            actionLabel: 'Pantalla completa'
         });
     }
     if (canvaInfo) {
@@ -1100,20 +1126,16 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                 id: 'canva',
                 type: 'iframe',
                 title: 'Presentación Canva',
-                icon: 'fa-solid fa-palette',
-                iconColor: '#00c4cc',
                 embedUrl: canvaInfo.embedUrl,
                 directUrl: canvaInfo.directUrl,
                 aspectRatio: '56.25%',
-                actionLabel: 'Ver en Canva'
+                actionLabel: 'Abrir en Canva'
             });
         } else if (canvaInfo.type === 'canva_notice') {
             mediaList.push({
                 id: 'canva',
                 type: 'canva_notice',
                 title: 'Presentación Canva',
-                icon: 'fa-solid fa-palette',
-                iconColor: '#00c4cc',
                 directUrl: canvaInfo.directUrl,
                 aspectRatio: 'auto',
                 actionLabel: 'Abrir en Canva'
@@ -1125,8 +1147,6 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
             id: 'resource',
             type: resourceInfo.type,
             title: resourceInfo.title,
-            icon: resourceInfo.icon,
-            iconColor: resourceInfo.iconColor || 'var(--siemens-teal)',
             rawUrl: resourceInfo.rawUrl,
             embedUrl: resourceInfo.embedUrl,
             directUrl: resourceInfo.directUrl,
@@ -1136,14 +1156,28 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
         });
     }
 
-    if (mediaList.length > 1) {
+    if (mediaList.length > 0) {
+        const isMulti = mediaList.length > 1;
         videoContainer.innerHTML = `
-            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                ${mediaList.map((m, idx) => `
-                    <button type="button" class="btn btn-sm media-tab-btn ${idx === 0 ? 'active-tab' : ''}" onclick="switchMediaTab('${m.id}', this)" style="background: ${idx === 0 ? 'var(--siemens-teal)' : 'var(--bg-body)'}; color: ${idx === 0 ? '#fff' : 'var(--text-secondary)'}; border: 1.5px solid ${idx === 0 ? 'var(--siemens-teal)' : 'var(--border-color)'}; border-radius: 20px;">
-                        <i class="${m.icon}" style="color: ${idx === 0 ? '#fff' : m.iconColor};"></i> ${m.title}
-                    </button>
-                `).join('')}
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: #ffffff; border: 1px solid #d1d5db; border-radius: 10px; padding: 8px 12px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    ${isMulti ? mediaList.map((m, idx) => `
+                        <button type="button" class="media-tab-btn ${idx === 0 ? 'active-tab' : ''}" onclick="switchMediaTab('${m.id}', this)" style="background: ${idx === 0 ? '#111111' : '#ffffff'}; color: ${idx === 0 ? '#ffffff' : '#4b5563'}; border: 1px solid ${idx === 0 ? '#111111' : '#d1d5db'}; border-radius: 6px; padding: 5px 11px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
+                            ${m.title}
+                        </button>
+                    `).join('') : `
+                        <span style="font-weight: 600; font-size: 0.84rem; color: #111111; padding: 2px 4px;">
+                            ${mediaList[0].title}
+                        </span>
+                    `}
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    ${mediaList.map((m, idx) => `
+                        <div id="mediaActions_${m.id}" class="media-action-group" style="display: ${idx === 0 ? 'flex' : 'none'}; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            ${renderMediaActionsHtml(m)}
+                        </div>
+                    `).join('')}
+                </div>
             </div>
             ${mediaList.map((m, idx) => `
                 <div id="mediaPane_${m.id}" class="media-content-pane" style="display: ${idx === 0 ? 'block' : 'none'};">
@@ -1152,44 +1186,14 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                     ` : m.type === 'canva_notice' ? `
                         ${renderCanvaNoticeHtml(m.directUrl, isAuthor)}
                     ` : m.type === 'html5_video' ? `
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-                            <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                                <i class="${m.icon}" style="color: ${m.iconColor};"></i> ${m.title}${m.formattedDate ? ` • ${m.formattedDate}` : ''}<span id="badgeDuration_${m.id}"></span>
-                            </span>
-                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                <div style="display: inline-flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden;">
-                                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1, this)" style="border: none; background: #111111; color: #ffffff; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1x</button>
-                                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1.25, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.25x</button>
-                                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 1.5, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.5x</button>
-                                    <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${m.id}', 2, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">2x</button>
-                                </div>
-                                <button type="button" onclick="window.NuevoMotorGrabaciones ? window.NuevoMotorGrabaciones.downloadUrlDirect('${escapeAttr(m.directUrl)}', '${escapeAttr(m.title)}', this) : window.open('${escapeAttr(m.downloadUrl)}', '_blank')" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                    <span>Descargar Grabación</span>
-                                </button>
-                                <a href="${m.directUrl}" target="_blank" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; text-decoration: none;" title="${m.actionLabel}">
-                                    Abrir enlace
-                                </a>
-                            </div>
-                        </div>
-                        <div style="margin-bottom: 20px; border-radius: 10px; overflow: hidden; background: #111111; border: 1px solid #d1d5db;">
+                        <div style="margin-bottom: 18px; border-radius: 10px; overflow: hidden; background: #111111; border: 1px solid #d1d5db;">
                             <video id="courseVideo_${m.id}" controls playsinline preload="metadata" onloadedmetadata="window.formatVideoDurationBadge(this, 'badgeDuration_${m.id}')" style="width: 100%; display: block; max-height: 480px; outline: none; background: #111111;" src="${m.directUrl}">
                                 <source src="${m.directUrl}" type="${String(m.directUrl || '').toLowerCase().includes('.mp4') ? 'video/mp4' : 'video/webm'}">
                                 Tu navegador no soporta reproducción directa de video.
                             </video>
                         </div>
                     ` : `
-                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 6px; gap: 8px; flex-wrap: wrap;">
-                            ${m.downloadUrl ? `
-                                <a href="${m.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar material en tu computadora">
-                                    <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Material
-                                </a>
-                            ` : ''}
-                            <a href="${m.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${m.actionLabel}">
-                                <i class="fa-solid fa-arrow-up-right-from-square"></i> ${m.actionLabel}
-                            </a>
-                        </div>
-                        <div style="position: relative; padding-bottom: ${m.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                        <div style="position: relative; padding-bottom: ${m.aspectRatio}; height: 0; overflow: hidden; border-radius: 10px; margin-bottom: 18px; border: 1px solid #d1d5db; background: #ffffff;">
                             <iframe src="${m.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
                         </div>
                     `}
@@ -1204,73 +1208,11 @@ function renderCourseMedia(videoContainer, videoUrl, pdfUrl, resourceUrl, canvaU
                 if (nbContainer) loadAndRenderNotebook(nbContainer, m.rawUrl, m.directUrl);
             }
         });
-    } else if (mediaList.length === 1) {
-        const item = mediaList[0];
-        if (item.type === 'notebook') {
-            videoContainer.innerHTML = `<div id="notebookView_single"></div>`;
-            videoContainer.style.display = 'block';
-            loadAndRenderNotebook(document.getElementById('notebookView_single'), item.rawUrl, item.directUrl);
-        } else if (item.type === 'canva_notice') {
-            videoContainer.innerHTML = renderCanvaNoticeHtml(item.directUrl, isAuthor);
-            videoContainer.style.display = 'block';
-        } else if (item.type === 'html5_video') {
-            videoContainer.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-                    <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                        <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}${item.formattedDate ? ` • ${item.formattedDate}` : ''}<span id="badgeDuration_${item.id}"></span>
-                    </span>
-                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                        <div style="display: inline-flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden;">
-                            <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${item.id}', 1, this)" style="border: none; background: #111111; color: #ffffff; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1x</button>
-                            <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${item.id}', 1.25, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.25x</button>
-                            <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${item.id}', 1.5, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">1.5x</button>
-                            <button type="button" class="course-speed-btn" onclick="window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.setCourseVideoSpeed('courseVideo_${item.id}', 2, this)" style="border: none; border-left: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">2x</button>
-                        </div>
-                        <button type="button" onclick="window.NuevoMotorGrabaciones ? window.NuevoMotorGrabaciones.downloadUrlDirect('${escapeAttr(item.directUrl)}', '${escapeAttr(item.title)}', this) : window.open('${escapeAttr(item.downloadUrl)}', '_blank')" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" title="Descargar grabación en tu computadora">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            <span>Descargar Grabación</span>
-                        </button>
-                        <a href="${item.directUrl}" target="_blank" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; text-decoration: none;" title="${item.actionLabel}">
-                            Abrir enlace
-                        </a>
-                    </div>
-                </div>
-                <div style="margin-bottom: 20px; border-radius: 10px; overflow: hidden; background: #111111; border: 1px solid #d1d5db;">
-                    <video id="courseVideo_${item.id}" controls playsinline preload="metadata" onloadedmetadata="window.formatVideoDurationBadge(this, 'badgeDuration_${item.id}')" style="width: 100%; display: block; max-height: 480px; outline: none; background: #111111;" src="${item.directUrl}">
-                        <source src="${item.directUrl}" type="${String(item.directUrl || '').toLowerCase().includes('.mp4') ? 'video/mp4' : 'video/webm'}">
-                        Tu navegador no soporta reproducción directa de video.
-                    </video>
-                </div>
-            `;
-            videoContainer.style.display = 'block';
-        } else {
-            videoContainer.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                    <span style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); display: flex; align-items: center; gap: 6px;">
-                        <i class="${item.icon}" style="color: ${item.iconColor};"></i> ${item.title}
-                    </span>
-                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        ${item.downloadUrl ? `
-                            <a href="${item.downloadUrl}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem; border-color: var(--border-color); color: var(--text-primary); display: inline-flex; align-items: center; gap: 5px;" title="Descargar material en tu computadora">
-                                <i class="fa-solid fa-download" style="color: var(--ubuntu-green);"></i> Descargar Material
-                            </a>
-                        ` : ''}
-                        <a href="${item.directUrl}" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" title="${item.actionLabel}">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.actionLabel}
-                        </a>
-                    </div>
-                </div>
-                <div style="position: relative; padding-bottom: ${item.aspectRatio}; height: 0; overflow: hidden; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
-                    <iframe src="${item.embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
-                </div>
-            `;
-            videoContainer.style.display = 'block';
-        }
     } else if (videoUrl) {
         videoContainer.innerHTML = `
             <div style="margin-bottom: 16px;">
-                <a href="${videoUrl}" target="_blank" class="btn btn-orange" style="width: 100%; justify-content: center;">
-                    <i class="fa-solid fa-play"></i> Ver Grabación de Clase (Google Drive / Enlace)
+                <a href="${videoUrl}" target="_blank" style="display: flex; width: 100%; justify-content: center; align-items: center; gap: 8px; padding: 10px 14px; background: #ffffff; color: #111111; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.84rem; font-weight: 600; text-decoration: none;">
+                    <span>Ver Grabación de Clase (Enlace externo)</span>
                 </a>
             </div>`;
         videoContainer.style.display = 'block';
@@ -1522,22 +1464,19 @@ export function openCourseDetail(id) {
                 </div>
 
                 ${activeWeek.anuncio && activeWeek.anuncio.trim() ? `
-                    <div class="week-announcement-banner" style="background: rgba(239, 108, 0, 0.08); border: 1.5px solid rgba(239, 108, 0, 0.35); border-left: 5px solid var(--ubuntu-orange); border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; display: flex; align-items: flex-start; gap: 14px; box-shadow: var(--shadow-sm);">
-                        <div style="background: var(--ubuntu-orange); color: #ffffff; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1rem; margin-top: 1px; box-shadow: 0 2px 6px rgba(239, 108, 0, 0.3);">
-                            <i class="fa-solid fa-bullhorn"></i>
-                        </div>
+                    <div class="week-announcement-banner" style="background: #ffffff; border: 1px solid #d1d5db; border-left: 3px solid #111111; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: flex-start; gap: 12px;">
                         <div style="flex: 1; min-width: 0;">
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 8px;">
-                                <strong style="color: var(--ubuntu-orange); font-size: 0.84rem; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                                <strong style="color: #111111; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;">
                                     Aviso del Docente
                                 </strong>
                                 ${isAuthor ? `
-                                    <button type="button" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')" style="background: none; border: none; color: var(--text-muted); font-size: 0.74rem; cursor: pointer; text-decoration: underline; padding: 0;" title="Editar o borrar este anuncio">
-                                        <i class="fa-solid fa-pen-to-square"></i> Editar aviso
+                                    <button type="button" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')" style="background: none; border: none; color: #6b7280; font-size: 0.74rem; cursor: pointer; text-decoration: underline; padding: 0;" title="Editar o borrar este anuncio">
+                                        Editar aviso
                                     </button>
                                 ` : ''}
                             </div>
-                            <p style="margin: 0; font-size: 0.88rem; color: var(--text-primary); line-height: 1.55; white-space: pre-wrap; word-break: break-word;">${activeWeek.anuncio.trim()}</p>
+                            <p style="margin: 0; font-size: 0.86rem; color: #374151; line-height: 1.5; white-space: pre-wrap; word-break: break-word;">${activeWeek.anuncio.trim()}</p>
                         </div>
                     </div>
                 ` : ''}
@@ -1554,14 +1493,13 @@ export function openCourseDetail(id) {
             videoContainer.style.display = 'block';
             videoContainer.innerHTML = `
                 <div class="week-empty-state">
-                    <i class="fa-solid ${isAuthor ? 'fa-folder-plus' : 'fa-folder-open'}"></i>
-                    <h4 style="color: var(--text-primary); margin-bottom: 6px;">Sin materiales aún</h4>
-                    <p style="font-size: 0.85rem; max-width: 420px; margin: 0 auto 12px auto;">
+                    <h4 style="color: #111111; margin: 0 0 6px 0; font-size: 0.95rem; font-weight: 700;">Sin materiales aún</h4>
+                    <p style="font-size: 0.84rem; color: #4b5563; max-width: 420px; margin: 0 auto 12px auto;">
                         ${isAuthor ? 'Esta semana no tiene videos ni presentaciones cargadas. Haz clic en el botón para agregar el enlace de YouTube, Drive o Canva.' : 'El profesor aún no ha cargado los materiales de esta semana.'}
                     </p>
                     ${isAuthor ? `
-                        <button type="button" class="btn btn-sm btn-primary" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')">
-                            <i class="fa-solid fa-plus"></i> Cargar Materiales a esta Semana
+                        <button type="button" onclick="window.openWeekModal('${course.id}', '${activeWeek.id}')" style="background: #111111; color: #ffffff; border: 1px solid #111111; border-radius: 8px; padding: 8px 14px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+                            Cargar materiales a esta semana
                         </button>
                     ` : ''}
                 </div>
@@ -1573,15 +1511,15 @@ export function openCourseDetail(id) {
         if (weeksNavEl) {
             if (isAuthor) {
                 weeksNavEl.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 153, 153, 0.08); border: 1.5px dashed var(--siemens-teal); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px dashed #9ca3af; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
                         <div>
-                            <strong style="color: var(--siemens-teal); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                                <i class="fa-solid fa-layer-group"></i> Estructura por Semanas
+                            <strong style="color: #111111; font-size: 0.86rem; display: block;">
+                                Estructura por Semanas
                             </strong>
-                            <span style="font-size: 0.78rem; color: var(--text-secondary);">Convierte este curso para organizarlo por Semana 1, Semana 2 y publicar progresivamente.</span>
+                            <span style="font-size: 0.78rem; color: #4b5563;">Convierte este curso para organizarlo por Semana 1, Semana 2 y publicar progresivamente.</span>
                         </div>
-                        <button type="button" class="btn btn-sm btn-primary" onclick="window.convertCourseToWeeks('${course.id}')">
-                            <i class="fa-solid fa-plus"></i> Activar Organización por Semanas
+                        <button type="button" onclick="window.convertCourseToWeeks('${course.id}')" style="background: #111111; color: #ffffff; border: 1px solid #111111; border-radius: 8px; padding: 7px 14px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">
+                            Activar Organización por Semanas
                         </button>
                     </div>
                 `;
