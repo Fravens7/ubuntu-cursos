@@ -2261,6 +2261,8 @@
 
             async ensureAudioPermissionWarmup() {
                 try {
+                    const host = window.location.hostname;
+                    if (host !== 'localhost' && host !== '127.0.0.1') return;
                     const hasLiveWarmup = this._warmUpMicStream && this._warmUpMicStream.getAudioTracks().some(t => t.readyState === 'live');
                     const hasLiveMic = this.micStream && this.micStream.getAudioTracks().some(t => t.readyState === 'live');
                     if (hasLiveWarmup || hasLiveMic) return;
@@ -3000,7 +3002,9 @@
                         if (this.audioTransceiver.direction !== 'sendonly' && this.audioTransceiver.direction !== 'sendrecv') {
                             try { this.audioTransceiver.direction = 'sendonly'; } catch (e) {}
                         }
-                        await this.audioSender.replaceTrack(targetTrack);
+                        if (this.audioSender.track !== targetTrack) {
+                            await this.audioSender.replaceTrack(targetTrack);
+                        }
                         const curDir = this.audioTransceiver.currentDirection;
                         return (!curDir || (curDir !== 'sendonly' && curDir !== 'sendrecv'));
                     } else {
@@ -3012,7 +3016,7 @@
                         return true;
                     }
                 } else {
-                    if (this.audioSender) {
+                    if (this.audioSender && this.audioSender.track !== null) {
                         await this.audioSender.replaceTrack(null).catch(() => {});
                     }
                     return false;
@@ -3027,7 +3031,9 @@
                     if (this.videoTransceiver.direction !== 'sendonly' && this.videoTransceiver.direction !== 'sendrecv') {
                         try { this.videoTransceiver.direction = 'sendonly'; } catch (e) {}
                     }
-                    await this.videoSender.replaceTrack(videoTrack);
+                    if (this.videoSender.track !== videoTrack) {
+                        await this.videoSender.replaceTrack(videoTrack);
+                    }
                     const curDir = this.videoTransceiver.currentDirection;
                     return (!curDir || (curDir !== 'sendonly' && curDir !== 'sendrecv'));
                 } else {
