@@ -238,4 +238,85 @@ Swap:              0           0           0
 > - En esta prueba automatizada abrimos **9 navegadores Google Chrome completos dentro de la misma máquina de 2 núcleos**, donde cada instancia de Chrome consume ~210–270 MB de RAM y ~10–14% de CPU codificando/decodificando audio Opus y renderizando el DOM (elevando el `LoadAvg` a `15.38` y la RAM al `49.9%`).
 > - En producción (`clases.ubuntuafroperuana.org`), **los navegadores Chrome NO corren dentro del servidor**: cada estudiante ejecuta su propio Chrome en su PC o celular. El servidor SFU únicamente reenvía paquetes RTP en memoria entre los sockets, consumiendo **menos del 2%–5% de CPU y ~30 MB de RAM** para 8, 15 o 25 estudiantes simultáneos.
 
+---
+
+# Parte IV: Guía y "Tips Técnicos" para Otras IAs / Desarrolladores (Lecciones Aprendidas al Probar en Chrome)
+
+> [!TIP]
+> **Si eres otra IA o desarrollador y necesitas volver a probar el audio o múltiples usuarios en [meet.html](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html), lee esta sección antes de empezar.** Te ahorrará horas de depuración contra errores de entorno, proxies, WebRTC y Chrome headless.
+
+## 13. Problemas Encontrados Durante las Pruebas y Cómo Evitarlos ("Gotchas" Técnicos)
+
+### Tip 1: Cómo lanzar Google Chrome con Proxy para Firebase sin romper `localhost` (`MeetApp undefined`)
+- **El problema que tuvimos:** Al abrir múltiples instancias de Google Chrome desde un script, si no le pasas el proxy del entorno o si le pasas un puerto fijo incorrecto, Chrome **no puede descargar el SDK de Firebase** (`https://www.gstatic.com/firebasejs/...`) ni autenticar contra `identitytoolkit.googleapis.com`. Como los scripts `<script type="module">` de [login.html](file:///home/antigravity/Fravens7/ubuntu-cursos/login.html) y [meet.html](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html) importan Firebase al inicio, si falla esa descarga, **`window.MeetApp` nunca llega a definirse** (`TypeError: Cannot read properties of undefined (reading 'userName')`).
+- **Cómo debes hacerlo siempre:**
+  1. Lee dinámicamente `const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY`.
+  2. Pásale a Chrome **ambas** banderas:
+     - `--proxy-server=${proxyUrl}` (para que alcance Firebase Auth / Firestore / gstatic).
+     - `--proxy-bypass-list=localhost,127.0.0.1` (para que el tráfico HTTP y el WebSocket local `ws://localhost:PORT/ws` NO se vayan por el proxy externo).
+  3. **Banderas obligatorias de Chrome para pruebas de audio/video WebRTC reales:**
+     ```text
+     --headless=new
+     --no-sandbox
+     --disable-setuid-sandbox
+     --disable-dev-shm-usage
+     --ignore-certificate-errors
+     --allow-loopback-in-peer-connection
+     --use-fake-ui-for-media-stream
+     --use-fake-device-for-media-stream
+     --autoplay-policy=no-user-gesture-required
+     ```
+  4. Dale a cada participante su propio `--user-data-dir=/tmp/chrome-peer-N` y su propio `--remote-debugging-port=933N` para que las sesiones de Firebase Auth (`IndexedDB` / `localStorage`) no se pisen entre el Profesor y los Estudiantes.
+
+---
+
+### Tip 2: Sin paquetes `npm` externos (`ws` / `puppeteer` / `playwright`) -> Usa `CDP` nativo + `SimpleWSServer`
+- **El problema que tuvimos:** Al intentar hacer `import { WebSocketServer } from 'ws'`, Node lanzó `ERR_MODULE_NOT_FOUND: Cannot find package 'ws'` porque este repositorio es 100% frontend estático sin `node_modules`.
+- **Cómo debes hacerlo siempre:**
+  - En **Node.js 24** (instalado en el entorno), el cliente `WebSocket` y `fetch` ya son **globales nativos** (`new WebSocket(wsDebuggerUrl)`).
+  - Para controlar Chrome como un humano sin Puppeteer, conéctate a `http://127.0.0.1:${debugPort}/json/list`, obtén `webSocketDebuggerUrl` y envía comandos del protocolo Chrome DevTools (`Page.navigate`, `Runtime.evaluate`) por ese WebSocket.
+  - Para el servidor de señalización WebSocket de prueba, implementa el handshake RFC 6455 con `crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64')` y decodifica frames `0x81` en ~70 líneas de Node puro (`SimpleWSServer`).
+
+---
+
+### Tip 3: La trampa silenciosa de Chromium al reenviar pistas en un puente SFU (`outboundPackets: 0`)
+- **El problema que tuvimos:** Cuando creas un navegador puente ("SFU Bridge") en Chrome que recibe la pista de audio del Participante A (`pcA.ontrack`) y la reenvía al Participante B con `pcB.addTransceiver(e.track, { direction: 'sendonly' })`, **Chromium NO reenvía ningún paquete RTP si la pista entrante `e.track` no se está consumiendo en el navegador puente** o si el motor de audio del puente está dormido.
+- **Cómo debes hacerlo siempre en el navegador puente SFU:**
+  1. Apenas arranque el navegador puente SFU, abre un `getUserMedia({ audio: true })` mudo (`window._sfuKeepStream`) para despertar el hilo de audio interno de Chromium.
+  2. En `pc.ontrack` del puente SFU, conecta cada `e.track` entrante a un elemento `<audio muted autoplay>` o `<video muted autoplay>` dentro del `document.body` del puente y llama a `.play()`. Sin ese sink activo, Chromium descarta los frames decodificados y no reenvía paquetes a los demás participantes.
+
+---
+
+### Tip 4: Condición de carrera en el WebSocket (`ws.onMessage` antes de `await peerReadyPromise`)
+- **El problema que tuvimos:** Cuando un navegador se conecta por WebSocket a `localhost`, en cuanto recibe `{ type: 'joined' }` envía en **menos de 2 milisegundos** el mensaje `{ type: 'request-sync' }` o su `{ type: 'offer' }`. Si en el servidor registras `ws.onMessage` *después* de un `await` asíncrono, el primer mensaje del cliente llega mientras el `await` está en curso y se pierde en el vacío.
+- **Cómo debes hacerlo siempre:**
+  - Registra `ws.onMessage = async (raw) => { await peerReadyPromise; ... }` **síncronamente en la primera línea** al aceptar el socket, antes de cualquier `await`.
+
+---
+
+### Tip 5: El Puente SFU debe ser "Impolite Peer" (RFC 8829) para evitar `InvalidAccessError: order of m-lines`
+- **El problema que tuvimos:** Con 6 u 8 navegadores en paralelo, ocurre con frecuencia que un estudiante enciende su micrófono y envía un `offer` al mismo tiempo que el SFU le está enviando un `offer` con la pista de otro compañero (`glare`).
+  - [meet.html](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html) ya actúa como **Polite Peer** (hace `rollback` de su oferta local, acepta la oferta del SFU, envía `answer` y re-publica su micrófono 50ms después).
+  - Si tu servidor SFU de prueba *también* hace `rollback` al mismo tiempo, ambos lados deshacen su SDP y el siguiente ciclo falla con `DOMException: InvalidAccessError: Failed to execute 'setRemoteDescription' on 'RTCPeerConnection': The order of m-lines in subsequent offer doesn't match order from previous offer/answer`.
+- **Cómo debes hacerlo siempre:**
+  - En el puente SFU (`sfuHandleOffer`), si `entry.pc.signalingState !== 'stable'`, **ignora la oferta entrante (`return null`)** sin hacer `rollback` en el SFU. Así el cliente (`Polite Peer`) resuelve la colisión limpiamente y vuelve a ofertar en estado `stable`.
+  - Además, cuando simules clics humanos en botones que disparan renegociaciones SDP seguidas (por ejemplo, encender Micrófono `#btnCallMic` y luego encender Cámara `#btnCallCam`), deja al menos **300–400ms** entre clic y clic (como haría un humano con el mouse) para no lanzar dos `createOffer()` simultáneos desde el mismo cliente.
+
+---
+
+### Tip 6: Cuentas de Prueba listas en Firebase Auth + Firestore (`usuarios`)
+Para futuras pruebas, estas **8 cuentas reales** ya existen en Firebase Auth y tienen su documento creado en la colección `usuarios` de Firestore con sus roles correspondientes:
+
+| Rol en Firestore (`usuarios.rol`) | Correo Electrónico | Contraseña | Nombre en Plataforma |
+| :--- | :--- | :--- | :--- |
+| **`profesor`** | `profe1@gmail.com` | `admin1` | `profe1` |
+| **`estudiante`** | `test@gmail.com` | `admin2` | `franco estudiante` |
+| **`estudiante`** | `alumno_ingles1@ubuntu.org` | `alumno123` | `Ana Torres` |
+| **`estudiante`** | `alumno_ingles2@ubuntu.org` | `alumno123` | `Carlos Mendoza` |
+| **`estudiante`** | `alumno_ingles3@ubuntu.org` | `alumno123` | `Lucia Paredes` |
+| **`estudiante`** | `alumno_ingles4@ubuntu.org` | `alumno123` | `Diego Quispe` |
+| **`estudiante`** | `alumno_ingles5@ubuntu.org` | `alumno123` | `Valeria Rojas` |
+| **`estudiante`** | `alumno_ingles6@ubuntu.org` | `alumno123` | `Mateo Silva` |
+
+
 
