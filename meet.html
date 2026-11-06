@@ -2228,7 +2228,12 @@
             ws: null,
             pc: null,
             audioSender: null,
+            audioTransceiver: null,
             videoSender: null,
+            videoTransceiver: null,
+            _pendingInitialSync: false,
+            _warmUpMicStream: null,
+            _audioUnlockBound: false,
             pendingCandidates: [],
             remoteVideoStreams: new Map(),
             remoteShareTypes: new Map(),
@@ -2253,6 +2258,27 @@
             voiceDataArray: null,
             smoothedVoiceLevel: 0,
             voiceLoopRunning: false,
+
+            async ensureAudioPermissionWarmup() {
+                try {
+                    const hasLiveWarmup = this._warmUpMicStream && this._warmUpMicStream.getAudioTracks().some(t => t.readyState === 'live');
+                    const hasLiveMic = this.micStream && this.micStream.getAudioTracks().some(t => t.readyState === 'live');
+                    if (hasLiveWarmup || hasLiveMic) return;
+                    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') return;
+                    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    s.getAudioTracks().forEach(t => { t.enabled = false; });
+                    this._warmUpMicStream = s;
+                    this.ensureAudioContext();
+                    this.unlockAllRemoteAudio();
+                } catch (e) {}
+            },
+
+            stopWarmUpMicStream() {
+                if (this._warmUpMicStream) {
+                    this._warmUpMicStream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+                    this._warmUpMicStream = null;
+                }
+            },
 
             ensureAudioContext() {
                 if (!this.audioCtx) {
@@ -2294,7 +2320,7 @@
                 this.localAnalyser = null;
             },
 
-            attachRemoteAudioAnalyser(stream, key) {
+            attachRemoteAudioAnalyser(stream, key, audioEl = null) {
                 try {
                     this.ensureAudioContext();
                     if (!this.audioCtx || !stream) return;
@@ -2305,13 +2331,28 @@
                     }
                     const sourceKey = key || stream.id || 'default';
                     if (this.remoteAudioSources.has(sourceKey)) {
-                        try { this.remoteAudioSources.get(sourceKey).disconnect(); } catch (e) {}
+                        const prev = this.remoteAudioSources.get(sourceKey);
+                        try { prev.srcNode ? prev.srcNode.disconnect() : prev.disconnect(); } catch (e) {}
+                        try { if (prev.fallbackGain) prev.fallbackGain.disconnect(); } catch (e) {}
                     }
                     const srcNode = this.audioCtx.createMediaStreamSource(stream);
                     srcNode.connect(this.remoteAnalyser);
-                    this.remoteAudioSources.set(sourceKey, srcNode);
+
+                    const fallbackGain = this.audioCtx.createGain();
+                    fallbackGain.gain.value = (audioEl && audioEl.paused) ? 1.0 : 0.0;
+                    srcNode.connect(fallbackGain);
+                    fallbackGain.connect(this.audioCtx.destination);
+
+                    this.remoteAudioSources.set(sourceKey, { srcNode, fallbackGain, audioEl });
                     this.remoteSourceNode = srcNode;
                 } catch (e) {}
+            },
+
+            syncFallbackGainForAudio(sourceKey, useFallback) {
+                const entry = this.remoteAudioSources.get(sourceKey);
+                if (entry && entry.fallbackGain) {
+                    entry.fallbackGain.gain.value = useFallback ? 1.0 : 0.0;
+                }
             },
 
             readAnalyserRms(analyser) {
@@ -2750,7 +2791,9 @@
                 document.getElementById('endedView').style.display = 'none';
                 document.getElementById('callView').style.display = 'flex';
                 this.inCall = true;
+                await this.ensureAudioPermissionWarmup();
                 this.ensureAudioContext();
+                this.unlockAllRemoteAudio();
 
                 if (window.NuevoMotorGrabaciones) {
                     window.NuevoMotorGrabaciones.mountMeetControls(this);
@@ -2856,7 +2899,14 @@
                     audios.forEach(a => {
                         a.muted = false;
                         a.volume = 1.0;
-                        a.play().catch(() => {});
+                        const p = a.play();
+                        if (p !== undefined) {
+                            p.then(() => {
+                                this.syncFallbackGainForAudio(a.id, false);
+                            }).catch(() => {
+                                this.syncFallbackGainForAudio(a.id, true);
+                            });
+                        }
                     });
                 }
             },
@@ -2945,11 +2995,20 @@
 
                 if (targetTrack) {
                     targetTrack.enabled = true;
-                    if (this.audioSender) {
+                    const outStream = targetStream || new MediaStream([targetTrack]);
+                    if (this.audioSender && this.audioTransceiver) {
+                        if (this.audioTransceiver.direction !== 'sendonly' && this.audioTransceiver.direction !== 'sendrecv') {
+                            try { this.audioTransceiver.direction = 'sendonly'; } catch (e) {}
+                        }
                         await this.audioSender.replaceTrack(targetTrack);
-                        return false;
+                        const curDir = this.audioTransceiver.currentDirection;
+                        return (!curDir || (curDir !== 'sendonly' && curDir !== 'sendrecv'));
                     } else {
-                        this.audioSender = this.pc.addTrack(targetTrack, targetStream || new MediaStream([targetTrack]));
+                        this.audioTransceiver = this.pc.addTransceiver(targetTrack, {
+                            direction: 'sendonly',
+                            streams: [outStream]
+                        });
+                        this.audioSender = this.audioTransceiver.sender;
                         return true;
                     }
                 } else {
@@ -2957,6 +3016,58 @@
                         await this.audioSender.replaceTrack(null).catch(() => {});
                     }
                     return false;
+                }
+            },
+
+            async syncOrAddVideoTrack(videoTrack, videoStream) {
+                if (!this.pc || !videoTrack) return false;
+                videoTrack.enabled = true;
+                const outStream = videoStream || new MediaStream([videoTrack]);
+                if (this.videoSender && this.videoTransceiver) {
+                    if (this.videoTransceiver.direction !== 'sendonly' && this.videoTransceiver.direction !== 'sendrecv') {
+                        try { this.videoTransceiver.direction = 'sendonly'; } catch (e) {}
+                    }
+                    await this.videoSender.replaceTrack(videoTrack);
+                    const curDir = this.videoTransceiver.currentDirection;
+                    return (!curDir || (curDir !== 'sendonly' && curDir !== 'sendrecv'));
+                } else {
+                    this.videoTransceiver = this.pc.addTransceiver(videoTrack, {
+                        direction: 'sendonly',
+                        streams: [outStream]
+                    });
+                    this.videoSender = this.videoTransceiver.sender;
+                    return true;
+                }
+            },
+
+            async ensureLocalTracksPublished() {
+                if (!this.pc || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                let needsOffer = false;
+
+                if (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0)) {
+                    const audioNeeds = await this.syncOutgoingAudio();
+                    if (audioNeeds) needsOffer = true;
+                }
+
+                let activeVideoTrack = null;
+                let activeVideoStream = null;
+                if (this.whiteboardEnabled && this.whiteboardStream) {
+                    activeVideoTrack = this.whiteboardStream.getVideoTracks()[0];
+                    activeVideoStream = this.whiteboardStream;
+                } else if (this.screenEnabled && this.screenStream) {
+                    activeVideoTrack = this.screenStream.getVideoTracks()[0];
+                    activeVideoStream = this.screenStream;
+                } else if (this.camEnabled && this.camStream) {
+                    activeVideoTrack = this.camStream.getVideoTracks()[0];
+                    activeVideoStream = this.camStream;
+                }
+                if (activeVideoTrack) {
+                    const videoNeeds = await this.syncOrAddVideoTrack(activeVideoTrack, activeVideoStream);
+                    if (videoNeeds) needsOffer = true;
+                }
+
+                if (needsOffer) {
+                    await this.sendOffer();
                 }
             },
 
@@ -2982,11 +3093,19 @@
                 this.ws = new WebSocket(url);
 
                 this.ws.onopen = async () => {
-                    // Si el usuario tiene micrófono, cámara o pantalla activa (al entrar o al cambiar de grupo), publicar de inmediato.
-                    // Si entra como oyente (todo apagado), solicitar sincronización de pistas activas al servidor sin colisión SDP.
-                    if (this.micEnabled || this.camEnabled || this.screenEnabled) {
+                    // Si el usuario tiene micrófono, cámara, pantalla o pizarra activa (al entrar o al cambiar de grupo), publicar de inmediato
+                    // y solicitar sincronización de pistas existentes en cuanto quede estable la negociación.
+                    if (this.micEnabled || this.camEnabled || this.screenEnabled || this.whiteboardEnabled) {
+                        this._pendingInitialSync = true;
                         await this.publishInitialLobbyTracks();
+                        setTimeout(() => {
+                            if (this._pendingInitialSync && this.ws && this.ws.readyState === WebSocket.OPEN && (!this.pc || this.pc.signalingState === 'stable')) {
+                                this._pendingInitialSync = false;
+                                this.ws.send(JSON.stringify({ type: 'request-sync' }));
+                            }
+                        }, 450);
                     } else if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this._pendingInitialSync = false;
                         this.ws.send(JSON.stringify({ type: 'request-sync' }));
                     }
                 };
@@ -3090,7 +3209,9 @@
                     try { this.pc.close(); } catch (e) {}
                 }
                 this.audioSender = null;
+                this.audioTransceiver = null;
                 this.videoSender = null;
+                this.videoTransceiver = null;
                 this.pendingCandidates = [];
 
                 this.pc = new RTCPeerConnection({
@@ -3111,30 +3232,57 @@
 
                     if (e.track.kind === 'audio') {
                         const audioContainer = document.getElementById('remoteAudios');
-                        const safeId = 'aud_' + (ownerPeerId || e.track.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+                        const safeId = 'aud_' + String(e.track.id || ownerPeerId || 'remote').replace(/[^a-zA-Z0-9_-]/g, '_');
+                        if (ownerPeerId && audioContainer) {
+                            audioContainer.querySelectorAll(`audio[data-owner-peer="${ownerPeerId}"]`).forEach(oldEl => {
+                                if (oldEl.id !== safeId) {
+                                    const oldTracks = oldEl.srcObject ? oldEl.srcObject.getAudioTracks() : [];
+                                    const allEnded = oldTracks.every(t => t.readyState === 'ended');
+                                    if (allEnded) {
+                                        if (this.remoteAudioSources.has(oldEl.id)) {
+                                            const oldEntry = this.remoteAudioSources.get(oldEl.id);
+                                            try { oldEntry.srcNode ? oldEntry.srcNode.disconnect() : oldEntry.disconnect(); } catch (err) {}
+                                            try { if (oldEntry.fallbackGain) oldEntry.fallbackGain.disconnect(); } catch (err) {}
+                                            this.remoteAudioSources.delete(oldEl.id);
+                                        }
+                                        oldEl.remove();
+                                    }
+                                }
+                            });
+                        }
                         let audioEl = document.getElementById(safeId);
                         if (!audioEl) {
                             audioEl = document.createElement('audio');
                             audioEl.id = safeId;
                             audioEl.autoplay = true;
                             audioEl.playsInline = true;
+                            if (ownerPeerId) audioEl.setAttribute('data-owner-peer', ownerPeerId);
                             audioContainer.appendChild(audioEl);
+                        } else if (ownerPeerId) {
+                            audioEl.setAttribute('data-owner-peer', ownerPeerId);
                         }
                         const stream = new MediaStream([e.track]);
                         audioEl.srcObject = stream;
                         audioEl.muted = false;
                         audioEl.volume = 1.0;
-                        this.attachRemoteAudioAnalyser(stream, safeId);
+                        this.attachRemoteAudioAnalyser(stream, safeId, audioEl);
 
                         const tryPlayAudio = () => {
+                            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                                this.audioCtx.resume().catch(() => {});
+                            }
                             const playPromise = audioEl.play();
                             if (playPromise !== undefined) {
                                 playPromise.then(() => {
+                                    this.syncFallbackGainForAudio(safeId, false);
                                     const unmuteBtn = document.getElementById('btnStageUnmute');
                                     if (unmuteBtn) unmuteBtn.classList.remove('is-visible');
                                 }).catch(() => {
-                                    const unmuteBtn = document.getElementById('btnStageUnmute');
-                                    if (unmuteBtn) unmuteBtn.classList.add('is-visible');
+                                    this.syncFallbackGainForAudio(safeId, true);
+                                    if (!this.audioCtx || this.audioCtx.state !== 'running') {
+                                        const unmuteBtn = document.getElementById('btnStageUnmute');
+                                        if (unmuteBtn) unmuteBtn.classList.add('is-visible');
+                                    }
                                     const resumeOnGesture = () => {
                                         this.unlockAllRemoteAudio();
                                         window.removeEventListener('click', resumeOnGesture);
@@ -3144,6 +3292,14 @@
                                     window.addEventListener('touchend', resumeOnGesture, { once: true });
                                 });
                             }
+                        };
+                        audioEl.onplaying = () => {
+                            this.syncFallbackGainForAudio(safeId, false);
+                            const unmuteBtn = document.getElementById('btnStageUnmute');
+                            if (unmuteBtn) unmuteBtn.classList.remove('is-visible');
+                        };
+                        e.track.onunmute = () => {
+                            tryPlayAudio();
                         };
                         tryPlayAudio();
                         return;
@@ -3188,37 +3344,7 @@
             },
 
             async publishInitialLobbyTracks() {
-                if (!this.pc) return;
-                let added = false;
-
-                if (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0)) {
-                    const audioAdded = await this.syncOutgoingAudio();
-                    if (audioAdded) added = true;
-                }
-
-                if (this.whiteboardEnabled && this.whiteboardStream) {
-                    const wbTrack = this.whiteboardStream.getVideoTracks()[0];
-                    if (wbTrack) {
-                        this.videoSender = this.pc.addTrack(wbTrack, this.whiteboardStream);
-                        added = true;
-                    }
-                } else if (this.screenEnabled && this.screenStream) {
-                    const screenTrack = this.screenStream.getVideoTracks()[0];
-                    if (screenTrack) {
-                        this.videoSender = this.pc.addTrack(screenTrack, this.screenStream);
-                        added = true;
-                    }
-                } else if (this.camEnabled && this.camStream) {
-                    const videoTrack = this.camStream.getVideoTracks()[0];
-                    if (videoTrack) {
-                        this.videoSender = this.pc.addTrack(videoTrack, this.camStream);
-                        added = true;
-                    }
-                }
-
-                if (added) {
-                    await this.sendOffer();
-                }
+                await this.ensureLocalTracksPublished();
             },
 
             async sendOffer() {
@@ -3258,11 +3384,25 @@
                             this.remoteVideoStreams.delete(msg.peerId);
                             const safeAudId = 'aud_' + String(msg.peerId).replace(/[^a-zA-Z0-9_-]/g, '_');
                             if (this.remoteAudioSources.has(safeAudId)) {
-                                try { this.remoteAudioSources.get(safeAudId).disconnect(); } catch (e) {}
+                                const oldEntry = this.remoteAudioSources.get(safeAudId);
+                                try { oldEntry.srcNode ? oldEntry.srcNode.disconnect() : oldEntry.disconnect(); } catch (e) {}
+                                try { if (oldEntry.fallbackGain) oldEntry.fallbackGain.disconnect(); } catch (e) {}
                                 this.remoteAudioSources.delete(safeAudId);
                             }
                             const audEl = document.getElementById(safeAudId);
                             if (audEl) audEl.remove();
+                            const audioContainer = document.getElementById('remoteAudios');
+                            if (audioContainer) {
+                                audioContainer.querySelectorAll(`audio[data-owner-peer="${msg.peerId}"]`).forEach(el => {
+                                    if (this.remoteAudioSources.has(el.id)) {
+                                        const entry = this.remoteAudioSources.get(el.id);
+                                        try { entry.srcNode ? entry.srcNode.disconnect() : entry.disconnect(); } catch (e) {}
+                                        try { if (entry.fallbackGain) entry.fallbackGain.disconnect(); } catch (e) {}
+                                        this.remoteAudioSources.delete(el.id);
+                                    }
+                                    el.remove();
+                                });
+                            }
                             this.handleRemoteVideoStopped(msg.peerId);
                         }
                         if (msg.peers) {
@@ -3296,6 +3436,7 @@
                             if (this.isHostUser() && window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.isRecording) {
                                 this.broadcastRecordingState(window.NuevoMotorGrabaciones.isPaused ? 'paused' : 'recording');
                             }
+                            this.ensureLocalTracksPublished();
                         }
                         break;
 
@@ -3403,10 +3544,14 @@
                                 sdp: answer.sdp
                             }));
                         }
-                        if (hadLocalOffer) {
+                        const audioNeedsOffer = (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0))
+                            && (!this.audioTransceiver || (this.audioTransceiver.currentDirection !== 'sendonly' && this.audioTransceiver.currentDirection !== 'sendrecv'));
+                        const videoNeedsOffer = (this.camEnabled || this.screenEnabled || this.whiteboardEnabled)
+                            && (!this.videoTransceiver || (this.videoTransceiver.currentDirection !== 'sendonly' && this.videoTransceiver.currentDirection !== 'sendrecv'));
+                        if (hadLocalOffer || audioNeedsOffer || videoNeedsOffer) {
                             setTimeout(() => {
-                                this.sendOffer();
-                            }, 80);
+                                this.ensureLocalTracksPublished();
+                            }, 60);
                         }
                         break;
                     }
@@ -3418,6 +3563,10 @@
                                 sdp: msg.sdp
                             }));
                             await this.flushCandidates();
+                        }
+                        if (this._pendingInitialSync && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            this._pendingInitialSync = false;
+                            this.ws.send(JSON.stringify({ type: 'request-sync' }));
                         }
                         break;
 
@@ -4550,13 +4699,7 @@
                 }
 
                 if (this.pc && wbTrack) {
-                    let needsOffer = false;
-                    if (this.videoSender) {
-                        await this.videoSender.replaceTrack(wbTrack);
-                    } else {
-                        this.videoSender = this.pc.addTrack(wbTrack, this.whiteboardStream);
-                        needsOffer = true;
-                    }
+                    const needsOffer = await this.syncOrAddVideoTrack(wbTrack, this.whiteboardStream);
                     if (needsOffer) {
                         await this.sendOffer();
                     }
@@ -4585,6 +4728,7 @@
 
             // ================= IN-CALL DOCK BUTTONS =================
             async toggleCallMic() {
+                this.unlockAllRemoteAudio();
                 if (this.micEnabled) {
                     this.stopMicStream();
                     this.micEnabled = false;
@@ -4599,6 +4743,7 @@
                         this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         const audioTrack = this.micStream.getAudioTracks()[0];
                         this.attachLocalAudioAnalyser(this.micStream);
+                        this.unlockAllRemoteAudio();
                         if (audioTrack && this.pc) {
                             this.micEnabled = true;
                             const needsOffer = await this.syncOutgoingAudio();
@@ -4614,6 +4759,7 @@
             },
 
             async toggleCallCam() {
+                this.unlockAllRemoteAudio();
                 if (this.camEnabled) {
                     this.stopCamStream();
                     this.camEnabled = false;
@@ -4642,12 +4788,9 @@
                         });
                         const videoTrack = this.camStream.getVideoTracks()[0];
                         if (videoTrack && this.pc) {
-                            videoTrack.enabled = true;
                             this.camEnabled = true;
-                            if (this.videoSender) {
-                                await this.videoSender.replaceTrack(videoTrack);
-                            } else {
-                                this.videoSender = this.pc.addTrack(videoTrack, this.camStream);
+                            const needsOffer = await this.syncOrAddVideoTrack(videoTrack, this.camStream);
+                            if (needsOffer) {
                                 await this.sendOffer();
                             }
                             this.sendRoomNotice('__VIDEO_ON__:cam');
@@ -4661,6 +4804,7 @@
             },
 
             async toggleCallShare() {
+                this.unlockAllRemoteAudio();
                 if (this.screenEnabled) {
                     await this.stopCallShare();
                     return;
@@ -4718,14 +4862,7 @@
                     }
 
                     if (this.pc && screenVideoTrack) {
-                        let needsOffer = false;
-                        if (this.videoSender) {
-                            await this.videoSender.replaceTrack(screenVideoTrack);
-                        } else {
-                            this.videoSender = this.pc.addTrack(screenVideoTrack, stream);
-                            needsOffer = true;
-                        }
-
+                        const needsOffer = await this.syncOrAddVideoTrack(screenVideoTrack, stream);
                         const audioNeedsOffer = await this.syncOutgoingAudio();
                         if (needsOffer || audioNeedsOffer) {
                             await this.sendOffer();
@@ -4849,6 +4986,7 @@
                 this.inCall = false;
                 this.handRaised = false;
                 this.stopMicStream();
+                this.stopWarmUpMicStream();
                 this.stopCamStream();
                 this.stopScreenStream();
                 this.stopWhiteboardStream();
@@ -4900,14 +5038,20 @@
                 this.remoteVideoStreams.clear();
                 this.activeVideoPeerIds.clear();
                 this.audioSender = null;
+                this.audioTransceiver = null;
                 this.videoSender = null;
+                this.videoTransceiver = null;
+                this._pendingInitialSync = false;
                 this._signalChain = null;
                 if (this._outMixNodes) {
                     this._outMixNodes.forEach(n => { try { n.disconnect(); } catch (e) {} });
                     this._outMixNodes = null;
                 }
                 if (this.remoteAudioSources && this.remoteAudioSources.size > 0) {
-                    this.remoteAudioSources.forEach(n => { try { n.disconnect(); } catch (e) {} });
+                    this.remoteAudioSources.forEach(n => {
+                        try { n.srcNode ? n.srcNode.disconnect() : n.disconnect(); } catch (e) {}
+                        try { if (n.fallbackGain) n.fallbackGain.disconnect(); } catch (e) {}
+                    });
                     this.remoteAudioSources.clear();
                 }
                 if (this.remoteSourceNode) {
