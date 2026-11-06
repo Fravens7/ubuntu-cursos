@@ -81,3 +81,80 @@ Todas las pruebas se ejecutaron en instancias reales de **Google Chrome** intera
 
 - **Impacto en CPU y Memoria del Servidor:** **0% de carga adicional.** El servidor Pion SFU ya está preparado para recibir un canal `sendonly` por participante que habla. De hecho, antes el cliente enviaba ofertas mal formadas reutilizando el `mid` de recepción del servidor, lo que obligaba al SFU a rechazar la dirección de subida.
 - **Impacto en Red / Señalización WebSocket:** **Menor o igual que antes.** Al reutilizar `this.audioSender.replaceTrack(...)` cuando un usuario silencia o reactiva su micrófono, **no se envían nuevas ofertas SDP (`offer`/`answer`) al servidor** en cada mute/unmute, ahorrando procesamiento en el servidor durante toda la clase.
+
+---
+
+# Parte II: Investigación y Reparación Multi-Estudiante ("La plataforma los sacaba de la clase")
+
+## 7. Segundo Reporte del Profesor (Capacidad de Estudiantes y Expulsiones de la Sala)
+
+> **Reporte textual del profesor afectado:**
+> - *"Parece que cuando el profesor está en la reunión, solo 1 estudiante puede unirse a la reunión. Los demás no."*
+> - *"Sino que ellos indican que la plataforma los botaba de la clase."*
+> - *"Después sí acordamos dejar la clase ahí, pero en sí la plataforma los sacaba de la clase."*
+
+### ¿Es un límite duro del servidor?
+**No.** El servidor y la arquitectura SFU de [meet.html](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html) **no tienen ningún límite duro de 1 estudiante**. Sin embargo, al analizar el código y someterlo a pruebas con **6 navegadores Google Chrome simultáneos (1 Profesor + 5 Estudiantes)** en escenarios reales de clase, encontramos **4 causas técnicas exactas** por las cuales la propia interfaz sacaba a los estudiantes o hacía parecer que solo 1 podía quedarse:
+
+1. **Causa A — Corte de WebSocket por inactividad (60–100s) en alumnos oyentes y falta de auto-reconexión:**
+   - En una clase real, el profesor habla y 1 estudiante participa mientras los demás estudiantes escuchan con el micrófono apagado.
+   - En el código anterior de [`connectSignaling`](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html#L3104-L3154), los estudiantes con micrófono apagado enviaban **0 paquetes por el WebSocket** durante toda la clase, y `this.ws` no tenía ni `ping` de *keepalive* ni manejador `ws.onclose`.
+   - Pasados **60 a 100 segundos de silencio**, el proxy inverso / Cloudflare (`wss://clases.ubuntuafroperuana.org/ws`) cerraba la conexión WebSocket inactiva de los estudiantes oyentes; el servidor SFU interpretaba que se habían ido (`peer-left`) y solo quedaban en la sala el profesor y el único estudiante que estaba hablando o interactuando.
+2. **Causa B — Refresco de sesión de Firebase (`onAuthStateChanged` -> `initUIForUser`) devolvía al alumno al Lobby en plena clase:**
+   - En [`initUIForUser`](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html#L2505-L2509), se ejecutaba `document.getElementById('lobbyView').style.display = 'flex'` sin verificar `if (!this.inCall)`.
+   - Cuando Firebase Auth refrescaba el token o disparaba `onAuthStateChanged` en segundo plano mientras el alumno ya estaba dentro de la clase, la pantalla de antesala (`#lobbyView`) se volvía a mostrar encima de la videollamada, **sacando visualmente al estudiante de la reunión**.
+3. **Causa C — Colisión de líneas SDP (`InvalidAccessError: order of m-lines`) cuando 3+ personas activaban micro o pizarra a la vez:**
+   - Cuando había múltiples estudiantes en la sala y un estudiante encendía su micrófono justo en el mismo instante en que el servidor enviaba la pista de otro compañero (`pc.signalingState !== 'stable'`), el `rollback` dejaba un transceptor local sin negociar antes de las líneas remotas del SFU, rompiendo las ofertas siguientes con `InvalidAccessError: The order of m-lines in subsequent offer doesn't match order from previous offer/answer`.
+4. **Causa D — Si el profesor salía y volvía a entrar para probar su audio (`hangupCall`), cerraba la sala para todos:**
+   - Cuando el profesor tenía problemas de audio y pulsaba el botón rojo de colgar para salir y volver a entrar, [`hangupCall`](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html#L4895-L4925) enviaba `{ type: 'end-room' }` al servidor. Eso enviaba `room-ended` a todos los estudiantes conectados y ejecutaba `window.close()` en sus navegadores, expulsándolos inmediatamente de la clase. *(Adicionalmente, en versiones previas antes de los commits `877e279` y `c50d842`, existía un filtro que solo permitía entrar a `test@gmail.com` y redirigía a otros alumnos al inicio tras iniciar sesión).*
+
+---
+
+## 8. Reparaciones Aplicadas en "Modo Pluma" para Multi-Estudiante
+
+1. **Protección de llamada activa frente a refrescos de Auth ([`initUIForUser`](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html#L2505-L2509) y [`onAuthStateChanged`](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html#L5170-L5175)):**
+   - Si el usuario ya está dentro de la llamada (`this.inCall === true`), `onAuthStateChanged` e `initUIForUser` ignoran la apertura de `#lobbyView`, impidiendo que la plataforma saque al estudiante a la antesala a mitad de clase.
+2. **Keepalive ultraligero (`ping` cada 25s) y Auto-Reconexión transparente ([`connectSignaling`](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html#L3106-L3153)):**
+   - Envía un paquete mínimo `{ type: 'ping' }` (~15 bytes cada 25 segundos) para mantener vivo el túnel WebSocket de los alumnos que solo escuchan en silencio.
+   - Si el alumno sufre un micro-corte de Wi-Fi o red móvil (`ws.onclose`), mientras siga en la clase (`this.inCall && !this.wasKicked`), la plataforma reconecta el WebSocket en 1.5 segundos en segundo plano y re-sincroniza pistas (`request-sync`) sin sacarlo de la pantalla de clase.
+3. **Serialización de `addTransceiver` cuando `signalingState !== 'stable'` ([`syncOutgoingAudio`](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html#L3002-L3011) y [`case 'offer'`](file:///home/antigravity/Fravens7/ubuntu-cursos/meet.html#L3576-L3615)):**
+   - Si un estudiante activa su micrófono justo mientras está entrando una oferta del servidor con pistas de otros compañeros, la creación del transceptor se encola (`_pendingLocalPublish = true`) hasta terminar de responder al servidor (`stable`), eliminando al 100% el error `InvalidAccessError: order of m-lines`.
+
+---
+
+## 9. Registro de 4 Escenarios Reales con 6 Navegadores Chrome Simultáneos (1 Profesor + 5 Estudiantes)
+
+Se crearon **4 nuevas cuentas reales con rol `estudiante`** en Firebase Auth y Firestore (colección `usuarios`) adicionales a `test@gmail.com`, sumando **6 participantes simultáneos en Google Chrome**:
+1. **Profesor:** `profe1@gmail.com` (`profe1` — `rol: profesor`)
+2. **Estudiante 1:** `test@gmail.com` (`franco estudiante` — `rol: estudiante`)
+3. **Estudiante 2:** `alumno_ingles1@ubuntu.org` (`Ana Torres` — `rol: estudiante`)
+4. **Estudiante 3:** `alumno_ingles2@ubuntu.org` (`Carlos Mendoza` — `rol: estudiante`)
+5. **Estudiante 4:** `alumno_ingles3@ubuntu.org` (`Lucia Paredes` — `rol: estudiante`)
+6. **Estudiante 5:** `alumno_ingles4@ubuntu.org` (`Diego Quispe` — `rol: estudiante`)
+
+| Escenario Real en Chrome | Dinámica probada en la interfaz | Conectados (`peersUI`) | ¿Alguien fue expulsado? (`lobbyVis` / `endedVis`) | Flujo de Paquetes RTP y Audio Activo | Resultado |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Escenario Real 1: Clase Magistral (1 Profe habla + 5 Estudiantes oyentes entran juntos)** | El Profesor inicia con micro encendido y los 5 Estudiantes entran simultáneamente como oyentes (`mic=false`). | **`6 / 6`** en los 6 navegadores | **Ninguno** (`inCall=true` en los 6) | Profe: `264 out`<br>Estud 1–5: `201 a 277 in` cada uno (`playing=true`, `remRms > 0`) | **✅ PASÓ** |
+| **Escenario Real 2: Conversación Real (Profe + 2 Estudiantes hablan a la vez + 3 Estudiantes escuchan)** | El Profesor habla mientras **Ana (Estud 2)** y **Lucía (Estud 4)** encienden sus micros (`#btnCallMic`) para conversar en inglés; **Franco, Carlos y Diego** solo escuchan. | **`6 / 6`** en los 6 navegadores | **Ninguno** (`inCall=true` en los 6) | Profe: `511 out / 276 in`<br>Estud 2: `192 out / 621 in`<br>Estud 4: `185 out / 678 in`<br>Oyentes (1, 3, 5): `835–885 in` (`remAudios=3`, `playing=true`) | **✅ PASÓ** |
+| **Escenario Real 3: Rotación de turnos + Mano levantada + Pizarra en vivo** | **Ana (Estud 2)** apaga su micro; **Carlos (Estud 3)** levanta la mano (`#btnRaiseHand`) y enciende su micro junto al Profesor y **Lucía (Estud 4)**; el Profesor abre la **Pizarra (`#btnCallWhiteboard`)**. | **`6 / 6`** en los 6 navegadores | **Ninguno** (`inCall=true` en los 6) | Profe: `753 out / 867 in`<br>Estud 3: `168 out / 1549 in`<br>Estud 4: `429 out / 1318 in`<br>Los 5 estudiantes reciben video de Pizarra (`video=true`) + audio (`playing=true`) | **✅ PASÓ** |
+| **Escenario Real 4: Silenciar a todos + Micro-corte de red + Refresco de Auth** | El Profesor silencia a todos (`#btnMuteAllStudents`), desbloquea, hablan **Franco (Estud 1)** y **Diego (Estud 5)**, y se provoca un **corte de WebSocket en Estud 3** y un **refresco de Firebase Auth en Estud 2**. | **`6 / 6`** en los 6 navegadores (`wsOpen=true`) | **Ninguno** (`lobbyVis=false`, `endedVis=false` en los 6) | Profe: `1179 out / 2144 in`<br>Estud 1: `170 out / 3218 in`<br>Estud 5: `195 out / 3326 in`<br>Estud 3 auto-reconectó su WS en 1.5s sin salir de la clase | **✅ PASÓ** |
+
+---
+
+## 10. `chiquihtop` — Consumo de Recursos durante la Prueba con 6 Navegadores Chrome + SFU
+
+```text
+=== CHIQUIHTOP (Consumo con 6 navegadores Chrome + SFU en paralelo) ===
+CPUs: 2 | LoadAvg: 4.81, 1.85, 0.84 | RAM: 2974 MB / 7948 MB (37.4%)
+PID    COMMAND         %CPU  %MEM    RSS (KB)
+8511   chromium        50.0   0.5     43,444
+7378   chromium        12.6   3.5    287,644
+8300   chromium        12.4   2.9    241,572
+8151   chromium        12.0   2.9    240,444
+8003   chromium        11.3   2.5    211,516
+7868   chromium        10.0   2.5    210,116
+7526   chromium         9.3   4.2    342,120
+```
+
+- **Nota sobre el `chiquihtop`:** Incluso corriendo **6 instancias completas de Google Chrome al mismo tiempo** dentro de esta máquina junto con el relé SFU, el uso de RAM total fue de apenas **37.4% (2.97 GB de 7.95 GB)**. En producción, cada alumno abre Chrome en su propia computadora/celular, por lo que el servidor solo reenvía paquetes RTP y mantiene los WebSockets (`< 1%` de CPU y pocos MB de RAM).
+

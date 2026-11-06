@@ -2503,7 +2503,9 @@
                 document.addEventListener('webkitfullscreenchange', onFsChange);
 
                 document.getElementById('guardView').style.display = 'none';
-                document.getElementById('lobbyView').style.display = 'flex';
+                if (!this.inCall) {
+                    document.getElementById('lobbyView').style.display = 'flex';
+                }
             },
 
             showStageToast(text, durationMs = 3400) {
@@ -2998,7 +3000,7 @@
                 if (targetTrack) {
                     targetTrack.enabled = true;
                     const outStream = targetStream || new MediaStream([targetTrack]);
-                    if (this.audioSender && this.audioTransceiver) {
+                    if (this.audioSender && this.audioTransceiver && !this.audioTransceiver.stopped) {
                         if (this.audioTransceiver.direction !== 'sendonly' && this.audioTransceiver.direction !== 'sendrecv') {
                             try { this.audioTransceiver.direction = 'sendonly'; } catch (e) {}
                         }
@@ -3008,6 +3010,10 @@
                         const curDir = this.audioTransceiver.currentDirection;
                         return (!curDir || (curDir !== 'sendonly' && curDir !== 'sendrecv'));
                     } else {
+                        if (this.pc.signalingState !== 'stable') {
+                            this._pendingLocalPublish = true;
+                            return false;
+                        }
                         this.audioTransceiver = this.pc.addTransceiver(targetTrack, {
                             direction: 'sendonly',
                             streams: [outStream]
@@ -3027,7 +3033,7 @@
                 if (!this.pc || !videoTrack) return false;
                 videoTrack.enabled = true;
                 const outStream = videoStream || new MediaStream([videoTrack]);
-                if (this.videoSender && this.videoTransceiver) {
+                if (this.videoSender && this.videoTransceiver && !this.videoTransceiver.stopped) {
                     if (this.videoTransceiver.direction !== 'sendonly' && this.videoTransceiver.direction !== 'sendrecv') {
                         try { this.videoTransceiver.direction = 'sendonly'; } catch (e) {}
                     }
@@ -3037,6 +3043,10 @@
                     const curDir = this.videoTransceiver.currentDirection;
                     return (!curDir || (curDir !== 'sendonly' && curDir !== 'sendrecv'));
                 } else {
+                    if (this.pc.signalingState !== 'stable') {
+                        this._pendingLocalPublish = true;
+                        return false;
+                    }
                     this.videoTransceiver = this.pc.addTransceiver(videoTrack, {
                         direction: 'sendonly',
                         streams: [outStream]
@@ -3048,6 +3058,10 @@
 
             async ensureLocalTracksPublished() {
                 if (!this.pc || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                if (this.pc.signalingState !== 'stable') {
+                    this._pendingLocalPublish = true;
+                    return;
+                }
                 let needsOffer = false;
 
                 if (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0)) {
@@ -3096,32 +3110,59 @@
                 this.initPeerConnection();
 
                 const url = `${this.wsUrl}?room=${encodeURIComponent(this.activeRoomCode)}&peer=${encodeURIComponent(this.peerId)}&name=${encodeURIComponent(this.userName)}&role=${encodeURIComponent(this.userRole || 'estudiante')}`;
-                this.ws = new WebSocket(url);
+                const wsInstance = new WebSocket(url);
+                this.ws = wsInstance;
 
-                this.ws.onopen = async () => {
+                wsInstance.onopen = async () => {
+                    if (this.ws !== wsInstance) return;
+                    if (this.wsKeepAliveInterval) clearInterval(this.wsKeepAliveInterval);
+                    this.wsKeepAliveInterval = setInterval(() => {
+                        if (this.ws === wsInstance && wsInstance.readyState === WebSocket.OPEN) {
+                            try { wsInstance.send(JSON.stringify({ type: 'ping' })); } catch (e) {}
+                        }
+                    }, 25000);
+
                     // Si el usuario tiene micrófono, cámara, pantalla o pizarra activa (al entrar o al cambiar de grupo), publicar de inmediato
                     // y solicitar sincronización de pistas existentes en cuanto quede estable la negociación.
                     if (this.micEnabled || this.camEnabled || this.screenEnabled || this.whiteboardEnabled) {
                         this._pendingInitialSync = true;
                         await this.publishInitialLobbyTracks();
                         setTimeout(() => {
-                            if (this._pendingInitialSync && this.ws && this.ws.readyState === WebSocket.OPEN && (!this.pc || this.pc.signalingState === 'stable')) {
+                            if (this._pendingInitialSync && this.ws === wsInstance && wsInstance.readyState === WebSocket.OPEN && (!this.pc || this.pc.signalingState === 'stable')) {
                                 this._pendingInitialSync = false;
-                                this.ws.send(JSON.stringify({ type: 'request-sync' }));
+                                wsInstance.send(JSON.stringify({ type: 'request-sync' }));
                             }
                         }, 450);
-                    } else if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    } else if (this.ws === wsInstance && wsInstance.readyState === WebSocket.OPEN) {
                         this._pendingInitialSync = false;
-                        this.ws.send(JSON.stringify({ type: 'request-sync' }));
+                        wsInstance.send(JSON.stringify({ type: 'request-sync' }));
                     }
                 };
 
-                this.ws.onmessage = (event) => {
+                wsInstance.onmessage = (event) => {
+                    if (this.ws !== wsInstance) return;
                     try {
                         const msg = JSON.parse(event.data);
+                        if (msg.type === 'pong') return;
                         this.enqueueSignalTask(() => this.handleSignal(msg));
                     } catch (err) {
                         console.error('[MeetApp] Error en mensaje WS:', err);
+                    }
+                };
+
+                wsInstance.onclose = () => {
+                    if (this.ws !== wsInstance) return;
+                    if (this.wsKeepAliveInterval) {
+                        clearInterval(this.wsKeepAliveInterval);
+                        this.wsKeepAliveInterval = null;
+                    }
+                    if (this.inCall && !this.wasKicked) {
+                        if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
+                        this._reconnectTimer = setTimeout(() => {
+                            if (this.inCall && !this.wasKicked) {
+                                this.connectSignaling();
+                            }
+                        }, 1500);
                     }
                 };
             },
@@ -3356,6 +3397,10 @@
             async sendOffer() {
                 return this.enqueueSignalTask(async () => {
                     if (!this.pc || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                    if (this.pc.signalingState !== 'stable') {
+                        this._pendingLocalPublish = true;
+                        return;
+                    }
                     const offer = await this.pc.createOffer();
                     await this.pc.setLocalDescription(offer);
                     this.ws.send(JSON.stringify({
@@ -3532,6 +3577,18 @@
                         // Si había una oferta local en vuelo, hace rollback, responde al servidor y luego re-envía su oferta.
                         const hadLocalOffer = (this.pc.signalingState === 'have-local-offer');
                         if (this.pc.signalingState !== 'stable') {
+                            if (this.audioTransceiver && !this.audioTransceiver.currentDirection) {
+                                try { this.audioTransceiver.stop(); } catch (e) {}
+                                this.audioTransceiver = null;
+                                this.audioSender = null;
+                                this._pendingLocalPublish = true;
+                            }
+                            if (this.videoTransceiver && !this.videoTransceiver.currentDirection) {
+                                try { this.videoTransceiver.stop(); } catch (e) {}
+                                this.videoTransceiver = null;
+                                this.videoSender = null;
+                                this._pendingLocalPublish = true;
+                            }
                             try {
                                 await this.pc.setLocalDescription({ type: 'rollback' });
                             } catch (e) {}
@@ -3551,13 +3608,14 @@
                             }));
                         }
                         const audioNeedsOffer = (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0))
-                            && (!this.audioTransceiver || (this.audioTransceiver.currentDirection !== 'sendonly' && this.audioTransceiver.currentDirection !== 'sendrecv'));
+                            && (!this.audioTransceiver || this.audioTransceiver.stopped || (this.audioTransceiver.currentDirection !== 'sendonly' && this.audioTransceiver.currentDirection !== 'sendrecv'));
                         const videoNeedsOffer = (this.camEnabled || this.screenEnabled || this.whiteboardEnabled)
-                            && (!this.videoTransceiver || (this.videoTransceiver.currentDirection !== 'sendonly' && this.videoTransceiver.currentDirection !== 'sendrecv'));
-                        if (hadLocalOffer || audioNeedsOffer || videoNeedsOffer) {
+                            && (!this.videoTransceiver || this.videoTransceiver.stopped || (this.videoTransceiver.currentDirection !== 'sendonly' && this.videoTransceiver.currentDirection !== 'sendrecv'));
+                        if (hadLocalOffer || this._pendingLocalPublish || audioNeedsOffer || videoNeedsOffer) {
+                            this._pendingLocalPublish = false;
                             setTimeout(() => {
                                 this.ensureLocalTracksPublished();
-                            }, 60);
+                            }, 50);
                         }
                         break;
                     }
@@ -3573,6 +3631,12 @@
                         if (this._pendingInitialSync && this.ws && this.ws.readyState === WebSocket.OPEN) {
                             this._pendingInitialSync = false;
                             this.ws.send(JSON.stringify({ type: 'request-sync' }));
+                        }
+                        if (this._pendingLocalPublish) {
+                            this._pendingLocalPublish = false;
+                            setTimeout(() => {
+                                this.ensureLocalTracksPublished();
+                            }, 40);
                         }
                         break;
 
@@ -5038,6 +5102,14 @@
             },
 
             cleanupConnectionOnly() {
+                if (this._reconnectTimer) {
+                    clearTimeout(this._reconnectTimer);
+                    this._reconnectTimer = null;
+                }
+                if (this.wsKeepAliveInterval) {
+                    clearInterval(this.wsKeepAliveInterval);
+                    this.wsKeepAliveInterval = null;
+                }
                 this.remoteVideoActive = false;
                 this.remoteVideoStream = null;
                 this.remoteSharingPeerId = '';
@@ -5074,8 +5146,9 @@
                     this.pc = null;
                 }
                 if (this.ws) {
-                    try { this.ws.close(); } catch (e) {}
+                    const oldWs = this.ws;
                     this.ws = null;
+                    try { oldWs.close(); } catch (e) {}
                 }
             }
         };
@@ -5089,6 +5162,11 @@
                 window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
                 return;
             }
+
+            if (MeetApp.inCall && MeetApp._authenticatedUid === user.uid) {
+                return;
+            }
+            MeetApp._authenticatedUid = user.uid;
 
             let displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Participante');
             let role = 'estudiante';
@@ -5121,7 +5199,7 @@
             MeetApp.initUIForUser(displayName, user.email || '');
 
             // Chiquifiltro: test@gmail.com entra directamente a la reunión para visualizar la transmisión
-            if (isAllowedTestEmail) {
+            if (isAllowedTestEmail && !MeetApp.inCall) {
                 MeetApp.joinMeeting();
             }
         });
