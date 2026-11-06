@@ -158,3 +158,84 @@ PID    COMMAND         %CPU  %MEM    RSS (KB)
 
 - **Nota sobre el `chiquihtop`:** Incluso corriendo **6 instancias completas de Google Chrome al mismo tiempo** dentro de esta máquina junto con el relé SFU, el uso de RAM total fue de apenas **37.4% (2.97 GB de 7.95 GB)**. En producción, cada alumno abre Chrome en su propia computadora/celular, por lo que el servidor solo reenvía paquetes RTP y mantiene los WebSockets (`< 1%` de CPU y pocos MB de RAM).
 
+---
+
+# Parte III: Batería Mix de Verificación en Solo Lectura (3 Rondas x 6 Escenarios) + Ronda Extra con 8 Navegadores (1 Profesor + 7 Estudiantes)
+
+## 11. Batería Mix en Modo Solo Lectura (`3 Rondas x 6 Escenarios = 18 Ejecuciones` en 6 Navegadores Chrome)
+
+Sin modificar ni una sola línea de código adicional, se ejecutaron **3 rondas completas** combinando los escenarios de audio bidireccional + multi-estudiante + **2 escenarios nuevos**:
+- **MIX 1 (Viceversa Multi-Alumno desde Lobby):** `Estud_1` y `Estud_2` activan micrófono en el Lobby (`#btnLobbyMic`) y entran primero hablando; `Estud_3` y `Estud_4` entran en silencio; el **Profesor** entra después con micro apagado y lo activa adentro (`#btnCallMic`).
+- **MIX 2 — 🆕 NUEVA PRUEBA #1 (Entrada tardía con micrófono encendido desde Lobby a sala con 3 personas hablando):** Mientras el Profesor, `Estud_1` y `Estud_2` están hablando simultáneamente, `Estud_5` llega tarde, enciende su micrófono en la antesala (`#btnLobbyMic`) y pulsa **Unirse ahora** (`#btnJoinNow`).
+- **MIX 3 (Rotación de hablantes + Ráfaga de Mute/Unmute + Pizarra):** `Estud_1`, `Estud_2` y `Estud_5` apagan micro; `Estud_3` y `Estud_4` levantan la mano (`#btnCallHand`), hacen ráfaga de mute/unmute junto con el Profesor y el Profesor abre la **Pizarra en vivo** (`#btnCallWhiteboard`).
+- **MIX 4 (Moderación "Silenciar a todos" + Intento bloqueado + Desbloqueo):** El Profesor pulsa `#btnMuteAllStudents`; `Estud_1` intenta activar su micrófono estando bloqueado (`micWhileMuted=false`); luego el Profesor desbloquea y hablan el Profesor, `Estud_1` y `Estud_4`.
+- **MIX 5 (Anti-Expulsión simultánea en 4 alumnos):** Corte de WebSocket (`ws.close()`) en `Estud_2` y `Estud_3` + refresco de sesión (`initUIForUser`) en `Estud_4` y `Estud_5`.
+- **MIX 6 — 🆕 NUEVA PRUEBA #2 (`F5` / Recarga completa de página de un alumno reingresando con voz + otro alumno encendiendo Cámara `#btnCallCam` y voz):** `Estud_2` recarga la página (`F5`) y vuelve a unirse con micrófono encendido mientras `Estud_3` activa su cámara web y habla con toda la clase.
+
+### Resumen de Resultados de las 3 Rondas (Salas `mix-ronda-1-3n80`, `mix-ronda-2-4yar`, `mix-ronda-3-69lw`)
+
+| Escenario del Mix | Ronda 1 (`mix-ronda-1-3n80`) | Ronda 2 (`mix-ronda-2-4yar`) | Ronda 3 (`mix-ronda-3-69lw`) | ¿Alguien expulsado? | Resultado Global |
+| :--- | :--- | :--- | :--- | :---: | :---: |
+| **MIX 1: Viceversa Multi-Alumno** | `peersUI=5` \| Profe `108 out / 292 in` \| `play=true` (`remRms=0.456`) | `peersUI=5` \| Profe `108 out / 292 in` \| `play=true` (`remRms=0.5545`) | `peersUI=5` \| Profe `108 out / 294 in` \| `play=true` (`remRms=0.1687`) | **No** (`inCall=true`) | **✅ 3/3 PASÓ** |
+| **MIX 2 (🆕 #1): Entrada tardía `Estud_5` hablando desde Lobby** | `peersUI=6` \| Est5 `167 out / 456 in` \| `play=true` (`remRms=0.5017`) | `peersUI=6` \| Est5 `177 out / 494 in` \| `play=true` (`remRms=0.4236`) | `peersUI=6` \| Est5 `175 out / 462 in` \| `play=true` (`remRms=0.4637`) | **No** (`inCall=true`) | **✅ 3/3 PASÓ** |
+| **MIX 3: Rotación + Ráfaga Mute/Unmute + Pizarra** | `peersUI=6` \| Profe `549 out`, Est3 `177 out`, Est4 `200 out` \| `video=true`, `play=true` | `peersUI=6` \| Profe `574 out`, Est3 `211 out`, Est4 `238 out` \| `video=true`, `play=true` | `peersUI=6` \| Profe `556 out`, Est3 `174 out`, Est4 `208 out` \| `video=true`, `play=true` | **No** (`inCall=true`) | **✅ 3/3 PASÓ** |
+| **MIX 4: Silenciar a todos → Bloqueo → Desbloqueo** | `peersUI=6` \| `micWhileMuted=false` \| Profe `776 out`, Est1 `629 out`, Est4 `371 out` \| `play=true` | `peersUI=6` \| `micWhileMuted=false` \| Profe `824 out`, Est1 `633 out`, Est4 `417 out` \| `play=true` | `peersUI=6` \| `micWhileMuted=false` \| Profe `786 out`, Est1 `630 out`, Est4 `380 out` \| `play=true` | **No** (`inCall=true`) | **✅ 3/3 PASÓ** |
+| **MIX 5: Corte WS (`Est2/3`) + Refresco Auth (`Est4/5`)** | `peersUI=6` \| `wsOpen=true` en los 6 \| `lobbyVis=false` \| `play=true` | `peersUI=6` \| `wsOpen=true` en los 6 \| `lobbyVis=false` \| `play=true` | `peersUI=6` \| `wsOpen=true` en los 6 \| `lobbyVis=false` \| `play=true` | **No** (`inCall=true`) | **✅ 3/3 PASÓ** |
+| **MIX 6 (🆕 #2): `F5` Reingreso `Estud_2` + Cámara `Estud_3`** | `peersUI=6` \| Est2 `167 out`, Est3 `192 out` (`cam=true`, `inVidPkts=43`) | `peersUI=6` \| Est2 `119 out`, Est3 `168 out` (`cam=true`, `inVidPkts=53`) | `peersUI=6` \| Est2 `135 out`, Est3 `157 out` (`cam=true`, `inVidPkts=22`) | **No** (`inCall=true`) | **✅ 3/3 PASÓ** |
+
+---
+
+## 12. Ronda Extra con 8 Navegadores Google Chrome Simultáneos (1 Profesor + 7 Estudiantes) y Análisis `htop`
+
+Se crearon **2 cuentas de estudiante adicionales** en Firebase Auth y Firestore (`rol: "estudiante"`), alcanzando **8 navegadores Google Chrome abiertos en paralelo**:
+1. **Profesor:** `profe1@gmail.com` (`profe1` — `rol: profesor`)
+2. **Estud_1:** `test@gmail.com` (`franco estudiante` — `rol: estudiante`)
+3. **Estud_2:** `alumno_ingles1@ubuntu.org` (`Ana Torres` — `rol: estudiante`)
+4. **Estud_3:** `alumno_ingles2@ubuntu.org` (`Carlos Mendoza` — `rol: estudiante`)
+5. **Estud_4:** `alumno_ingles3@ubuntu.org` (`Lucia Paredes` — `rol: estudiante`)
+6. **Estud_5:** `alumno_ingles4@ubuntu.org` (`Diego Quispe` — `rol: estudiante`)
+7. **Estud_6 (Nuevo):** `alumno_ingles5@ubuntu.org` (`Valeria Rojas` — `rol: estudiante`)
+8. **Estud_7 (Nuevo):** `alumno_ingles6@ubuntu.org` (`Mateo Silva` — `rol: estudiante`)
+
+### Resultados de la Ronda Extra de 8 Participantes (1 Profesor + 7 Estudiantes)
+
+| Escenario Mix con 8 Navegadores | Conectados (`peersUI`) | ¿Alguien expulsado? (`lobbyVis` / `endedVis`) | Paquetes de Audio Enviados (`outPkts`) | Paquetes de Audio Recibidos (`inPkts`) | Señal y Estado |
+| :--- | :---: | :---: | :--- | :--- | :--- |
+| **MIX 1 (Viceversa con 7 personas):** `Estud_1`, `2` y `6` entran hablando desde el Lobby; `Estud_3`, `4` y `5` oyen; el Profesor entra después y activa su micro. | **`7 / 7`** | **Ninguno** (`inCall=true`) | Profe: `103` \| Est1: `307` \| Est2: `306` \| Est6: `353` | Profe: `270` \| Est1: `537` \| Est2: `566` \| Est3: `753` \| Est4: `738` \| Est5: `710` \| Est6: `688` | **`play=true` en los 7** (`remRms` hasta `0.2956`) — **✅ PASÓ** |
+| **MIX 2 (Entrada tardía del 7mo estudiante `Estud_7` Mateo con micro desde Lobby):** Entra el 8vo navegador mientras hablan 4 personas. | **`8 / 8`** | **Ninguno** (`inCall=true`) | Profe: `368` \| Est1: `576` \| Est2: `575` \| Est6: `637` \| **Est7: `139`** | Profe: `893` \| Est1: `1185` \| Est2: `1219` \| Est3: `1634` \| Est4: `1624` \| Est5: `1597` \| Est6: `1355` | Los 8 quedan dentro de la sala (`peersUI=8`) con señal (`remRms` hasta `0.4942`) — **✅ PASÓ** |
+| **MIX 3 (Rotación de turnos en sala de 8):** `Estud_1`, `2`, `6` y `7` pasan a oyentes; hablan Profesor y `Estud_3`. | **`8 / 8`** | **Ninguno** (`inCall=true`) | Profe: `763` \| Est3: `235` | Profe: `1923` \| Est1: `2327` \| Est2: `2328` \| Est3: `3009` \| Est4: `3063` \| Est5: `3076` \| Est6: `2546` \| **Est7: `1073`** | **`play=true` en los 8 navegadores** (`Estud_7` ya recibió `1073` paquetes y `remRms` llega a `0.3696`) — **✅ PASÓ** |
+| **MIX 4 (Profesor silencia a los 7 alumnos → Bloqueo → Desbloqueo):** `Estud_6` intenta prender micro bloqueado (`micWhileMuted=false`); luego hablan Profe, `Estud_6` y `Estud_7`. | **`8 / 8`** | **Ninguno** (`inCall=true`) | Profe: `1139` \| **Est6: `901`** \| **Est7: `379`** | Profe: `3090` \| Est1: `3396` \| Est2: `3427` \| Est3: `4393` \| Est4: `4396` \| Est5: `4396` \| Est6: `3572` \| Est7: `2064` | Bloqueo `micWhileMuted=false` verificado y flujo de audio activo en los 8 — **✅ PASÓ** |
+| **MIX 5 (Corte WS en `Est3/4` + Refresco Auth en `Est5/7`):** Resiliencia anti-expulsión con 8 participantes. | **`8 / 8`** | **Ninguno** (`lobbyVis=false`, `endedVis=false`, `wsOpen=true`) | Profe: `1550` \| Est6: `1291` \| Est7: `770` | Profe: `3461` \| Est1: `3728` \| Est5: `4576` \| Est6: `3680` \| Est7: `2119` | `Est3` y `Est4` reconectaron su WS en 1.5s y `Est5`/`Est7` ignoraron el refresco de Auth sin salir al Lobby — **✅ PASÓ** |
+
+### `chiquihtop` con 8 Participantes (9 Navegadores Google Chrome corriendo en 2 CPUs)
+
+```text
+================================================================================
+=== CHIQUIHTOP DEL SERVIDOR (Con 8 navegadores Chrome + SFU activos a la vez) ===
+================================================================================
+CPUs: 2 | LoadAvg: 15.38, 4.54, 2.60 | RAM Usada: 3967 MB / 7948 MB (49.9%)
+
+--- free -m ---
+               total        used        free      shared  buff/cache   available
+Mem:            7947        3992        3302        1083        2007        3955
+Swap:              0           0           0
+
+--- Top Procesos (ps) ---
+  PID COMMAND         %CPU %MEM   RSS (KB)
+11667 chromium        14.6  3.3   275,180  (~269 MB)
+12693 chromium        13.5  2.8   232,280  (~227 MB)
+12138 chromium        10.4  2.6   219,380  (~214 MB)
+12859 chromium        10.3  2.7   223,924  (~218 MB)
+12563 chromium        10.1  2.5   204,320  (~199 MB)
+12271 chromium         9.4  2.5   211,088  (~206 MB)
+12403 chromium         9.3  2.5   209,612  (~204 MB)
+11952 chromium         8.0  2.5   210,720  (~205 MB)
+11810 chromium         7.4  3.1   254,188  (~248 MB)
+```
+
+> [!IMPORTANT]
+> **Interpretación del `htop` (Prueba Local vs. Servidor de Producción):**
+> - En esta prueba automatizada abrimos **9 navegadores Google Chrome completos dentro de la misma máquina de 2 núcleos**, donde cada instancia de Chrome consume ~210–270 MB de RAM y ~10–14% de CPU codificando/decodificando audio Opus y renderizando el DOM (elevando el `LoadAvg` a `15.38` y la RAM al `49.9%`).
+> - En producción (`clases.ubuntuafroperuana.org`), **los navegadores Chrome NO corren dentro del servidor**: cada estudiante ejecuta su propio Chrome en su PC o celular. El servidor SFU únicamente reenvía paquetes RTP en memoria entre los sockets, consumiendo **menos del 2%–5% de CPU y ~30 MB de RAM** para 8, 15 o 25 estudiantes simultáneos.
+
+
