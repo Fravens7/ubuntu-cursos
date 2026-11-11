@@ -670,85 +670,6 @@
             font-weight: 600;
         }
 
-        .chat-attach-btn {
-            width: 32px;
-            height: 32px;
-            flex-shrink: 0;
-            border-radius: 8px;
-            border: 1px solid #d1d5db;
-            background: #ffffff;
-            color: #4b5563;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.12s, color 0.12s, border-color 0.12s;
-        }
-
-        .chat-attach-btn:hover {
-            background: #f3f4f6;
-            color: #111111;
-            border-color: #9ca3af;
-        }
-
-        .chat-pdf-card {
-            margin-top: 4px;
-            padding: 8px 10px;
-            background: #ffffff;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .chat-pdf-info {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            min-width: 0;
-            flex: 1;
-        }
-
-        .chat-pdf-meta {
-            min-width: 0;
-            flex: 1;
-        }
-
-        .chat-pdf-name {
-            font-size: 11.5px;
-            font-weight: 600;
-            color: #111111;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .chat-pdf-size {
-            font-size: 10px;
-            color: #6b7280;
-        }
-
-        .chat-pdf-dl {
-            flex-shrink: 0;
-            height: 26px;
-            padding: 0 9px;
-            border-radius: 6px;
-            border: 1px solid #111111;
-            background: #111111;
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .chat-pdf-dl:hover {
-            background: #374151;
-        }
-
         /* Chiquicontador de 3h para el Profesor e Indicador de Grabación para el Alumno */
         .session-timer-pill {
             display: none;
@@ -1297,281 +1218,6 @@
             background: #374151;
         }
 
-        /* ================= PIZARRA INTERACTIVA MINIMALISTA (WHITEBOARD LITE) ================= */
-        .stage-whiteboard-wrap {
-            display: none;
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            background: #ffffff;
-            z-index: 4;
-            touch-action: none;
-            user-select: none;
-        }
-
-        .stage-whiteboard-wrap.is-visible {
-            display: block;
-        }
-
-        #whiteboardCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            cursor: crosshair;
-            touch-action: none;
-        }
-
-        #whiteboardCanvas.is-eraser {
-            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' fill='%23ffffff' stroke='%23111111' stroke-width='1.8'/%3E%3C/svg%3E") 12 12, cell;
-        }
-
-        #whiteboardCanvas.is-text {
-            cursor: text;
-        }
-
-        .whiteboard-toolbar {
-            position: absolute;
-            top: 14px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: inline-flex;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: calc(100% - 24px);
-            gap: 5px;
-            background: #ffffff;
-            border: 1px solid #d1d5db;
-            border-radius: 999px;
-            padding: 5px 10px;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-        }
-
-        .wb-tool-btn {
-            height: 28px;
-            padding: 0 9px;
-            border-radius: 999px;
-            border: 1px solid transparent;
-            background: #ffffff;
-            color: #4b5563;
-            font-size: 12px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
-            transition: all 0.12s ease;
-        }
-
-        .wb-tool-btn:hover {
-            background: #f3f4f6;
-            color: #111111;
-        }
-
-        .wb-tool-btn.is-active {
-            background: #111111;
-            color: #ffffff;
-            border-color: #111111;
-            font-weight: 600;
-        }
-
-        .wb-tool-btn:disabled {
-            opacity: 0.38;
-            cursor: not-allowed;
-        }
-
-        .wb-color-group {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 0 2px;
-        }
-
-        .wb-color-btn {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 1.5px solid #d1d5db;
-            padding: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            background: #ffffff;
-            transition: transform 0.12s ease, border-color 0.12s ease;
-        }
-
-        .wb-color-btn:hover {
-            transform: scale(1.08);
-        }
-
-        .wb-color-btn.is-active {
-            border-color: #111111;
-            box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px #111111;
-        }
-
-        .wb-color-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: block;
-        }
-
-        .wb-page-group {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .wb-page-label {
-            font-size: 11px;
-            color: #6b7280;
-            font-weight: 600;
-            margin-right: 2px;
-        }
-
-        .wb-page-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
-            border: 1px solid #d1d5db;
-            background: #ffffff;
-            color: #4b5563;
-            font-size: 11.5px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.12s ease;
-        }
-
-        .wb-page-btn:hover {
-            background: #f3f4f6;
-            color: #111111;
-        }
-
-        .wb-page-btn.is-active {
-            background: #111111;
-            color: #ffffff;
-            border-color: #111111;
-        }
-
-        .wb-divider {
-            width: 1px;
-            height: 18px;
-            background: #e5e7eb;
-            margin: 0 2px;
-        }
-
-        /* Cuadro flotante minimalista para herramienta Texto en Pizarra */
-        .wb-text-editor {
-            display: none;
-            position: absolute;
-            top: 120px;
-            left: 120px;
-            min-width: 230px;
-            background: #ffffff;
-            border: 1.5px solid #111111;
-            border-radius: 10px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-            z-index: 12;
-            overflow: hidden;
-        }
-
-        .wb-text-editor.is-open {
-            display: block;
-        }
-
-        .wb-text-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            padding: 5px 8px;
-            background: #f9fafb;
-            border-bottom: 1px solid #e5e7eb;
-            cursor: move;
-            user-select: none;
-        }
-
-        .wb-text-drag-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #4b5563;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .wb-text-controls {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .wb-size-btn {
-            height: 20px;
-            padding: 0 6px;
-            border-radius: 4px;
-            border: 1px solid #d1d5db;
-            background: #ffffff;
-            color: #4b5563;
-            font-size: 10.5px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .wb-size-btn.is-active {
-            background: #111111;
-            color: #ffffff;
-            border-color: #111111;
-        }
-
-        .wb-text-apply-btn {
-            height: 20px;
-            padding: 0 8px;
-            border-radius: 4px;
-            border: 1px solid #111111;
-            background: #111111;
-            color: #ffffff;
-            font-size: 10.5px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .wb-text-cancel-btn {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            border: 1px solid #d1d5db;
-            background: #ffffff;
-            color: #6b7280;
-            font-size: 12px;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .wb-text-input {
-            width: 100%;
-            min-height: 54px;
-            padding: 8px 10px;
-            border: none;
-            outline: none;
-            resize: both;
-            font-family: Arial, sans-serif;
-            font-size: 18px;
-            line-height: 1.3;
-            color: #111111;
-            background: #ffffff;
-            display: block;
-        }
-
         /* ================= VIEW 3: POST-CALL ENDED VIEW ================= */
         #endedView {
             display: none;
@@ -1634,9 +1280,10 @@
     <!-- CONTENEDOR DE AUDIOS REMOTOS (OFFSCREEN PARA COMPATIBILIDAD MOVIL) -->
     <div id="remoteAudios" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;"></div>
 
-    <!-- ================= GUARD / CARGANDO ================= -->
+    <!-- ================= GUARD / CHIQUISEGURO ================= -->
     <div id="guardView">
-        <div class="guard-title" id="guardTitle">Conectando a la clase...</div>
+        <div class="guard-title" id="guardTitle">Verificando acceso...</div>
+        <div class="guard-sub" id="guardSub">Comprobando credenciales de administrador.</div>
         <button type="button" class="btn-outline" id="guardBtn" style="display:none;" onclick="window.location.href='/'">Volver al inicio</button>
     </div>
 
@@ -1744,10 +1391,6 @@
                 <span id="callClockText">00:00</span>
                 <span class="call-divider">|</span>
                 <span class="call-room-code" id="callRoomCodeText">---</span>
-                <button type="button" id="btnMeetTopShare" onclick="MeetApp.copyCleanRoomLink()" style="display: none; background: #ffffff; border: 1px solid #d1d5db; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; color: #111111; cursor: pointer; align-items: center; gap: 5px; margin-left: 6px; transition: all 0.15s ease;" title="Copiar enlace limpio para alumnos">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                    <span>Compartir</span>
-                </button>
 
                 <!-- Chiquicontador de límite de 3h (Solo Profesor/Admin) -->
                 <div class="session-timer-pill" id="callSessionTimerPill" title="Tiempo transcurrido de la sesión (Máximo 3 horas)">
@@ -1811,12 +1454,6 @@
                         <div style="text-align:center;color:#6b7280;font-size:12px;padding:24px 10px;">Los mensajes enviados durante la llamada aparecerán aquí y se borrarán al finalizar.</div>
                     </div>
                     <form class="chat-input-bar" onsubmit="MeetApp.sendChatMessage(event)">
-                        <input type="file" id="chatPdfInput" accept="application/pdf,.pdf" style="display:none;" onchange="MeetApp.handleChatPdfSelected(event)">
-                        <button type="button" class="chat-attach-btn" id="btnChatAttachPdf" onclick="MeetApp.triggerChatPdfUpload()" title="Adjuntar archivo PDF (Máx. 2 MB)">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-                            </svg>
-                        </button>
                         <input type="text" class="chat-input-field" id="chatInputField" placeholder="Escribe un mensaje..." maxlength="400" autocomplete="off">
                         <button type="submit" class="chat-send-btn">Enviar</button>
                     </form>
@@ -1838,13 +1475,6 @@
                             <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"></path>
                         </svg>
                         <span id="btnMuteAllStudentsText">Silenciar a todos</span>
-                    </button>
-                    <button type="button" class="peers-mute-all-btn" id="btnToggleHandSound" style="display:none;" onclick="MeetApp.toggleHandSoundMuted()">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                        </svg>
-                        <span id="btnToggleHandSoundText">Sonido de mano: Activo</span>
                     </button>
                     <div id="peersDropdownList"></div>
                 </div>
@@ -1903,93 +1533,6 @@
 
             <video id="stageVideo" autoplay playsinline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback"></video>
 
-            <!-- Pizarra Interactiva Minimalista (Solo Profesor) -->
-            <div class="stage-whiteboard-wrap" id="stageWhiteboardWrap">
-                <div class="whiteboard-toolbar">
-                    <button type="button" class="wb-tool-btn is-active" id="wbBtnPen" onclick="MeetApp.setWhiteboardTool('pen')">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                        </svg>
-                        <span>Pluma</span>
-                    </button>
-                    <div class="wb-color-group" title="Color de pluma y texto">
-                        <button type="button" class="wb-color-btn is-active" id="wbColorBlack" onclick="MeetApp.setWhiteboardColor('#111111')" title="Negro">
-                            <span class="wb-color-dot" style="background:#111111;"></span>
-                        </button>
-                        <button type="button" class="wb-color-btn" id="wbColorBlue" onclick="MeetApp.setWhiteboardColor('#2563eb')" title="Azul">
-                            <span class="wb-color-dot" style="background:#2563eb;"></span>
-                        </button>
-                        <button type="button" class="wb-color-btn" id="wbColorRed" onclick="MeetApp.setWhiteboardColor('#dc2626')" title="Rojo">
-                            <span class="wb-color-dot" style="background:#dc2626;"></span>
-                        </button>
-                    </div>
-                    <button type="button" class="wb-tool-btn" id="wbBtnText" onclick="MeetApp.setWhiteboardTool('text')" title="Insertar texto (Arial)">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="4 7 4 4 20 4 20 7"></polyline>
-                            <line x1="9" y1="20" x2="15" y2="20"></line>
-                            <line x1="12" y1="4" x2="12" y2="20"></line>
-                        </svg>
-                        <span>Texto</span>
-                    </button>
-                    <button type="button" class="wb-tool-btn" id="wbBtnEraser" onclick="MeetApp.setWhiteboardTool('eraser')" title="Borrador cuadrado">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-                        </svg>
-                        <span>Borrador</span>
-                    </button>
-                    <div class="wb-divider"></div>
-                    <button type="button" class="wb-tool-btn" id="wbBtnUndo" onclick="MeetApp.undoWhiteboard()" title="Deshacer último trazo (Ctrl+Z)" disabled>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 7v6h6"></path>
-                            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-                        </svg>
-                        <span>Deshacer</span>
-                    </button>
-                    <button type="button" class="wb-tool-btn" onclick="MeetApp.clearWhiteboard()" title="Limpiar esta hoja">
-                        <span>Limpiar</span>
-                    </button>
-                    <div class="wb-divider"></div>
-                    <div class="wb-page-group" title="Cambiar página de pizarra">
-                        <span class="wb-page-label">Pág</span>
-                        <button type="button" class="wb-page-btn is-active" id="wbBtnPage0" onclick="MeetApp.switchWhiteboardPage(0)">1</button>
-                        <button type="button" class="wb-page-btn" id="wbBtnPage1" onclick="MeetApp.switchWhiteboardPage(1)">2</button>
-                        <button type="button" class="wb-page-btn" id="wbBtnPage2" onclick="MeetApp.switchWhiteboardPage(2)">3</button>
-                    </div>
-                    <div class="wb-divider"></div>
-                    <button type="button" class="wb-tool-btn" onclick="MeetApp.toggleWhiteboard()" title="Cerrar pizarra">
-                        <span>Cerrar</span>
-                    </button>
-                </div>
-
-                <!-- Cuadro flotante para escribir y acomodar texto en la pizarra -->
-                <div class="wb-text-editor" id="wbTextEditor">
-                    <div class="wb-text-header" id="wbTextDragHandle">
-                        <span class="wb-text-drag-label">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="5 9 2 12 5 15"></polyline>
-                                <polyline points="9 5 12 2 15 5"></polyline>
-                                <polyline points="15 19 12 22 9 19"></polyline>
-                                <polyline points="19 9 22 12 19 15"></polyline>
-                                <line x1="2" y1="12" x2="22" y2="12"></line>
-                                <line x1="12" y1="2" x2="12" y2="22"></line>
-                            </svg>
-                            <span>Mover</span>
-                        </span>
-                        <div class="wb-text-controls">
-                            <button type="button" class="wb-size-btn" id="wbSizeS" onclick="MeetApp.setWhiteboardTextSize(28, 'S')" title="Pequeño">S</button>
-                            <button type="button" class="wb-size-btn is-active" id="wbSizeM" onclick="MeetApp.setWhiteboardTextSize(42, 'M')" title="Mediano">M</button>
-                            <button type="button" class="wb-size-btn" id="wbSizeL" onclick="MeetApp.setWhiteboardTextSize(60, 'L')" title="Grande">L</button>
-                            <button type="button" class="wb-text-apply-btn" onclick="MeetApp.commitWhiteboardText()">Fijar</button>
-                            <button type="button" class="wb-text-cancel-btn" onclick="MeetApp.cancelWhiteboardText()" title="Cancelar">&times;</button>
-                        </div>
-                    </div>
-                    <textarea id="wbTextInput" class="wb-text-input" rows="2" placeholder="Escribe con Arial..."></textarea>
-                </div>
-
-                <canvas id="whiteboardCanvas" width="1920" height="1080"></canvas>
-            </div>
-
             <div class="stage-bottom-label" id="stageParticipantLabel">Merby</div>
 
             <!-- Opción Pantalla completa (Imagen 2) cuando hay transmisión activa -->
@@ -2044,16 +1587,6 @@
                         <line x1="12" y1="17" x2="12" y2="21"></line>
                         <polyline points="9 10 12 7 15 10"></polyline>
                         <line x1="12" y1="7" x2="12" y2="13"></line>
-                    </svg>
-                </button>
-
-                <!-- 3.5. Pizarra (Exclusivo rol Profesor/Admin) -->
-                <button type="button" class="dock-btn is-off" id="btnCallWhiteboard" style="display:none;" onclick="MeetApp.toggleWhiteboard()" title="Pizarra en blanco (Modo pluma)">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                        <path d="M2 2l7.586 7.586"></path>
-                        <circle cx="11" cy="11" r="2"></circle>
                     </svg>
                 </button>
 
@@ -2186,58 +1719,29 @@
             // Moderación, Mano, Grabación y Chat Efímero
             studentsMuted: false,
             handRaised: false,
-            handCooldownUntilMs: 0,
-            handSoundMuted: false,
-            lastHandChimeByPeer: new Map(),
-            lastGlobalHandChimeMs: 0,
             remoteRecordingState: '',
             chatMessages: [],
             chatUnreadCount: 0,
-            incomingPdfChunks: new Map(),
-            pdfObjectUrls: [],
             sessionStartTimeMs: 0,
             sessionTimerInterval: null,
             toastTimeout: null,
             wasKicked: false,
 
-            // Media & Pizarra state
+            // Media state
             micEnabled: false,
             camEnabled: false,
             screenEnabled: false,
-            whiteboardEnabled: false,
             micStream: null,
             camStream: null,
             screenStream: null,
-            whiteboardStream: null,
-            wbTool: 'pen',
-            wbColor: '#111111',
-            wbDrawing: false,
-            wbLastX: 0,
-            wbLastY: 0,
-            wbMidX: 0,
-            wbMidY: 0,
-            wbCurrentPage: 0,
-            wbPages: [null, null, null],
-            wbUndoStacks: [[], [], []],
-            wbTextFontSize: 42,
-            wbTextSizeKey: 'M',
-            wbKeepAliveTimer: null,
-            _wbEventsBound: false,
 
             // WebRTC & Signaling state
             ws: null,
             pc: null,
             audioSender: null,
-            audioTransceiver: null,
             videoSender: null,
-            videoTransceiver: null,
-            _pendingInitialSync: false,
-            _warmUpMicStream: null,
-            _audioUnlockBound: false,
             pendingCandidates: [],
             remoteVideoStreams: new Map(),
-            remoteShareTypes: new Map(),
-            lastNotifiedShareKey: '',
             activeVideoPeerIds: new Set(),
             remoteSharingPeerId: '',
             remoteVideoStream: null,
@@ -2258,29 +1762,6 @@
             voiceDataArray: null,
             smoothedVoiceLevel: 0,
             voiceLoopRunning: false,
-
-            async ensureAudioPermissionWarmup() {
-                try {
-                    const host = window.location.hostname;
-                    if (host !== 'localhost' && host !== '127.0.0.1') return;
-                    const hasLiveWarmup = this._warmUpMicStream && this._warmUpMicStream.getAudioTracks().some(t => t.readyState === 'live');
-                    const hasLiveMic = this.micStream && this.micStream.getAudioTracks().some(t => t.readyState === 'live');
-                    if (hasLiveWarmup || hasLiveMic) return;
-                    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') return;
-                    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    s.getAudioTracks().forEach(t => { t.enabled = false; });
-                    this._warmUpMicStream = s;
-                    this.ensureAudioContext();
-                    this.unlockAllRemoteAudio();
-                } catch (e) {}
-            },
-
-            stopWarmUpMicStream() {
-                if (this._warmUpMicStream) {
-                    this._warmUpMicStream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
-                    this._warmUpMicStream = null;
-                }
-            },
 
             ensureAudioContext() {
                 if (!this.audioCtx) {
@@ -2322,7 +1803,7 @@
                 this.localAnalyser = null;
             },
 
-            attachRemoteAudioAnalyser(stream, key, audioEl = null) {
+            attachRemoteAudioAnalyser(stream, key) {
                 try {
                     this.ensureAudioContext();
                     if (!this.audioCtx || !stream) return;
@@ -2333,28 +1814,13 @@
                     }
                     const sourceKey = key || stream.id || 'default';
                     if (this.remoteAudioSources.has(sourceKey)) {
-                        const prev = this.remoteAudioSources.get(sourceKey);
-                        try { prev.srcNode ? prev.srcNode.disconnect() : prev.disconnect(); } catch (e) {}
-                        try { if (prev.fallbackGain) prev.fallbackGain.disconnect(); } catch (e) {}
+                        try { this.remoteAudioSources.get(sourceKey).disconnect(); } catch (e) {}
                     }
                     const srcNode = this.audioCtx.createMediaStreamSource(stream);
                     srcNode.connect(this.remoteAnalyser);
-
-                    const fallbackGain = this.audioCtx.createGain();
-                    fallbackGain.gain.value = (audioEl && audioEl.paused) ? 1.0 : 0.0;
-                    srcNode.connect(fallbackGain);
-                    fallbackGain.connect(this.audioCtx.destination);
-
-                    this.remoteAudioSources.set(sourceKey, { srcNode, fallbackGain, audioEl });
+                    this.remoteAudioSources.set(sourceKey, srcNode);
                     this.remoteSourceNode = srcNode;
                 } catch (e) {}
-            },
-
-            syncFallbackGainForAudio(sourceKey, useFallback) {
-                const entry = this.remoteAudioSources.get(sourceKey);
-                if (entry && entry.fallbackGain) {
-                    entry.fallbackGain.gain.value = useFallback ? 1.0 : 0.0;
-                }
             },
 
             readAnalyserRms(analyser) {
@@ -2456,26 +1922,6 @@
                     btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
                 }
 
-                const btnHandSound = document.getElementById('btnToggleHandSound');
-                if (btnHandSound) {
-                    btnHandSound.style.display = this.isHostUser() ? 'inline-flex' : 'none';
-                }
-
-                const btnWhiteboard = document.getElementById('btnCallWhiteboard');
-                if (btnWhiteboard) {
-                    btnWhiteboard.style.display = this.isHostUser() ? 'flex' : 'none';
-                }
-
-                const btnMeetShare = document.getElementById('btnMeetTopShare');
-                if (btnMeetShare) {
-                    btnMeetShare.style.display = this.isHostUser() ? 'inline-flex' : 'none';
-                }
-
-                const btnChatAttach = document.getElementById('btnChatAttachPdf');
-                if (btnChatAttach) {
-                    btnChatAttach.style.display = this.isHostUser() ? 'inline-flex' : 'none';
-                }
-
                 this.updateClock();
                 if (!this.clockInterval) {
                     this.clockInterval = setInterval(() => this.updateClock(), 15000);
@@ -2503,9 +1949,7 @@
                 document.addEventListener('webkitfullscreenchange', onFsChange);
 
                 document.getElementById('guardView').style.display = 'none';
-                if (!this.inCall) {
-                    document.getElementById('lobbyView').style.display = 'flex';
-                }
+                document.getElementById('lobbyView').style.display = 'flex';
             },
 
             showStageToast(text, durationMs = 3400) {
@@ -2703,24 +2147,11 @@
                     btnCallShare.className = `dock-btn ${this.screenEnabled ? 'is-on' : 'is-off'}`;
                 }
 
-                // In-Call Whiteboard (Profesor/Admin)
-                const btnCallWhiteboard = document.getElementById('btnCallWhiteboard');
-                if (btnCallWhiteboard) {
-                    btnCallWhiteboard.style.display = this.isHostUser() ? 'flex' : 'none';
-                    btnCallWhiteboard.className = `dock-btn ${this.whiteboardEnabled ? 'is-on' : 'is-off'}`;
-                }
-
-                const btnChatAttach = document.getElementById('btnChatAttachPdf');
-                if (btnChatAttach) {
-                    btnChatAttach.style.display = this.isHostUser() ? 'inline-flex' : 'none';
-                }
-
                 // In-Call Raise Hand (Estudiante)
                 const btnCallHand = document.getElementById('btnCallHand');
                 if (btnCallHand) {
                     btnCallHand.style.display = this.isHostUser() ? 'none' : 'flex';
-                    const onCooldown = (!this.handRaised && Date.now() < this.handCooldownUntilMs);
-                    btnCallHand.className = `dock-btn ${this.handRaised ? 'is-on' : 'is-off'} ${onCooldown ? 'is-locked' : ''}`;
+                    btnCallHand.className = `dock-btn ${this.handRaised ? 'is-on' : 'is-off'}`;
                     btnCallHand.title = this.handRaised ? 'Bajar la mano' : 'Levantar la mano para pedir la palabra';
                 }
 
@@ -2730,26 +2161,13 @@
             updateMuteAllButtonUI() {
                 const btnMuteAll = document.getElementById('btnMuteAllStudents');
                 const txtMuteAll = document.getElementById('btnMuteAllStudentsText');
-                if (btnMuteAll) {
-                    btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
-                    btnMuteAll.classList.toggle('is-locked', !!this.studentsMuted);
-                    if (txtMuteAll) {
-                        txtMuteAll.textContent = this.studentsMuted
-                            ? 'Micrófonos bloqueados (Permitir)'
-                            : 'Silenciar a todos';
-                    }
-                }
-
-                const btnHandSound = document.getElementById('btnToggleHandSound');
-                const txtHandSound = document.getElementById('btnToggleHandSoundText');
-                if (btnHandSound) {
-                    btnHandSound.style.display = this.isHostUser() ? 'inline-flex' : 'none';
-                    btnHandSound.classList.toggle('is-locked', !!this.handSoundMuted);
-                    if (txtHandSound) {
-                        txtHandSound.textContent = this.handSoundMuted
-                            ? 'Sonido de mano: Silenciado'
-                            : 'Sonido de mano: Activo';
-                    }
+                if (!btnMuteAll) return;
+                btnMuteAll.style.display = this.isHostUser() ? 'inline-flex' : 'none';
+                btnMuteAll.classList.toggle('is-locked', !!this.studentsMuted);
+                if (txtMuteAll) {
+                    txtMuteAll.textContent = this.studentsMuted
+                        ? 'Micrófonos bloqueados (Permitir)'
+                        : 'Silenciar a todos';
                 }
             },
 
@@ -2795,9 +2213,7 @@
                 document.getElementById('endedView').style.display = 'none';
                 document.getElementById('callView').style.display = 'flex';
                 this.inCall = true;
-                await this.ensureAudioPermissionWarmup();
                 this.ensureAudioContext();
-                this.unlockAllRemoteAudio();
 
                 if (window.NuevoMotorGrabaciones) {
                     window.NuevoMotorGrabaciones.mountMeetControls(this);
@@ -2812,21 +2228,9 @@
 
             updateStageDisplay() {
                 const stageVideo = document.getElementById('stageVideo');
-                const wbWrap = document.getElementById('stageWhiteboardWrap');
                 const avatarBox = document.getElementById('stageAvatarBox');
                 const labelEl = document.getElementById('stageParticipantLabel');
                 const fsBtn = document.getElementById('btnStageFullscreen');
-
-                if (this.whiteboardEnabled && this.isHostUser()) {
-                    if (wbWrap) wbWrap.classList.add('is-visible');
-                    stageVideo.classList.remove('is-visible');
-                    avatarBox.style.display = 'none';
-                    labelEl.textContent = `${this.userName} (Compartiendo pizarra)`;
-                    if (fsBtn) fsBtn.classList.add('is-visible');
-                    return;
-                } else if (wbWrap) {
-                    wbWrap.classList.remove('is-visible');
-                }
 
                 // Prioridad: 1) Pantalla propia, 2) Cámara propia, 3) Video remoto activo, 4) Avatar centrado
                 if (this.screenEnabled && this.screenStream) {
@@ -2863,15 +2267,7 @@
                     stageVideo.classList.add('is-visible');
                     stageVideo.play().catch(() => {});
                     avatarBox.style.display = 'none';
-                    const baseName = this.remoteSharingName || 'Profesor';
-                    const remoteMode = this.remoteShareTypes.get(this.remoteSharingPeerId) || '';
-                    if (remoteMode === 'whiteboard') {
-                        labelEl.textContent = `${baseName} (Compartiendo pizarra)`;
-                    } else if (remoteMode === 'screen') {
-                        labelEl.textContent = `${baseName} (Compartiendo pantalla)`;
-                    } else {
-                        labelEl.textContent = baseName;
-                    }
+                    labelEl.textContent = this.remoteSharingName || 'Participante';
                     if (fsBtn) fsBtn.classList.add('is-visible');
                     return;
                 }
@@ -2903,14 +2299,7 @@
                     audios.forEach(a => {
                         a.muted = false;
                         a.volume = 1.0;
-                        const p = a.play();
-                        if (p !== undefined) {
-                            p.then(() => {
-                                this.syncFallbackGainForAudio(a.id, false);
-                            }).catch(() => {
-                                this.syncFallbackGainForAudio(a.id, true);
-                            });
-                        }
+                        a.play().catch(() => {});
                     });
                 }
             },
@@ -2999,95 +2388,22 @@
 
                 if (targetTrack) {
                     targetTrack.enabled = true;
-                    const outStream = targetStream || new MediaStream([targetTrack]);
-                    if (this.audioSender && this.audioTransceiver && !this.audioTransceiver.stopped) {
-                        if (this.audioTransceiver.direction !== 'sendonly' && this.audioTransceiver.direction !== 'sendrecv') {
-                            try { this.audioTransceiver.direction = 'sendonly'; } catch (e) {}
-                        }
-                        if (this.audioSender.track !== targetTrack) {
-                            await this.audioSender.replaceTrack(targetTrack);
-                        }
-                        const curDir = this.audioTransceiver.currentDirection;
-                        return (!curDir || (curDir !== 'sendonly' && curDir !== 'sendrecv'));
+                    if (this.audioSender) {
+                        await this.audioSender.replaceTrack(targetTrack);
+                        return false;
                     } else {
-                        if (this.pc.signalingState !== 'stable') {
-                            this._pendingLocalPublish = true;
-                            return false;
-                        }
-                        this.audioTransceiver = this.pc.addTransceiver(targetTrack, {
-                            direction: 'sendonly',
-                            streams: [outStream]
-                        });
-                        this.audioSender = this.audioTransceiver.sender;
-                        return true;
-                    }
+    const tr = this.pc.addTransceiver(targetTrack, {
+        direction: 'sendonly',
+        streams: [targetStream || new MediaStream([targetTrack])]
+    });
+    this.audioSender = tr.sender;
+    return true;
+}
                 } else {
-                    if (this.audioSender && this.audioSender.track !== null) {
+                    if (this.audioSender) {
                         await this.audioSender.replaceTrack(null).catch(() => {});
                     }
                     return false;
-                }
-            },
-
-            async syncOrAddVideoTrack(videoTrack, videoStream) {
-                if (!this.pc || !videoTrack) return false;
-                videoTrack.enabled = true;
-                const outStream = videoStream || new MediaStream([videoTrack]);
-                if (this.videoSender && this.videoTransceiver && !this.videoTransceiver.stopped) {
-                    if (this.videoTransceiver.direction !== 'sendonly' && this.videoTransceiver.direction !== 'sendrecv') {
-                        try { this.videoTransceiver.direction = 'sendonly'; } catch (e) {}
-                    }
-                    if (this.videoSender.track !== videoTrack) {
-                        await this.videoSender.replaceTrack(videoTrack);
-                    }
-                    const curDir = this.videoTransceiver.currentDirection;
-                    return (!curDir || (curDir !== 'sendonly' && curDir !== 'sendrecv'));
-                } else {
-                    if (this.pc.signalingState !== 'stable') {
-                        this._pendingLocalPublish = true;
-                        return false;
-                    }
-                    this.videoTransceiver = this.pc.addTransceiver(videoTrack, {
-                        direction: 'sendonly',
-                        streams: [outStream]
-                    });
-                    this.videoSender = this.videoTransceiver.sender;
-                    return true;
-                }
-            },
-
-            async ensureLocalTracksPublished() {
-                if (!this.pc || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-                if (this.pc.signalingState !== 'stable') {
-                    this._pendingLocalPublish = true;
-                    return;
-                }
-                let needsOffer = false;
-
-                if (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0)) {
-                    const audioNeeds = await this.syncOutgoingAudio();
-                    if (audioNeeds) needsOffer = true;
-                }
-
-                let activeVideoTrack = null;
-                let activeVideoStream = null;
-                if (this.whiteboardEnabled && this.whiteboardStream) {
-                    activeVideoTrack = this.whiteboardStream.getVideoTracks()[0];
-                    activeVideoStream = this.whiteboardStream;
-                } else if (this.screenEnabled && this.screenStream) {
-                    activeVideoTrack = this.screenStream.getVideoTracks()[0];
-                    activeVideoStream = this.screenStream;
-                } else if (this.camEnabled && this.camStream) {
-                    activeVideoTrack = this.camStream.getVideoTracks()[0];
-                    activeVideoStream = this.camStream;
-                }
-                if (activeVideoTrack) {
-                    const videoNeeds = await this.syncOrAddVideoTrack(activeVideoTrack, activeVideoStream);
-                    if (videoNeeds) needsOffer = true;
-                }
-
-                if (needsOffer) {
-                    await this.sendOffer();
                 }
             },
 
@@ -3098,7 +2414,22 @@
                 return this._signalChain;
             },
 
+            scheduleAutoReconnect(delayMs = 1200) {
+                if (this.reconnectTimeout || !this.inCall || this._manualHangup || this.wasKicked) return;
+                this.reconnectTimeout = setTimeout(() => {
+                    this.reconnectTimeout = null;
+                    if (this.inCall && !this._manualHangup && !this.wasKicked) {
+                        this.connectSignaling();
+                    }
+                }, delayMs);
+            },
+
             connectSignaling() {
+                this._manualHangup = false;
+                if (this.reconnectTimeout) {
+                    clearTimeout(this.reconnectTimeout);
+                    this.reconnectTimeout = null;
+                }
                 this.cleanupConnectionOnly();
                 if (!this.peerId) {
                     const prefix = this.isHostUser() ? 'adm_' : 'est_';
@@ -3110,59 +2441,40 @@
                 this.initPeerConnection();
 
                 const url = `${this.wsUrl}?room=${encodeURIComponent(this.activeRoomCode)}&peer=${encodeURIComponent(this.peerId)}&name=${encodeURIComponent(this.userName)}&role=${encodeURIComponent(this.userRole || 'estudiante')}`;
-                const wsInstance = new WebSocket(url);
-                this.ws = wsInstance;
+                this.ws = new WebSocket(url);
 
-                wsInstance.onopen = async () => {
-                    if (this.ws !== wsInstance) return;
-                    if (this.wsKeepAliveInterval) clearInterval(this.wsKeepAliveInterval);
-                    this.wsKeepAliveInterval = setInterval(() => {
-                        if (this.ws === wsInstance && wsInstance.readyState === WebSocket.OPEN) {
-                            try { wsInstance.send(JSON.stringify({ type: 'ping' })); } catch (e) {}
+                this.ws.onopen = async () => {
+                    if (this.pingInterval) clearInterval(this.pingInterval);
+                    this.pingInterval = setInterval(() => {
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            this.ws.send(JSON.stringify({ type: 'ping' }));
                         }
-                    }, 25000);
+                    }, 20000);
 
-                    // Si el usuario tiene micrófono, cámara, pantalla o pizarra activa (al entrar o al cambiar de grupo), publicar de inmediato
-                    // y solicitar sincronización de pistas existentes en cuanto quede estable la negociación.
-                    if (this.micEnabled || this.camEnabled || this.screenEnabled || this.whiteboardEnabled) {
-                        this._pendingInitialSync = true;
+                    if (this.micEnabled || this.camEnabled || this.screenEnabled) {
                         await this.publishInitialLobbyTracks();
-                        setTimeout(() => {
-                            if (this._pendingInitialSync && this.ws === wsInstance && wsInstance.readyState === WebSocket.OPEN && (!this.pc || this.pc.signalingState === 'stable')) {
-                                this._pendingInitialSync = false;
-                                wsInstance.send(JSON.stringify({ type: 'request-sync' }));
-                            }
-                        }, 450);
-                    } else if (this.ws === wsInstance && wsInstance.readyState === WebSocket.OPEN) {
-                        this._pendingInitialSync = false;
-                        wsInstance.send(JSON.stringify({ type: 'request-sync' }));
+                    } else if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({ type: 'request-sync' }));
                     }
                 };
 
-                wsInstance.onmessage = (event) => {
-                    if (this.ws !== wsInstance) return;
+                this.ws.onmessage = (event) => {
                     try {
                         const msg = JSON.parse(event.data);
-                        if (msg.type === 'pong') return;
                         this.enqueueSignalTask(() => this.handleSignal(msg));
                     } catch (err) {
                         console.error('[MeetApp] Error en mensaje WS:', err);
                     }
                 };
 
-                wsInstance.onclose = () => {
-                    if (this.ws !== wsInstance) return;
-                    if (this.wsKeepAliveInterval) {
-                        clearInterval(this.wsKeepAliveInterval);
-                        this.wsKeepAliveInterval = null;
+                this.ws.onclose = () => {
+                    if (this.pingInterval) {
+                        clearInterval(this.pingInterval);
+                        this.pingInterval = null;
                     }
-                    if (this.inCall && !this.wasKicked) {
-                        if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
-                        this._reconnectTimer = setTimeout(() => {
-                            if (this.inCall && !this.wasKicked) {
-                                this.connectSignaling();
-                            }
-                        }, 1500);
+                    if (this.inCall && !this._manualHangup && !this.wasKicked) {
+                        this.showStageToast('Reconectando a la clase...', 2500);
+                        this.scheduleAutoReconnect(1200);
                     }
                 };
             },
@@ -3184,25 +2496,11 @@
                 return '';
             },
 
-            handleRemoteVideoStarted(peerId, peerName, shareType = '') {
+            handleRemoteVideoStarted(peerId, peerName) {
                 if (!peerId || peerId === this.peerId) return;
                 this.activeVideoPeerIds.add(peerId);
                 this.remoteSharingPeerId = peerId;
                 if (peerName) this.remoteSharingName = peerName;
-
-                if (shareType) {
-                    this.remoteShareTypes.set(peerId, shareType);
-                    const notifyKey = `${peerId}:${shareType}`;
-                    if (this.lastNotifiedShareKey !== notifyKey) {
-                        this.lastNotifiedShareKey = notifyKey;
-                        const displayName = peerName || this.remoteSharingName || 'El profesor';
-                        if (shareType === 'whiteboard') {
-                            this.showStageToast(`${displayName} está compartiendo pizarra`, 3800);
-                        } else if (shareType === 'screen') {
-                            this.showStageToast(`${displayName} está compartiendo pantalla`, 3800);
-                        }
-                    }
-                }
 
                 const entry = this.remoteVideoStreams.get(peerId);
                 if (entry) {
@@ -3216,18 +2514,12 @@
                         stageVideo.play().catch(() => {});
                     }
                     this.updateStageDisplay();
-                } else {
-                    this.updateStageDisplay();
                 }
             },
 
             handleRemoteVideoStopped(peerId) {
                 if (!peerId || peerId === this.peerId) return;
                 this.activeVideoPeerIds.delete(peerId);
-                this.remoteShareTypes.delete(peerId);
-                if (this.lastNotifiedShareKey && this.lastNotifiedShareKey.startsWith(peerId + ':')) {
-                    this.lastNotifiedShareKey = '';
-                }
 
                 // Si queda otro participante compartiendo video/cámara activo, mantenerlo en escena
                 if (this.activeVideoPeerIds.size > 0) {
@@ -3256,14 +2548,25 @@
                     try { this.pc.close(); } catch (e) {}
                 }
                 this.audioSender = null;
-                this.audioTransceiver = null;
                 this.videoSender = null;
-                this.videoTransceiver = null;
                 this.pendingCandidates = [];
 
                 this.pc = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun.cloudflare.com:3478' }
+                    ]
                 });
+
+                this.pc.oniceconnectionstatechange = () => {
+                    if (!this.inCall || this._manualHangup || this.wasKicked) return;
+                    const st = this.pc ? this.pc.iceConnectionState : '';
+                    if (st === 'failed') {
+                        console.warn('[MeetApp] ICE falló, reconectando automáticamente...');
+                        this.scheduleAutoReconnect(800);
+                    }
+                };
 
                 this.pc.onicecandidate = (e) => {
                     if (e.candidate && this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -3279,57 +2582,30 @@
 
                     if (e.track.kind === 'audio') {
                         const audioContainer = document.getElementById('remoteAudios');
-                        const safeId = 'aud_' + String(e.track.id || ownerPeerId || 'remote').replace(/[^a-zA-Z0-9_-]/g, '_');
-                        if (ownerPeerId && audioContainer) {
-                            audioContainer.querySelectorAll(`audio[data-owner-peer="${ownerPeerId}"]`).forEach(oldEl => {
-                                if (oldEl.id !== safeId) {
-                                    const oldTracks = oldEl.srcObject ? oldEl.srcObject.getAudioTracks() : [];
-                                    const allEnded = oldTracks.every(t => t.readyState === 'ended');
-                                    if (allEnded) {
-                                        if (this.remoteAudioSources.has(oldEl.id)) {
-                                            const oldEntry = this.remoteAudioSources.get(oldEl.id);
-                                            try { oldEntry.srcNode ? oldEntry.srcNode.disconnect() : oldEntry.disconnect(); } catch (err) {}
-                                            try { if (oldEntry.fallbackGain) oldEntry.fallbackGain.disconnect(); } catch (err) {}
-                                            this.remoteAudioSources.delete(oldEl.id);
-                                        }
-                                        oldEl.remove();
-                                    }
-                                }
-                            });
-                        }
+                        const safeId = 'aud_' + (ownerPeerId || e.track.id).replace(/[^a-zA-Z0-9_-]/g, '_');
                         let audioEl = document.getElementById(safeId);
                         if (!audioEl) {
                             audioEl = document.createElement('audio');
                             audioEl.id = safeId;
                             audioEl.autoplay = true;
                             audioEl.playsInline = true;
-                            if (ownerPeerId) audioEl.setAttribute('data-owner-peer', ownerPeerId);
                             audioContainer.appendChild(audioEl);
-                        } else if (ownerPeerId) {
-                            audioEl.setAttribute('data-owner-peer', ownerPeerId);
                         }
                         const stream = new MediaStream([e.track]);
                         audioEl.srcObject = stream;
                         audioEl.muted = false;
                         audioEl.volume = 1.0;
-                        this.attachRemoteAudioAnalyser(stream, safeId, audioEl);
+                        this.attachRemoteAudioAnalyser(stream, safeId);
 
                         const tryPlayAudio = () => {
-                            if (this.audioCtx && this.audioCtx.state === 'suspended') {
-                                this.audioCtx.resume().catch(() => {});
-                            }
                             const playPromise = audioEl.play();
                             if (playPromise !== undefined) {
                                 playPromise.then(() => {
-                                    this.syncFallbackGainForAudio(safeId, false);
                                     const unmuteBtn = document.getElementById('btnStageUnmute');
                                     if (unmuteBtn) unmuteBtn.classList.remove('is-visible');
                                 }).catch(() => {
-                                    this.syncFallbackGainForAudio(safeId, true);
-                                    if (!this.audioCtx || this.audioCtx.state !== 'running') {
-                                        const unmuteBtn = document.getElementById('btnStageUnmute');
-                                        if (unmuteBtn) unmuteBtn.classList.add('is-visible');
-                                    }
+                                    const unmuteBtn = document.getElementById('btnStageUnmute');
+                                    if (unmuteBtn) unmuteBtn.classList.add('is-visible');
                                     const resumeOnGesture = () => {
                                         this.unlockAllRemoteAudio();
                                         window.removeEventListener('click', resumeOnGesture);
@@ -3339,14 +2615,6 @@
                                     window.addEventListener('touchend', resumeOnGesture, { once: true });
                                 });
                             }
-                        };
-                        audioEl.onplaying = () => {
-                            this.syncFallbackGainForAudio(safeId, false);
-                            const unmuteBtn = document.getElementById('btnStageUnmute');
-                            if (unmuteBtn) unmuteBtn.classList.remove('is-visible');
-                        };
-                        e.track.onunmute = () => {
-                            tryPlayAudio();
                         };
                         tryPlayAudio();
                         return;
@@ -3391,16 +2659,44 @@
             },
 
             async publishInitialLobbyTracks() {
-                await this.ensureLocalTracksPublished();
+                if (!this.pc) return;
+                let added = false;
+
+                if (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0)) {
+                    const audioAdded = await this.syncOutgoingAudio();
+                    if (audioAdded) added = true;
+                }
+
+                if (this.screenEnabled && this.screenStream) {
+                    const screenTrack = this.screenStream.getVideoTracks()[0];
+                    if (screenTrack) {
+                        const sTr = this.pc.addTransceiver(screenTrack, {
+                            direction: 'sendonly',
+                            streams: [this.screenStream]
+                        });
+                        this.videoSender = sTr.sender;
+                        added = true;
+                    }
+                } else if (this.camEnabled && this.camStream) {
+                    const videoTrack = this.camStream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        const vTr = this.pc.addTransceiver(videoTrack, {
+                            direction: 'sendonly',
+                            streams: [this.camStream]
+                        });
+                        this.videoSender = vTr.sender;
+                        added = true;
+                    }
+                }
+
+                if (added) {
+                    await this.sendOffer();
+                }
             },
 
             async sendOffer() {
                 return this.enqueueSignalTask(async () => {
                     if (!this.pc || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-                    if (this.pc.signalingState !== 'stable') {
-                        this._pendingLocalPublish = true;
-                        return;
-                    }
                     const offer = await this.pc.createOffer();
                     await this.pc.setLocalDescription(offer);
                     this.ws.send(JSON.stringify({
@@ -3435,25 +2731,11 @@
                             this.remoteVideoStreams.delete(msg.peerId);
                             const safeAudId = 'aud_' + String(msg.peerId).replace(/[^a-zA-Z0-9_-]/g, '_');
                             if (this.remoteAudioSources.has(safeAudId)) {
-                                const oldEntry = this.remoteAudioSources.get(safeAudId);
-                                try { oldEntry.srcNode ? oldEntry.srcNode.disconnect() : oldEntry.disconnect(); } catch (e) {}
-                                try { if (oldEntry.fallbackGain) oldEntry.fallbackGain.disconnect(); } catch (e) {}
+                                try { this.remoteAudioSources.get(safeAudId).disconnect(); } catch (e) {}
                                 this.remoteAudioSources.delete(safeAudId);
                             }
                             const audEl = document.getElementById(safeAudId);
                             if (audEl) audEl.remove();
-                            const audioContainer = document.getElementById('remoteAudios');
-                            if (audioContainer) {
-                                audioContainer.querySelectorAll(`audio[data-owner-peer="${msg.peerId}"]`).forEach(el => {
-                                    if (this.remoteAudioSources.has(el.id)) {
-                                        const entry = this.remoteAudioSources.get(el.id);
-                                        try { entry.srcNode ? entry.srcNode.disconnect() : entry.disconnect(); } catch (e) {}
-                                        try { if (entry.fallbackGain) entry.fallbackGain.disconnect(); } catch (e) {}
-                                        this.remoteAudioSources.delete(el.id);
-                                    }
-                                    el.remove();
-                                });
-                            }
                             this.handleRemoteVideoStopped(msg.peerId);
                         }
                         if (msg.peers) {
@@ -3477,17 +2759,12 @@
                             });
                         }
                         if (msg.type === 'peer-joined') {
-                            if (this.whiteboardEnabled) {
-                                this.sendRoomNotice('__VIDEO_ON__:whiteboard');
-                            } else if (this.screenEnabled) {
-                                this.sendRoomNotice('__VIDEO_ON__:screen');
-                            } else if (this.camEnabled) {
-                                this.sendRoomNotice('__VIDEO_ON__:cam');
+                            if (this.camEnabled || this.screenEnabled) {
+                                this.sendRoomNotice(this.screenEnabled ? '__VIDEO_ON__:screen' : '__VIDEO_ON__:cam');
                             }
                             if (this.isHostUser() && window.NuevoMotorGrabaciones && window.NuevoMotorGrabaciones.isRecording) {
                                 this.broadcastRecordingState(window.NuevoMotorGrabaciones.isPaused ? 'paused' : 'recording');
                             }
-                            this.ensureLocalTracksPublished();
                         }
                         break;
 
@@ -3512,9 +2789,6 @@
                             this.syncControlButtonsUI();
                         } else if (msg.handRaised) {
                             this.showStageToast(`${msg.name || 'Estudiante'} levantó la mano`, 4000);
-                            if (this.isHostUser()) {
-                                this.playHandChime(msg.peerId);
-                            }
                         }
                         if (msg.peers) {
                             this.currentRoomPeers = msg.peers;
@@ -3559,12 +2833,7 @@
                             if (msg.text === '__VIDEO_OFF__') {
                                 if (msg.peerId !== this.peerId) this.handleRemoteVideoStopped(msg.peerId);
                             } else if (msg.text.startsWith('__VIDEO_ON__')) {
-                                if (msg.peerId !== this.peerId) {
-                                    const sType = msg.text.split(':')[1] || 'screen';
-                                    this.handleRemoteVideoStarted(msg.peerId, msg.name, sType);
-                                }
-                            } else if (msg.text.startsWith('__PDF_CHUNK__:')) {
-                                this.handleIncomingPdfChunk(msg);
+                                if (msg.peerId !== this.peerId) this.handleRemoteVideoStarted(msg.peerId, msg.name);
                             } else {
                                 this.receiveChatMessage(msg);
                             }
@@ -3577,18 +2846,6 @@
                         // Si había una oferta local en vuelo, hace rollback, responde al servidor y luego re-envía su oferta.
                         const hadLocalOffer = (this.pc.signalingState === 'have-local-offer');
                         if (this.pc.signalingState !== 'stable') {
-                            if (this.audioTransceiver && !this.audioTransceiver.currentDirection) {
-                                try { this.audioTransceiver.stop(); } catch (e) {}
-                                this.audioTransceiver = null;
-                                this.audioSender = null;
-                                this._pendingLocalPublish = true;
-                            }
-                            if (this.videoTransceiver && !this.videoTransceiver.currentDirection) {
-                                try { this.videoTransceiver.stop(); } catch (e) {}
-                                this.videoTransceiver = null;
-                                this.videoSender = null;
-                                this._pendingLocalPublish = true;
-                            }
                             try {
                                 await this.pc.setLocalDescription({ type: 'rollback' });
                             } catch (e) {}
@@ -3607,15 +2864,10 @@
                                 sdp: answer.sdp
                             }));
                         }
-                        const audioNeedsOffer = (this.micEnabled || (this.screenEnabled && this.screenStream && this.screenStream.getAudioTracks().length > 0))
-                            && (!this.audioTransceiver || this.audioTransceiver.stopped || (this.audioTransceiver.currentDirection !== 'sendonly' && this.audioTransceiver.currentDirection !== 'sendrecv'));
-                        const videoNeedsOffer = (this.camEnabled || this.screenEnabled || this.whiteboardEnabled)
-                            && (!this.videoTransceiver || this.videoTransceiver.stopped || (this.videoTransceiver.currentDirection !== 'sendonly' && this.videoTransceiver.currentDirection !== 'sendrecv'));
-                        if (hadLocalOffer || this._pendingLocalPublish || audioNeedsOffer || videoNeedsOffer) {
-                            this._pendingLocalPublish = false;
+                        if (hadLocalOffer) {
                             setTimeout(() => {
-                                this.ensureLocalTracksPublished();
-                            }, 50);
+                                this.sendOffer();
+                            }, 80);
                         }
                         break;
                     }
@@ -3627,16 +2879,6 @@
                                 sdp: msg.sdp
                             }));
                             await this.flushCandidates();
-                        }
-                        if (this._pendingInitialSync && this.ws && this.ws.readyState === WebSocket.OPEN) {
-                            this._pendingInitialSync = false;
-                            this.ws.send(JSON.stringify({ type: 'request-sync' }));
-                        }
-                        if (this._pendingLocalPublish) {
-                            this._pendingLocalPublish = false;
-                            setTimeout(() => {
-                                this.ensureLocalTracksPublished();
-                            }, 40);
                         }
                         break;
 
@@ -3937,7 +3179,7 @@
                 if (!inp) return;
                 const text = String(inp.value || '').trim();
                 if (!text) return;
-                if (text.startsWith('__VIDEO_') || text.startsWith('__PDF_CHUNK__:')) return;
+                if (text.startsWith('__VIDEO_')) return;
 
                 inp.value = '';
                 if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -3956,167 +3198,13 @@
                 }
             },
 
-            triggerChatPdfUpload() {
-                if (!this.isHostUser()) return;
-                const fileInp = document.getElementById('chatPdfInput');
-                if (fileInp) {
-                    fileInp.value = '';
-                    fileInp.click();
-                }
-            },
-
-            handleChatPdfSelected(ev) {
-                if (!this.isHostUser()) return;
-                const input = ev && ev.target ? ev.target : document.getElementById('chatPdfInput');
-                const file = input && input.files && input.files[0];
-                if (!file) return;
-
-                const fileName = String(file.name || 'documento.pdf').trim();
-                const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(fileName);
-                if (!isPdf) {
-                    this.showStageToast('Solo se permite adjuntar archivos en formato PDF.', 3200);
-                    input.value = '';
-                    return;
-                }
-
-                const MAX_PDF_BYTES = 2 * 1024 * 1024; // 2 MB estrictos
-                if (file.size > MAX_PDF_BYTES) {
-                    this.showStageToast('El archivo PDF supera el límite máximo de 2 MB.', 3400);
-                    input.value = '';
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const dataUrl = String(reader.result || '');
-                    if (!dataUrl.startsWith('data:application/pdf') && !dataUrl.startsWith('data:binary/octet-stream') && !dataUrl.startsWith('data:application/octet-stream')) {
-                        this.showStageToast('No se pudo leer el archivo PDF.', 2800);
-                        return;
-                    }
-
-                    const transferId = 'pdf_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6);
-                    const chunkSize = 42000;
-                    const totalChunks = Math.max(1, Math.ceil(dataUrl.length / chunkSize));
-                    const safeEncName = encodeURIComponent(fileName);
-
-                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        for (let idx = 0; idx < totalChunks; idx++) {
-                            const slice = dataUrl.slice(idx * chunkSize, (idx + 1) * chunkSize);
-                            const payload = `__PDF_CHUNK__:${transferId}:${idx}:${totalChunks}:${safeEncName}:${file.size}:${slice}`;
-                            this.ws.send(JSON.stringify({
-                                type: 'chat',
-                                text: payload
-                            }));
-                        }
-                    } else {
-                        this.receiveChatMessage({
-                            peerId: this.peerId,
-                            name: this.userName,
-                            role: this.userRole,
-                            text: fileName,
-                            pdfName: fileName,
-                            pdfSize: file.size,
-                            pdfDataUrl: dataUrl,
-                            timestamp: Date.now()
-                        });
-                    }
-                    input.value = '';
-                };
-                reader.readAsDataURL(file);
-            },
-
-            handleIncomingPdfChunk(msg) {
-                try {
-                    const raw = String(msg.text || '');
-                    const prefix = '__PDF_CHUNK__:';
-                    const body = raw.slice(prefix.length);
-                    const p1 = body.indexOf(':');
-                    const p2 = body.indexOf(':', p1 + 1);
-                    const p3 = body.indexOf(':', p2 + 1);
-                    const p4 = body.indexOf(':', p3 + 1);
-                    const p5 = body.indexOf(':', p4 + 1);
-                    if (p1 < 0 || p2 < 0 || p3 < 0 || p4 < 0 || p5 < 0) return;
-
-                    const transferId = body.slice(0, p1);
-                    const idx = parseInt(body.slice(p1 + 1, p2), 10);
-                    const total = parseInt(body.slice(p2 + 1, p3), 10);
-                    const fileName = decodeURIComponent(body.slice(p3 + 1, p4) || 'documento.pdf');
-                    const fileSize = parseInt(body.slice(p4 + 1, p5), 10) || 0;
-                    const chunkData = body.slice(p5 + 1);
-
-                    if (!transferId || isNaN(idx) || isNaN(total) || total < 1 || total > 100 || fileSize > 2 * 1024 * 1024 + 4096) return;
-
-                    let entry = this.incomingPdfChunks.get(transferId);
-                    if (!entry) {
-                        entry = {
-                            chunks: new Array(total),
-                            received: 0,
-                            total,
-                            fileName,
-                            fileSize,
-                            peerId: msg.peerId || '',
-                            name: msg.name || 'Profesor',
-                            role: msg.role || 'profesor',
-                            createdAt: Date.now()
-                        };
-                        this.incomingPdfChunks.set(transferId, entry);
-                    }
-
-                    if (entry.chunks[idx] === undefined) {
-                        entry.chunks[idx] = chunkData;
-                        entry.received++;
-                    }
-
-                    if (entry.received === entry.total) {
-                        this.incomingPdfChunks.delete(transferId);
-                        const fullDataUrl = entry.chunks.join('');
-                        this.receiveChatMessage({
-                            peerId: entry.peerId,
-                            name: entry.name,
-                            role: entry.role,
-                            text: entry.fileName,
-                            pdfName: entry.fileName,
-                            pdfSize: entry.fileSize,
-                            pdfDataUrl: fullDataUrl,
-                            timestamp: msg.timestamp || Date.now()
-                        });
-                    }
-                } catch (e) {}
-            },
-
-            createPdfBlobUrl(dataUrl) {
-                try {
-                    const parts = String(dataUrl || '').split(',');
-                    if (parts.length < 2) return dataUrl;
-                    const byteString = atob(parts[1]);
-                    const ab = new ArrayBuffer(byteString.length);
-                    const ia = new Uint8Array(ab);
-                    for (let i = 0; i < byteString.length; i++) {
-                        ia[i] = byteString.charCodeAt(i);
-                    }
-                    const blob = new Blob([ab], { type: 'application/pdf' });
-                    const url = URL.createObjectURL(blob);
-                    this.pdfObjectUrls.push(url);
-                    return url;
-                } catch (e) {
-                    return dataUrl;
-                }
-            },
-
             receiveChatMessage(msg) {
                 if (!msg || !msg.text) return;
-                let pdfBlobUrl = '';
-                if (msg.pdfDataUrl) {
-                    pdfBlobUrl = this.createPdfBlobUrl(msg.pdfDataUrl);
-                }
                 const item = {
                     peerId: msg.peerId || '',
                     name: msg.name || 'Participante',
                     role: msg.role || 'estudiante',
                     text: String(msg.text),
-                    pdfName: msg.pdfName || '',
-                    pdfSize: Number(msg.pdfSize || 0),
-                    pdfBlobUrl: pdfBlobUrl,
                     timestamp: msg.timestamp || Date.now()
                 };
                 this.chatMessages.push(item);
@@ -4124,14 +3212,7 @@
                     this.chatMessages.shift();
                 }
                 try {
-                    const serializable = this.chatMessages.map(c => ({
-                        peerId: c.peerId,
-                        name: c.name,
-                        role: c.role,
-                        text: c.pdfName ? `[PDF] ${c.pdfName}` : c.text,
-                        timestamp: c.timestamp
-                    }));
-                    sessionStorage.setItem('ubuntu_meet_chat_' + this.roomCode, JSON.stringify(serializable));
+                    sessionStorage.setItem('ubuntu_meet_chat_' + this.roomCode, JSON.stringify(this.chatMessages));
                 } catch (e) {}
 
                 const chatDd = document.getElementById('chatDropdown');
@@ -4139,9 +3220,6 @@
                 if (!isOpen && item.peerId !== this.peerId) {
                     this.chatUnreadCount++;
                     this.updateChatUnreadUI();
-                    if (item.pdfName) {
-                        this.showStageToast(`${item.name} compartió un PDF en el chat`, 3200);
-                    }
                 }
                 this.renderChatMessages();
             },
@@ -4161,35 +3239,6 @@
                     const hh = String(d.getHours()).padStart(2, '0');
                     const mm = String(d.getMinutes()).padStart(2, '0');
                     const senderLabel = isSelf ? `${escapeHtml(m.name)} (Tú)` : escapeHtml(m.name);
-
-                    if (m.pdfName && m.pdfBlobUrl) {
-                        const kb = Math.max(1, Math.round((m.pdfSize || 0) / 1024));
-                        const sizeStr = kb >= 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${kb} KB`;
-                        return `
-                            <div class="chat-msg-bubble ${isSelf ? 'is-self' : ''}">
-                                <div class="chat-msg-meta">
-                                    <span>${senderLabel}</span>
-                                    <span>${hh}:${mm}</span>
-                                </div>
-                                <div class="chat-pdf-card">
-                                    <div class="chat-pdf-info">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                            <polyline points="14 2 14 8 20 8"></polyline>
-                                        </svg>
-                                        <div class="chat-pdf-meta">
-                                            <div class="chat-pdf-name" title="${escapeHtml(m.pdfName)}">${escapeHtml(m.pdfName)}</div>
-                                            <div class="chat-pdf-size">PDF • ${sizeStr}</div>
-                                        </div>
-                                    </div>
-                                    <a class="chat-pdf-dl" href="${m.pdfBlobUrl}" download="${escapeHtml(m.pdfName)}" target="_blank" rel="noopener">
-                                        <span>Descargar</span>
-                                    </a>
-                                </div>
-                            </div>
-                        `;
-                    }
-
                     return `
                         <div class="chat-msg-bubble ${isSelf ? 'is-self' : ''}">
                             <div class="chat-msg-meta">
@@ -4254,19 +3303,7 @@
 
             toggleRaiseHand() {
                 if (this.isHostUser()) return;
-                const now = Date.now();
-                if (!this.handRaised && now < this.handCooldownUntilMs) {
-                    const remSec = Math.max(1, Math.ceil((this.handCooldownUntilMs - now) / 1000));
-                    this.showStageToast(`Espera ${remSec}s antes de volver a levantar la mano.`, 2400);
-                    return;
-                }
                 this.handRaised = !this.handRaised;
-                if (!this.handRaised) {
-                    this.handCooldownUntilMs = now + 15000;
-                    setTimeout(() => {
-                        this.syncControlButtonsUI();
-                    }, 15100);
-                }
                 this.syncControlButtonsUI();
                 if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                     this.ws.send(JSON.stringify({
@@ -4284,46 +3321,6 @@
                     targetPeerId: String(targetPeerId),
                     handRaised: false
                 }));
-            },
-
-            toggleHandSoundMuted() {
-                if (!this.isHostUser()) return;
-                this.handSoundMuted = !this.handSoundMuted;
-                this.updateMuteAllButtonUI();
-                this.showStageToast(this.handSoundMuted ? 'Avisos sonoros de mano silenciados.' : 'Avisos sonoros de mano activados.', 2200);
-            },
-
-            playHandChime(peerId) {
-                if (!this.isHostUser() || this.handSoundMuted) return;
-                const now = Date.now();
-                const pid = String(peerId || 'anon');
-                const lastPeer = this.lastHandChimeByPeer.get(pid) || 0;
-                if (now - lastPeer < 10000) return;
-                if (now - this.lastGlobalHandChimeMs < 2500) return;
-
-                this.lastHandChimeByPeer.set(pid, now);
-                this.lastGlobalHandChimeMs = now;
-
-                try {
-                    this.ensureAudioContext();
-                    if (!this.audioCtx) return;
-                    if (this.audioCtx.state === 'suspended') {
-                        this.audioCtx.resume().catch(() => {});
-                    }
-                    const t0 = this.audioCtx.currentTime;
-                    const osc = this.audioCtx.createOscillator();
-                    const gain = this.audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(587.33, t0);
-                    osc.frequency.setValueAtTime(783.99, t0 + 0.08);
-                    gain.gain.setValueAtTime(0.001, t0);
-                    gain.gain.linearRampToValueAtTime(0.08, t0 + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
-                    osc.connect(gain);
-                    gain.connect(this.audioCtx.destination);
-                    osc.start(t0);
-                    osc.stop(t0 + 0.24);
-                } catch (e) {}
             },
 
             showNoAudioNotice() {
@@ -4344,461 +3341,8 @@
                 await this.toggleCallShare();
             },
 
-            // ================= PIZARRA INTERACTIVA LITE (SOLO PROFESOR) =================
-            initWhiteboardCanvas() {
-                const canvas = document.getElementById('whiteboardCanvas');
-                if (!canvas) return null;
-                const ctx = canvas.getContext('2d', { alpha: false });
-                if (!this._wbEventsBound && ctx) {
-                    this._wbEventsBound = true;
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    this.wbPages[0] = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-                    const getCoords = (ev) => {
-                        const rect = canvas.getBoundingClientRect();
-                        if (!rect.width || !rect.height) return { x: 0, y: 0, relX: 0, relY: 0 };
-                        const scaleX = canvas.width / rect.width;
-                        const scaleY = canvas.height / rect.height;
-                        return {
-                            x: (ev.clientX - rect.left) * scaleX,
-                            y: (ev.clientY - rect.top) * scaleY,
-                            relX: ev.clientX - rect.left,
-                            relY: ev.clientY - rect.top
-                        };
-                    };
-
-                    const onDown = (ev) => {
-                        if (!this.whiteboardEnabled || !this.isHostUser()) return;
-                        if (ev.button !== undefined && ev.button !== 0) return;
-
-                        if (this.wbTool === 'text') {
-                            ev.preventDefault();
-                            const pt = getCoords(ev);
-                            this.openWhiteboardTextEditor(pt.relX, pt.relY);
-                            return;
-                        }
-
-                        ev.preventDefault();
-                        this.pushWhiteboardUndoState();
-                        try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}
-                        const pt = getCoords(ev);
-                        this.wbDrawing = true;
-                        this.wbLastX = pt.x;
-                        this.wbLastY = pt.y;
-                        this.wbMidX = pt.x;
-                        this.wbMidY = pt.y;
-
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.fillStyle = this.wbTool === 'eraser' ? '#ffffff' : this.wbColor;
-                        const radius = this.wbTool === 'eraser' ? 16 : 2;
-                        ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.restore();
-                    };
-
-                    const onMove = (ev) => {
-                        if (!this.wbDrawing || !this.whiteboardEnabled) return;
-                        ev.preventDefault();
-                        const pt = getCoords(ev);
-                        const midX = (this.wbLastX + pt.x) / 2;
-                        const midY = (this.wbLastY + pt.y) / 2;
-
-                        ctx.save();
-                        ctx.lineCap = 'round';
-                        ctx.lineJoin = 'round';
-                        if (this.wbTool === 'eraser') {
-                            ctx.strokeStyle = '#ffffff';
-                            ctx.lineWidth = 32;
-                        } else {
-                            ctx.strokeStyle = this.wbColor;
-                            ctx.lineWidth = 3.5;
-                        }
-                        ctx.beginPath();
-                        ctx.moveTo(this.wbMidX, this.wbMidY);
-                        ctx.quadraticCurveTo(this.wbLastX, this.wbLastY, midX, midY);
-                        ctx.stroke();
-                        ctx.restore();
-
-                        this.wbLastX = pt.x;
-                        this.wbLastY = pt.y;
-                        this.wbMidX = midX;
-                        this.wbMidY = midY;
-                    };
-
-                    const onUp = (ev) => {
-                        if (!this.wbDrawing) return;
-                        this.wbDrawing = false;
-                        try { canvas.releasePointerCapture(ev.pointerId); } catch (e) {}
-                        this.wbPages[this.wbCurrentPage] = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    };
-
-                    canvas.addEventListener('pointerdown', onDown);
-                    canvas.addEventListener('pointermove', onMove);
-                    canvas.addEventListener('pointerup', onUp);
-                    canvas.addEventListener('pointercancel', onUp);
-                    canvas.addEventListener('pointerleave', onUp);
-
-                    // Arrastre del cuadro flotante de texto
-                    const editorEl = document.getElementById('wbTextEditor');
-                    const dragHandle = document.getElementById('wbTextDragHandle');
-                    const txtInput = document.getElementById('wbTextInput');
-                    if (editorEl && dragHandle) {
-                        let draggingBox = false;
-                        let dragStartX = 0;
-                        let dragStartY = 0;
-                        let boxOrigLeft = 0;
-                        let boxOrigTop = 0;
-
-                        dragHandle.addEventListener('pointerdown', (e) => {
-                            if (e.target && e.target.closest('button')) return;
-                            e.preventDefault();
-                            draggingBox = true;
-                            dragStartX = e.clientX;
-                            dragStartY = e.clientY;
-                            boxOrigLeft = editorEl.offsetLeft;
-                            boxOrigTop = editorEl.offsetTop;
-                            try { dragHandle.setPointerCapture(e.pointerId); } catch (err) {}
-                        });
-
-                        dragHandle.addEventListener('pointermove', (e) => {
-                            if (!draggingBox) return;
-                            e.preventDefault();
-                            const wrap = document.getElementById('stageWhiteboardWrap');
-                            const maxW = wrap ? Math.max(80, wrap.clientWidth - editorEl.offsetWidth - 8) : 1200;
-                            const maxH = wrap ? Math.max(80, wrap.clientHeight - editorEl.offsetHeight - 8) : 800;
-                            const nextLeft = Math.max(8, Math.min(maxW, boxOrigLeft + (e.clientX - dragStartX)));
-                            const nextTop = Math.max(54, Math.min(maxH, boxOrigTop + (e.clientY - dragStartY)));
-                            editorEl.style.left = `${nextLeft}px`;
-                            editorEl.style.top = `${nextTop}px`;
-                        });
-
-                        const endDrag = (e) => {
-                            if (!draggingBox) return;
-                            draggingBox = false;
-                            try { dragHandle.releasePointerCapture(e.pointerId); } catch (err) {}
-                        };
-                        dragHandle.addEventListener('pointerup', endDrag);
-                        dragHandle.addEventListener('pointercancel', endDrag);
-                    }
-
-                    if (txtInput) {
-                        txtInput.addEventListener('keydown', (e) => {
-                            if (e.key === 'Escape') {
-                                e.preventDefault();
-                                this.cancelWhiteboardText();
-                            } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                e.preventDefault();
-                                this.commitWhiteboardText();
-                            }
-                        });
-                    }
-
-                    // Atajo de teclado Ctrl+Z / Cmd+Z para deshacer en pizarra
-                    window.addEventListener('keydown', (e) => {
-                        if (!this.whiteboardEnabled || !this.isHostUser()) return;
-                        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-                        if (activeTag === 'input' || activeTag === 'textarea') return;
-                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-                            e.preventDefault();
-                            this.undoWhiteboard();
-                        }
-                    });
-                }
-                return canvas;
-            },
-
-            pushWhiteboardUndoState() {
-                const canvas = document.getElementById('whiteboardCanvas');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d', { alpha: false });
-                if (!ctx) return;
-                const stack = this.wbUndoStacks[this.wbCurrentPage] || [];
-                stack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-                if (stack.length > 15) stack.shift();
-                this.wbUndoStacks[this.wbCurrentPage] = stack;
-                this.updateWhiteboardUndoUI();
-            },
-
-            updateWhiteboardUndoUI() {
-                const btnUndo = document.getElementById('wbBtnUndo');
-                if (!btnUndo) return;
-                const stack = this.wbUndoStacks[this.wbCurrentPage] || [];
-                btnUndo.disabled = stack.length === 0;
-            },
-
-            undoWhiteboard() {
-                if (!this.whiteboardEnabled || !this.isHostUser()) return;
-                const stack = this.wbUndoStacks[this.wbCurrentPage] || [];
-                if (stack.length === 0) return;
-                const canvas = document.getElementById('whiteboardCanvas');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d', { alpha: false });
-                if (!ctx) return;
-                const prevImage = stack.pop();
-                if (prevImage) {
-                    ctx.putImageData(prevImage, 0, 0);
-                    this.wbPages[this.wbCurrentPage] = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                }
-                this.updateWhiteboardUndoUI();
-            },
-
-            setWhiteboardTool(tool) {
-                if (this.wbTool === 'text' && tool !== 'text') {
-                    this.commitWhiteboardText();
-                }
-                if (tool === 'eraser') {
-                    this.wbTool = 'eraser';
-                } else if (tool === 'text') {
-                    this.wbTool = 'text';
-                } else {
-                    this.wbTool = 'pen';
-                }
-                const canvas = document.getElementById('whiteboardCanvas');
-                if (canvas) {
-                    canvas.classList.toggle('is-eraser', this.wbTool === 'eraser');
-                    canvas.classList.toggle('is-text', this.wbTool === 'text');
-                }
-                const btnPen = document.getElementById('wbBtnPen');
-                const btnText = document.getElementById('wbBtnText');
-                const btnEraser = document.getElementById('wbBtnEraser');
-                if (btnPen) btnPen.classList.toggle('is-active', this.wbTool === 'pen');
-                if (btnText) btnText.classList.toggle('is-active', this.wbTool === 'text');
-                if (btnEraser) btnEraser.classList.toggle('is-active', this.wbTool === 'eraser');
-            },
-
-            setWhiteboardColor(color) {
-                this.wbColor = color || '#111111';
-                if (this.wbTool === 'eraser') {
-                    this.setWhiteboardTool('pen');
-                }
-                const cBlack = document.getElementById('wbColorBlack');
-                const cBlue = document.getElementById('wbColorBlue');
-                const cRed = document.getElementById('wbColorRed');
-                if (cBlack) cBlack.classList.toggle('is-active', this.wbColor === '#111111');
-                if (cBlue) cBlue.classList.toggle('is-active', this.wbColor === '#2563eb');
-                if (cRed) cRed.classList.toggle('is-active', this.wbColor === '#dc2626');
-                const txtInput = document.getElementById('wbTextInput');
-                if (txtInput) txtInput.style.color = this.wbColor;
-            },
-
-            openWhiteboardTextEditor(relX, relY) {
-                const editorEl = document.getElementById('wbTextEditor');
-                const txtInput = document.getElementById('wbTextInput');
-                const wrap = document.getElementById('stageWhiteboardWrap');
-                if (!editorEl || !txtInput || !wrap) return;
-
-                if (editorEl.classList.contains('is-open') && txtInput.value.trim()) {
-                    this.commitWhiteboardText();
-                }
-
-                const maxLeft = Math.max(12, wrap.clientWidth - 260);
-                const maxTop = Math.max(58, wrap.clientHeight - 130);
-                const left = Math.max(12, Math.min(maxLeft, Math.round(relX)));
-                const top = Math.max(58, Math.min(maxTop, Math.round(relY)));
-
-                editorEl.style.left = `${left}px`;
-                editorEl.style.top = `${top}px`;
-                txtInput.style.color = this.wbColor;
-                editorEl.classList.add('is-open');
-                setTimeout(() => txtInput.focus(), 20);
-            },
-
-            setWhiteboardTextSize(canvasPx, key) {
-                this.wbTextFontSize = Number(canvasPx) || 42;
-                this.wbTextSizeKey = key || 'M';
-                const btnS = document.getElementById('wbSizeS');
-                const btnM = document.getElementById('wbSizeM');
-                const btnL = document.getElementById('wbSizeL');
-                if (btnS) btnS.classList.toggle('is-active', this.wbTextSizeKey === 'S');
-                if (btnM) btnM.classList.toggle('is-active', this.wbTextSizeKey === 'M');
-                if (btnL) btnL.classList.toggle('is-active', this.wbTextSizeKey === 'L');
-                const txtInput = document.getElementById('wbTextInput');
-                if (txtInput) {
-                    txtInput.style.fontSize = this.wbTextSizeKey === 'S' ? '14px' : (this.wbTextSizeKey === 'L' ? '24px' : '18px');
-                    txtInput.focus();
-                }
-            },
-
-            commitWhiteboardText() {
-                const editorEl = document.getElementById('wbTextEditor');
-                const txtInput = document.getElementById('wbTextInput');
-                const canvas = document.getElementById('whiteboardCanvas');
-                if (!editorEl || !txtInput || !canvas) return;
-                if (!editorEl.classList.contains('is-open')) return;
-
-                const rawText = String(txtInput.value || '').replace(/\r/g, '');
-                if (rawText.trim()) {
-                    const ctx = canvas.getContext('2d', { alpha: false });
-                    const rect = canvas.getBoundingClientRect();
-                    if (ctx && rect.width > 0 && rect.height > 0) {
-                        this.pushWhiteboardUndoState();
-                        const scaleX = canvas.width / rect.width;
-                        const scaleY = canvas.height / rect.height;
-                        const textLeftPx = editorEl.offsetLeft + 10;
-                        const textTopPx = editorEl.offsetTop + 36;
-                        const startX = textLeftPx * scaleX;
-                        const startY = textTopPx * scaleY;
-                        const fontPx = this.wbTextFontSize || 42;
-                        const lineHeight = Math.round(fontPx * 1.28);
-
-                        ctx.save();
-                        ctx.font = `${fontPx}px Arial, sans-serif`;
-                        ctx.fillStyle = this.wbColor || '#111111';
-                        ctx.textBaseline = 'top';
-                        const lines = rawText.split('\n');
-                        lines.forEach((line, i) => {
-                            ctx.fillText(line, startX, startY + i * lineHeight);
-                        });
-                        ctx.restore();
-                        this.wbPages[this.wbCurrentPage] = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    }
-                }
-
-                txtInput.value = '';
-                editorEl.classList.remove('is-open');
-            },
-
-            cancelWhiteboardText() {
-                const editorEl = document.getElementById('wbTextEditor');
-                const txtInput = document.getElementById('wbTextInput');
-                if (txtInput) txtInput.value = '';
-                if (editorEl) editorEl.classList.remove('is-open');
-            },
-
-            switchWhiteboardPage(pageIdx) {
-                const targetIdx = Number(pageIdx);
-                if (isNaN(targetIdx) || targetIdx < 0 || targetIdx > 2) return;
-                if (targetIdx === this.wbCurrentPage) return;
-
-                this.commitWhiteboardText();
-                const canvas = document.getElementById('whiteboardCanvas');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d', { alpha: false });
-                if (!ctx) return;
-
-                this.wbPages[this.wbCurrentPage] = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                this.wbCurrentPage = targetIdx;
-
-                if (this.wbPages[targetIdx]) {
-                    ctx.putImageData(this.wbPages[targetIdx], 0, 0);
-                } else {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    this.wbPages[targetIdx] = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                }
-
-                for (let i = 0; i < 3; i++) {
-                    const btn = document.getElementById(`wbBtnPage${i}`);
-                    if (btn) btn.classList.toggle('is-active', i === targetIdx);
-                }
-                this.updateWhiteboardUndoUI();
-            },
-
-            clearWhiteboard() {
-                this.cancelWhiteboardText();
-                const canvas = document.getElementById('whiteboardCanvas');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d', { alpha: false });
-                if (!ctx) return;
-                this.pushWhiteboardUndoState();
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                this.wbPages[this.wbCurrentPage] = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            },
-
-            stopWhiteboardStream() {
-                this.wbDrawing = false;
-                this.cancelWhiteboardText();
-                if (this.wbKeepAliveTimer) {
-                    clearInterval(this.wbKeepAliveTimer);
-                    this.wbKeepAliveTimer = null;
-                }
-                if (this.whiteboardStream) {
-                    this.whiteboardStream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
-                    this.whiteboardStream = null;
-                }
-            },
-
-            async toggleWhiteboard() {
-                if (!this.isHostUser()) return;
-                if (this.whiteboardEnabled) {
-                    await this.stopWhiteboard();
-                    return;
-                }
-
-                const canvas = this.initWhiteboardCanvas();
-                if (!canvas || typeof canvas.captureStream !== 'function') {
-                    this.showStageToast('Tu navegador no soporta pizarra en vivo.', 2600);
-                    return;
-                }
-
-                if (this.screenEnabled) {
-                    this.hideNoAudioNotice();
-                    this.stopScreenStream();
-                    this.screenEnabled = false;
-                    await this.syncOutgoingAudio();
-                }
-                if (this.camEnabled) {
-                    this.stopCamStream();
-                    this.camEnabled = false;
-                }
-
-                this.whiteboardStream = canvas.captureStream(24);
-                this.whiteboardEnabled = true;
-
-                // Mantener refresco sutil de fotograma en navegadores que pausan captureStream estático
-                if (this.wbKeepAliveTimer) clearInterval(this.wbKeepAliveTimer);
-                this.wbKeepAliveTimer = setInterval(() => {
-                    if (!this.whiteboardEnabled) return;
-                    const c = document.getElementById('whiteboardCanvas');
-                    const ctx = c ? c.getContext('2d', { alpha: false }) : null;
-                    if (ctx) {
-                        const px = ctx.getImageData(0, 0, 1, 1);
-                        ctx.putImageData(px, 0, 0);
-                    }
-                }, 800);
-
-                const wbTrack = this.whiteboardStream.getVideoTracks()[0];
-                if (wbTrack) {
-                    wbTrack.enabled = true;
-                    if ('contentHint' in wbTrack) {
-                        try { wbTrack.contentHint = 'detail'; } catch (e) {}
-                    }
-                }
-
-                if (this.pc && wbTrack) {
-                    const needsOffer = await this.syncOrAddVideoTrack(wbTrack, this.whiteboardStream);
-                    if (needsOffer) {
-                        await this.sendOffer();
-                    }
-                    this.sendRoomNotice('__VIDEO_ON__:whiteboard');
-                }
-
-                this.syncControlButtonsUI();
-                this.updateStageDisplay();
-            },
-
-            async stopWhiteboard() {
-                this.stopWhiteboardStream();
-                this.whiteboardEnabled = false;
-
-                if (this.videoSender && !this.camEnabled && !this.screenEnabled) {
-                    await this.videoSender.replaceTrack(null).catch(() => {});
-                    this.sendRoomNotice('__VIDEO_OFF__');
-                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        this.ws.send(JSON.stringify({ type: 'stop-share' }));
-                    }
-                }
-
-                this.syncControlButtonsUI();
-                this.updateStageDisplay();
-            },
-
             // ================= IN-CALL DOCK BUTTONS =================
             async toggleCallMic() {
-                this.unlockAllRemoteAudio();
                 if (this.micEnabled) {
                     this.stopMicStream();
                     this.micEnabled = false;
@@ -4810,10 +3354,11 @@
                         return;
                     }
                     try {
+                        this.ensureAudioContext();
+                        this.unlockAllRemoteAudio();
                         this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         const audioTrack = this.micStream.getAudioTracks()[0];
                         this.attachLocalAudioAnalyser(this.micStream);
-                        this.unlockAllRemoteAudio();
                         if (audioTrack && this.pc) {
                             this.micEnabled = true;
                             const needsOffer = await this.syncOutgoingAudio();
@@ -4829,11 +3374,10 @@
             },
 
             async toggleCallCam() {
-                this.unlockAllRemoteAudio();
                 if (this.camEnabled) {
                     this.stopCamStream();
                     this.camEnabled = false;
-                    if (this.videoSender && !this.screenEnabled && !this.whiteboardEnabled) {
+                    if (this.videoSender && !this.screenEnabled) {
                         await this.videoSender.replaceTrack(null).catch(() => {});
                         this.sendRoomNotice('__VIDEO_OFF__');
                         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -4842,11 +3386,7 @@
                     }
                 } else {
                     try {
-                        // Si estaba compartiendo pantalla o pizarra, detenerlos y pasar a cámara
-                        if (this.whiteboardEnabled) {
-                            this.stopWhiteboardStream();
-                            this.whiteboardEnabled = false;
-                        }
+                        // Si estaba compartiendo pantalla, detener pantalla y pasar a cámara
                         if (this.screenEnabled) {
                             this.hideNoAudioNotice();
                             this.stopScreenStream();
@@ -4858,9 +3398,16 @@
                         });
                         const videoTrack = this.camStream.getVideoTracks()[0];
                         if (videoTrack && this.pc) {
+                            videoTrack.enabled = true;
                             this.camEnabled = true;
-                            const needsOffer = await this.syncOrAddVideoTrack(videoTrack, this.camStream);
-                            if (needsOffer) {
+                            if (this.videoSender) {
+                                await this.videoSender.replaceTrack(videoTrack);
+                            } else {
+                                const vTr = this.pc.addTransceiver(videoTrack, {
+                                    direction: 'sendonly',
+                                    streams: [this.camStream]
+                                });
+                                this.videoSender = vTr.sender;
                                 await this.sendOffer();
                             }
                             this.sendRoomNotice('__VIDEO_ON__:cam');
@@ -4874,7 +3421,6 @@
             },
 
             async toggleCallShare() {
-                this.unlockAllRemoteAudio();
                 if (this.screenEnabled) {
                     await this.stopCallShare();
                     return;
@@ -4900,11 +3446,7 @@
                         monitorTypeSurfaces: 'include'
                     });
 
-                    // Si tenía pizarra o cámara encendida, apagarlas para mostrar la pantalla
-                    if (this.whiteboardEnabled) {
-                        this.stopWhiteboardStream();
-                        this.whiteboardEnabled = false;
-                    }
+                    // Si tenía cámara encendida, apagar cámara para mostrar la pantalla
                     if (this.camEnabled) {
                         this.stopCamStream();
                         this.camEnabled = false;
@@ -4932,7 +3474,18 @@
                     }
 
                     if (this.pc && screenVideoTrack) {
-                        const needsOffer = await this.syncOrAddVideoTrack(screenVideoTrack, stream);
+                        let needsOffer = false;
+                        if (this.videoSender) {
+                            await this.videoSender.replaceTrack(screenVideoTrack);
+                        } else {
+                            const sTr = this.pc.addTransceiver(screenVideoTrack, {
+                                direction: 'sendonly',
+                                streams: [stream]
+                            });
+                            this.videoSender = sTr.sender;
+                            needsOffer = true;
+                        }
+
                         const audioNeedsOffer = await this.syncOutgoingAudio();
                         if (needsOffer || audioNeedsOffer) {
                             await this.sendOffer();
@@ -4952,7 +3505,7 @@
                 this.stopScreenStream();
                 this.screenEnabled = false;
 
-                if (this.videoSender && !this.camEnabled && !this.whiteboardEnabled) {
+                if (this.videoSender && !this.camEnabled) {
                     await this.videoSender.replaceTrack(null).catch(() => {});
                     this.sendRoomNotice('__VIDEO_OFF__');
                     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -4963,21 +3516,6 @@
 
                 this.syncControlButtonsUI();
                 this.updateStageDisplay();
-            },
-
-            copyCleanRoomLink() {
-                const url = `${window.location.origin}/meet?room=${encodeURIComponent(this.roomCode)}`;
-                try {
-                    navigator.clipboard.writeText(url);
-                } catch(e) {
-                    const t = document.createElement('input');
-                    t.value = url;
-                    document.body.appendChild(t);
-                    t.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(t);
-                }
-                this.showStageToast('Enlace de la clase copiado al portapapeles.', 2500);
             },
 
             async cleanupLiveSessionInPlatform() {
@@ -5034,7 +3572,29 @@
             },
 
             async hangupCall(customReason = '', hideRejoin = false) {
-                if (window.NuevoMotorGrabaciones && (window.NuevoMotorGrabaciones.isRecording || window.NuevoMotorGrabaciones.isSaving)) {
+                let endForEveryone = false;
+
+                if (this.isHostUser() && !this.wasKicked && !customReason) {
+                    endForEveryone = window.confirm(
+                        '¿Deseas FINALIZAR la clase para todos los alumnos?\n\n' +
+                        '• Aceptar: Cierra la sala para todos y guarda la grabación.\n' +
+                        '• Cancelar: Solo sales tú (los alumnos permanecen en la sala por si deseas volver a entrar).'
+                    );
+                } else if (this.isHostUser() && !this.wasKicked && customReason) {
+                    endForEveryone = true;
+                }
+
+                this._manualHangup = true;
+                if (this.pingInterval) {
+                    clearInterval(this.pingInterval);
+                    this.pingInterval = null;
+                }
+                if (this.reconnectTimeout) {
+                    clearTimeout(this.reconnectTimeout);
+                    this.reconnectTimeout = null;
+                }
+
+                if ((endForEveryone || !this.isHostUser()) && window.NuevoMotorGrabaciones && (window.NuevoMotorGrabaciones.isRecording || window.NuevoMotorGrabaciones.isSaving)) {
                     await window.NuevoMotorGrabaciones.stopAndSave();
                 }
 
@@ -5043,8 +3603,7 @@
                     this.sessionTimerInterval = null;
                 }
 
-                // Si el anfitrión (Profesor/Admin) finaliza la llamada, cerrar la sala para todos y limpiar la sesión activa en la plataforma
-                if (this.isHostUser() && !this.wasKicked) {
+                if (endForEveryone) {
                     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                         try {
                             this.ws.send(JSON.stringify({ type: 'end-room' }));
@@ -5056,16 +3615,12 @@
                 this.inCall = false;
                 this.handRaised = false;
                 this.stopMicStream();
-                this.stopWarmUpMicStream();
                 this.stopCamStream();
                 this.stopScreenStream();
-                this.stopWhiteboardStream();
                 this.micEnabled = false;
                 this.camEnabled = false;
                 this.screenEnabled = false;
-                this.whiteboardEnabled = false;
 
-                // El historial del chat muere al terminar la reunión
                 this.chatMessages = [];
                 this.chatUnreadCount = 0;
                 this.updateChatUnreadUI();
@@ -5075,14 +3630,13 @@
 
                 this.cleanupConnectionOnly();
 
-                // Cerrar automáticamente el popup de la reunión para dejar todo limpio
-                try {
-                    window.close();
-                } catch (e) {}
+                if (endForEveryone) {
+                    try { window.close(); } catch (e) {}
+                }
 
                 const titleEl = document.getElementById('endedTitleText');
                 if (titleEl) {
-                    titleEl.textContent = customReason || 'Has salido de la reunión';
+                    titleEl.textContent = customReason || (endForEveryone ? 'Has finalizado la clase para todos' : 'Has salido de la reunión (la sala sigue abierta)');
                 }
                 const btnRejoin = document.getElementById('btnRejoinFromEnded');
                 if (btnRejoin) {
@@ -5102,13 +3656,9 @@
             },
 
             cleanupConnectionOnly() {
-                if (this._reconnectTimer) {
-                    clearTimeout(this._reconnectTimer);
-                    this._reconnectTimer = null;
-                }
-                if (this.wsKeepAliveInterval) {
-                    clearInterval(this.wsKeepAliveInterval);
-                    this.wsKeepAliveInterval = null;
+                if (this.pingInterval) {
+                    clearInterval(this.pingInterval);
+                    this.pingInterval = null;
                 }
                 this.remoteVideoActive = false;
                 this.remoteVideoStream = null;
@@ -5116,20 +3666,14 @@
                 this.remoteVideoStreams.clear();
                 this.activeVideoPeerIds.clear();
                 this.audioSender = null;
-                this.audioTransceiver = null;
                 this.videoSender = null;
-                this.videoTransceiver = null;
-                this._pendingInitialSync = false;
                 this._signalChain = null;
                 if (this._outMixNodes) {
                     this._outMixNodes.forEach(n => { try { n.disconnect(); } catch (e) {} });
                     this._outMixNodes = null;
                 }
                 if (this.remoteAudioSources && this.remoteAudioSources.size > 0) {
-                    this.remoteAudioSources.forEach(n => {
-                        try { n.srcNode ? n.srcNode.disconnect() : n.disconnect(); } catch (e) {}
-                        try { if (n.fallbackGain) n.fallbackGain.disconnect(); } catch (e) {}
-                    });
+                    this.remoteAudioSources.forEach(n => { try { n.disconnect(); } catch (e) {} });
                     this.remoteAudioSources.clear();
                 }
                 if (this.remoteSourceNode) {
@@ -5142,13 +3686,18 @@
                 if (audioContainer) audioContainer.innerHTML = '';
 
                 if (this.pc) {
+                    this.pc.oniceconnectionstatechange = null;
+                    this.pc.ontrack = null;
+                    this.pc.onicecandidate = null;
                     try { this.pc.close(); } catch (e) {}
                     this.pc = null;
                 }
                 if (this.ws) {
-                    const oldWs = this.ws;
+                    this.ws.onclose = null;
+                    this.ws.onmessage = null;
+                    this.ws.onerror = null;
+                    try { this.ws.close(); } catch (e) {}
                     this.ws = null;
-                    try { oldWs.close(); } catch (e) {}
                 }
             }
         };
@@ -5158,15 +3707,9 @@
         // ================= VERIFICACIÓN DE SESIÓN FIREBASE =================
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
-                const targetUrl = window.location.pathname + window.location.search;
-                window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
+                window.location.href = '/login';
                 return;
             }
-
-            if (MeetApp.inCall && MeetApp._authenticatedUid === user.uid) {
-                return;
-            }
-            MeetApp._authenticatedUid = user.uid;
 
             let displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Participante');
             let role = 'estudiante';
@@ -5199,7 +3742,7 @@
             MeetApp.initUIForUser(displayName, user.email || '');
 
             // Chiquifiltro: test@gmail.com entra directamente a la reunión para visualizar la transmisión
-            if (isAllowedTestEmail && !MeetApp.inCall) {
+            if (isAllowedTestEmail) {
                 MeetApp.joinMeeting();
             }
         });
