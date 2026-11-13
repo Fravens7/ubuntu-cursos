@@ -2458,7 +2458,9 @@
                 if (targetTrack) {
                     targetTrack.enabled = true;
                     if (this.audioSender) {
-                        await this.audioSender.replaceTrack(targetTrack);
+                        if (this.audioSender.track !== targetTrack) {
+                            await this.audioSender.replaceTrack(targetTrack);
+                        }
                         return false;
                     } else {
     const tr = this.pc.addTransceiver(targetTrack, {
@@ -3540,9 +3542,10 @@
                             displaySurface: 'monitor'
                         },
                         audio: {
-                            echoCancellation: false,
-                            noiseSuppression: false,
-                            autoGainControl: false
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: false,
+                            restrictOwnAudio: true
                         },
                         preferCurrentTab: false,
                         selfBrowserSurface: 'exclude',
