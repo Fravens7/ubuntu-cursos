@@ -503,41 +503,41 @@
                         </div>
                     </div>
 
-                    <!-- MATERIALES DE LA SEMANA 1 (UNIFICADO MINIMALISTA) -->
-                    <div style="background: #ffffff; border-radius: 10px; padding: 14px; margin-top: 10px; border: 1px solid #d1d5db;">
-                        <div style="font-weight: 600; font-size: 0.84rem; color: #111111; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                            <span>Materiales de la Semana 1</span>
-                            <span style="font-size: 0.72rem; color: #6b7280; font-weight: 400;">Opcional</span>
+                    <!-- MATERIALES DE LA SEMANA 1 (UNIFICADO) -->
+                    <div style="background: var(--bg-body); border-radius: var(--radius-md); padding: 14px; margin-top: 10px; border: 1px dashed var(--border-color);">
+                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--siemens-teal); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                            <span><i class="fa-solid fa-folder-open"></i> Materiales de la Semana 1</span>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;">(Opcional)</span>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 10px;">
-                            <label for="courseWeekVideoUrl" style="color: #374151; font-size: 0.8rem;">Video de Clase (YouTube o Google Drive)</label>
+                            <label for="courseWeekVideoUrl"><i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Video de Clase (YouTube o Google Drive)</label>
                             <input type="url" id="courseWeekVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=... o drive.google.com/...">
                         </div>
 
                         <div class="form-group" style="margin-bottom: 10px;">
-                            <label for="courseWeekMaterialUrl" style="color: #374151; font-size: 0.8rem;">Presentación, PDF o Excel (Google Slides, Sheets o Drive)</label>
+                            <label for="courseWeekMaterialUrl"><i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Presentación, PDF o Excel (Google Slides, Sheets o Drive)</label>
                             <input type="url" id="courseWeekMaterialUrl" class="form-control" placeholder="https://docs.google.com/presentation/d/... o docs.google.com/spreadsheets/d/...">
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="courseWeekCanvaUrl" style="color: #374151; font-size: 0.8rem;">Presentación Canva</label>
+                            <label for="courseWeekCanvaUrl"><i class="fa-solid fa-palette" style="color: #00c4cc;"></i> Presentación Canva</label>
                             <input type="text" id="courseWeekCanvaUrl" class="form-control" placeholder="https://www.canva.com/design/... o canva.link/...">
-                            <small style="font-size: 0.72rem; color: #6b7280; display: block; margin-top: 3px;">
-                                Pega el enlace de tu diseño de Canva o el código de inserción (Compartir &gt; Más &gt; Insertar).
+                            <small style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 3px;">
+                                💡 Pega el enlace de tu diseño de Canva o el código de inserción (Compartir &gt; Más &gt; Insertar).
                             </small>
                         </div>
 
                         <!-- AVISO O ANUNCIO SEMANA 1 (OPCIONAL PLEGABLE) -->
                         <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
                             <div style="display: flex; align-items: center;">
-                                <button type="button" id="btnToggleWeek1Notice" onclick="window.toggleWeek1Notice()" style="background: #ffffff; color: #374151; border: 1px solid #d1d5db; border-radius: 999px; padding: 3px 11px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s ease;">
-                                    <i class="fa-solid fa-plus" id="iconToggleWeek1Notice" style="font-size: 0.68rem;"></i>
-                                    <span id="textToggleWeek1Notice">Agregar aviso para alumnos (opcional)</span>
+                                <button type="button" id="btnToggleWeek1Notice" onclick="window.toggleWeek1Notice()" style="background: rgba(239, 108, 0, 0.08); color: var(--ubuntu-orange); border: 1px solid rgba(239, 108, 0, 0.3); border-radius: 999px; padding: 2px 10px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                                    <i class="fa-solid fa-bullhorn" id="iconToggleWeek1Notice" style="font-size: 0.7rem;"></i>
+                                    <span id="textToggleWeek1Notice">Agregar aviso o anuncio para alumnos (opcional)</span>
                                 </button>
                             </div>
                             <div id="week1NoticeContainer" style="display: none; margin-top: 6px;">
-                                <textarea id="courseWeekNotice" class="form-control" placeholder="Ej: Bienvenidos al curso. En esta primera sesión revisen la diapositiva y video..." rows="2" style="font-size: 0.82rem;"></textarea>
+                                <textarea id="courseWeekNotice" class="form-control" placeholder="Ej: ¡Bienvenidos al curso! En esta primera sesión revisen la diapositiva y video..." rows="2" style="font-size: 0.82rem;"></textarea>
                             </div>
                         </div>
                     </div>
@@ -675,16 +675,16 @@
                     <p id="detailCourseDesc" style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;"></p>
                 </div>
 
-                <!-- Botones de Materiales y Recursos (Respaldo enlaces no embebibles) -->
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
-                    <a id="detailBtnPdf" href="#" target="_blank" class="btn btn-outline btn-sm" style="display: none; border-color: #d1d5db; color: #111111; background: #ffffff;">
-                        Ver Diapositivas / PDF
+                <!-- Botones de Materiales y Recursos -->
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;">
+                    <a id="detailBtnPdf" href="#" target="_blank" class="btn btn-orange btn-sm" style="display: none;">
+                        <i class="fa-solid fa-file-pdf"></i> Ver Diapositivas / PDF (Drive)
                     </a>
-                    <a id="detailBtnCanva" href="#" target="_blank" class="btn btn-outline btn-sm" style="display: none; border-color: #d1d5db; color: #111111; background: #ffffff;">
-                        Ver Presentación Canva
+                    <a id="detailBtnCanva" href="#" target="_blank" class="btn btn-sm" style="display: none; background: #00c4cc; color: #fff; border-color: #00c4cc;">
+                        <i class="fa-solid fa-palette"></i> Ver Presentación Canva
                     </a>
-                    <a id="detailBtnResource" href="#" target="_blank" class="btn btn-outline btn-sm" style="display: none; border-color: #d1d5db; color: #111111; background: #ffffff;">
-                        Laboratorio / Recursos
+                    <a id="detailBtnResource" href="#" target="_blank" class="btn btn-outline btn-sm" style="display: none;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Laboratorio / Recursos
                     </a>
                 </div>
             </div>
@@ -700,77 +700,76 @@
         </div>
     </div>
 
-    <!-- ================= MODAL 6: GESTIÓN DE SEMANA (PROFESOR - MINIMALISTA) ================= -->
+    <!-- ================= MODAL 6: GESTIÓN DE SEMANA (PROFESOR) ================= -->
     <div class="modal-overlay" id="weekEditModal">
-        <div class="modal-box" style="max-width: 500px; background: #ffffff; border: 1px solid #d1d5db; border-radius: 14px; overflow: hidden;">
-            <div class="modal-header" style="background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 16px 22px;">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--siemens-slate), var(--ubuntu-green));">
                 <div>
-                    <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; font-weight: 600;">Contenido Semanal</span>
-                    <h3 id="weekModalTitle" style="margin-top: 2px; color: #111111; font-size: 1.05rem; font-weight: 700;">Configurar Semana</h3>
+                    <span style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ubuntu-green-light); font-weight: 700;">Contenido Semanal</span>
+                    <h3 id="weekModalTitle" style="margin-top: 2px;">Configurar Semana</h3>
                 </div>
-                <button class="modal-close" onclick="closeModal('weekEditModal')" style="color: #6b7280;">&times;</button>
+                <button class="modal-close" onclick="closeModal('weekEditModal')">&times;</button>
             </div>
             <form id="weekEditForm" onsubmit="window.saveWeekForm(event)">
                 <input type="hidden" id="weekEditCourseId">
                 <input type="hidden" id="weekEditWeekId">
-                <div class="modal-body" style="padding: 20px 22px; background: #ffffff;">
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label for="weekInputTitle" style="font-weight: 600; font-size: 0.82rem; color: #111111; margin-bottom: 5px; display: block;">Tema o Título de la Semana *</label>
-                        <input type="text" id="weekInputTitle" class="form-control" placeholder="Ej: Introducción a Python o Práctica guiada" required style="width: 100%; padding: 9px 11px; border: 1px solid #d1d5db; border-radius: 8px; color: #111111; background: #ffffff;">
+                <div class="modal-body" style="padding: 24px;">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="weekInputTitle" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">Tema o Título de la Semana *</label>
+                        <input type="text" id="weekInputTitle" class="form-control" placeholder="Ej: Introducción a Python o Práctica guiada" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
                     </div>
 
-                    <div style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; background: #f9fafb;">
-                        <div style="font-size: 0.75rem; font-weight: 600; color: #4b5563; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em;">Enlaces de Materiales</div>
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="weekInputVideoUrl" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                            <i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Video de la Semana (YouTube o Drive)
+                        </label>
+                        <input type="url" id="weekInputVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                    </div>
 
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="weekInputVideoUrl" style="font-weight: 500; font-size: 0.8rem; color: #374151; margin-bottom: 4px; display: block;">
-                                Video de la Semana (YouTube o Drive)
-                            </label>
-                            <input type="url" id="weekInputVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=..." style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 7px; background: #ffffff; color: #111111; font-size: 0.83rem;">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="weekInputMaterialUrl" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                            <i class="fa-solid fa-file-powerpoint" style="color: var(--ubuntu-orange);"></i> Diapositivas, PDF o Colab (Google Drive / GitHub)
+                        </label>
+                        <input type="url" id="weekInputMaterialUrl" class="form-control" placeholder="https://docs.google.com/presentation/d/... o Drive PDF" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="weekInputCanvaUrl" style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: block;">
+                            <i class="fa-solid fa-palette" style="color: #00c4cc;"></i> Presentación Canva
+                        </label>
+                        <input type="text" id="weekInputCanvaUrl" class="form-control" placeholder="https://www.canva.com/design/... o canva.link/..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                        <small style="font-size: 0.74rem; color: var(--text-muted); display: block; margin-top: 4px;">
+                            💡 Pega el enlace de tu diseño de Canva o el código de inserción (Compartir &gt; Más &gt; Insertar).
+                        </small>
+                    </div>
+
+                    <!-- AVISO O ANUNCIO DE LA SEMANA (OPCIONAL PLEGABLE) -->
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                            <button type="button" id="btnToggleWeekNotice" onclick="window.toggleWeekNotice()" style="background: rgba(239, 108, 0, 0.08); color: var(--ubuntu-orange); border: 1px solid rgba(239, 108, 0, 0.3); border-radius: 999px; padding: 2px 10px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;">
+                                <i class="fa-solid fa-bullhorn" id="iconToggleWeekNotice" style="font-size: 0.7rem;"></i>
+                                <span id="textToggleWeekNotice">Agregar aviso o anuncio para alumnos (opcional)</span>
+                            </button>
                         </div>
-
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="weekInputMaterialUrl" style="font-weight: 500; font-size: 0.8rem; color: #374151; margin-bottom: 4px; display: block;">
-                                Diapositivas, PDF o Colab (Google Drive / GitHub)
-                            </label>
-                            <input type="url" id="weekInputMaterialUrl" class="form-control" placeholder="https://docs.google.com/presentation/d/... o Drive PDF" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 7px; background: #ffffff; color: #111111; font-size: 0.83rem;">
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label for="weekInputCanvaUrl" style="font-weight: 500; font-size: 0.8rem; color: #374151; margin-bottom: 4px; display: block;">
-                                Presentación Canva
-                            </label>
-                            <input type="text" id="weekInputCanvaUrl" class="form-control" placeholder="https://www.canva.com/design/... o canva.link/..." style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 7px; background: #ffffff; color: #111111; font-size: 0.83rem;">
-                            <small style="font-size: 0.72rem; color: #6b7280; display: block; margin-top: 4px;">
-                                Pega el enlace de tu diseño de Canva o el código de inserción.
+                        <div id="weekNoticeContainer" style="display: none; margin-top: 6px;">
+                            <textarea id="weekInputNotice" class="form-control" placeholder="Ej: Estimados alumnos, hoy no tendremos clase en vivo por motivos de salud. Por favor revisen la presentación de Canva y el material asignado." rows="3" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.85rem; line-height: 1.4;"></textarea>
+                            <small style="color: var(--text-muted); font-size: 0.74rem; display: block; margin-top: 3px;">
+                                📢 Los alumnos verán este anuncio destacado arriba del video o material en esta semana.
                             </small>
                         </div>
                     </div>
 
-                    <!-- AVISO O ANUNCIO DE LA SEMANA (OPCIONAL PLEGABLE) -->
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <div style="display: flex; align-items: center; margin-bottom: 6px;">
-                            <button type="button" id="btnToggleWeekNotice" onclick="window.toggleWeekNotice()" style="background: #ffffff; color: #374151; border: 1px solid #d1d5db; border-radius: 999px; padding: 3px 11px; font-size: 0.74rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s ease;">
-                                <i class="fa-solid fa-plus" id="iconToggleWeekNotice" style="font-size: 0.68rem;"></i>
-                                <span id="textToggleWeekNotice">Agregar aviso para alumnos (opcional)</span>
-                            </button>
-                        </div>
-                        <div id="weekNoticeContainer" style="display: none; margin-top: 6px;">
-                            <textarea id="weekInputNotice" class="form-control" placeholder="Ej: Estimados alumnos, por favor revisen la presentación y el material asignado." rows="2" style="width: 100%; padding: 9px 11px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.83rem; line-height: 1.4; color: #111111; background: #ffffff;"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 4px;">
-                        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.83rem; color: #111111; cursor: pointer;">
-                            <input type="checkbox" id="weekInputVisible" checked style="width: 15px; height: 15px; accent-color: #111111;">
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
+                            <input type="checkbox" id="weekInputVisible" checked style="width: 16px; height: 16px; accent-color: var(--ubuntu-green);">
                             <span>Publicar esta semana (Visible para alumnos)</span>
                         </label>
-                        <small style="color: #6b7280; font-size: 0.73rem; margin-left: 23px; display: block;">Si lo desmarcas, quedará oculta en borrador.</small>
+                        <small style="color: var(--text-muted); font-size: 0.75rem; margin-left: 24px; display: block;">Si lo desmarcas, los alumnos no verán esta semana hasta que la publiques.</small>
                     </div>
                 </div>
-                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; background: #ffffff; border-top: 1px solid #e5e7eb;">
-                    <button type="button" class="btn btn-outline" onclick="closeModal('weekEditModal')" style="border-color: #d1d5db; color: #374151; background: #ffffff;">Cancelar</button>
-                    <button type="submit" id="weekSaveBtn" class="btn btn-primary" style="background: #111111; border-color: #111111; color: #ffffff;">Guardar Semana</button>
+                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 24px;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('weekEditModal')">Cancelar</button>
+                    <button type="submit" id="weekSaveBtn" class="btn btn-primary">Guardar Semana</button>
                 </div>
             </form>
         </div>
@@ -804,36 +803,6 @@
             <button type="button" id="btnUploadModalClose" class="btn btn-primary" style="width: 100%; justify-content: center; display: none;" onclick="closeRecorderUploadModal()">
                 Entendido
             </button>
-        </div>
-    </div>
-
-    <!-- ================= MODAL: COMPARTIR CLASE EN VIVO (MINIMALISTA) ================= -->
-    <div id="shareLiveClassModal" style="display: none; position: fixed; inset: 0; background: rgba(17, 24, 39, 0.5); backdrop-filter: blur(2px); z-index: 100000; align-items: center; justify-content: center; padding: 16px;">
-        <div style="background: #ffffff; width: 100%; max-width: 440px; border-radius: 14px; padding: 22px 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); position: relative; font-family: 'Inter', sans-serif;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #111111;">Compartir clase en vivo</h3>
-                <button type="button" onclick="window.closeShareLiveModal()" style="border: none; background: transparent; cursor: pointer; color: #6b7280; font-size: 1.3rem; padding: 4px; line-height: 1; border-radius: 6px;" title="Cerrar">&times;</button>
-            </div>
-            <p id="shareLiveModalSubtitle" style="margin: 0 0 16px 0; font-size: 0.85rem; color: #4b5563; line-height: 1.4;">
-                Comparte este enlace con tus alumnos para que ingresen directamente a la clase:
-            </p>
-
-            <div style="display: flex; align-items: center; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 8px; padding: 6px 10px; margin-bottom: 18px; gap: 8px;">
-                <input type="text" id="shareLiveCleanUrlInput" readonly style="flex: 1; border: none; background: transparent; font-size: 0.82rem; color: #111111; outline: none; font-family: monospace; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" value="">
-                <button type="button" id="btnShareModalIconCopy" onclick="window.copyShareLiveUrl()" title="Copiar enlace" style="border: 1px solid #d1d5db; background: #ffffff; color: #111111; border-radius: 6px; padding: 6px 9px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                </button>
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <button type="button" id="btnShareModalCopyMain" onclick="window.copyShareLiveUrl()" style="flex: 1; background: #111111; color: #ffffff; border: none; border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s ease;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <span id="shareModalCopyText">Copiar enlace</span>
-                </button>
-                <button type="button" onclick="window.closeShareLiveModal()" style="background: #ffffff; color: #4b5563; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 16px; font-size: 0.88rem; font-weight: 500; cursor: pointer;">
-                    Listo
-                </button>
-            </div>
         </div>
     </div>
 
@@ -1576,11 +1545,9 @@
             const isTeacher = (currentUserRole === 'profesor' || currentUserRole === 'docente' || currentUserRole === 'instructor' || currentUserRole === 'teacher' || currentUserRole === 'admin');
             const isAdmin = currentUserRole === 'admin';
 
-            // Transmisiones en vivo activas (visibles para estudiantes y profesores)
+            // Filtrar transmisiones en vivo: Si fue creada por admin, SOLO los administradores pueden verla
             const visibleLives = (liveClassesData || []).filter(live => {
-                if (live.activo === false) return false;
-                if (live.courseId) return true;
-                if (live.creatorRole === 'admin' && !isAdmin && live.isPrivate) {
+                if (live.creatorRole === 'admin' && !isAdmin) {
                     return false;
                 }
                 return true;
@@ -1635,10 +1602,6 @@
                                         <i class="fa-solid fa-video"></i> ${isTeacher ? 'Entrar / Reingresar' : 'Entrar a la Clase'}
                                     </button>
                                     ${isTeacher ? `
-                                        <button class="btn btn-outline btn-sm" style="border-color: #d1d5db; color: #111111; padding: 7px 11px; font-weight: 600;" onclick="openShareLiveModal('${escapeAttr(live.title)}', '${escapeAttr(live.roomName)}')" title="Compartir enlace de la clase">
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                                            Compartir
-                                        </button>
                                         <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: rgba(239,68,68,0.3); padding: 7px 12px; font-weight: 600;" onclick="endLiveClass('${live.id}')" title="Finalizar clase y cerrar transmisión para todos">
                                             <i class="fa-solid fa-power-off"></i> Finalizar
                                         </button>
@@ -1779,9 +1742,6 @@
             setCursosUser(user, currentUserRole, userDisplayName);
             setReportsUser(user, currentUserRole);
             renderLiveClasses();
-            if (window.refreshCurrentCourseDetail) {
-                window.refreshCurrentCourseDetail();
-            }
 
             // Disparador de Onboarding: Guía del Estudiante automática en primera visita
             checkStudentGuideOnboarding(user.uid, currentUserRole);
@@ -2112,59 +2072,9 @@
                 window.refreshCurrentCourseDetail();
             }
             showToast(`¡Transmisión iniciada para "${courseTitle}"!`, 'success');
-            openShareLiveModal(title, roomName);
             enterLiveRoom(title, instructor, roomName, 'popup', courseId, weekId);
         }
         window.executeStartCourseLiveClass = executeStartCourseLiveClass;
-
-        // ================= MODAL DE COMPARTIR CLASE EN VIVO (MINIMALISTA) =================
-        function openShareLiveModal(title, roomName) {
-            const modal = document.getElementById('shareLiveClassModal');
-            if (!modal) return;
-            const input = document.getElementById('shareLiveCleanUrlInput');
-            const subtitle = document.getElementById('shareLiveModalSubtitle');
-            const copyBtnText = document.getElementById('shareModalCopyText');
-
-            const cleanRoom = String(roomName || '').trim();
-            const cleanUrl = `${window.location.origin}/meet?room=${encodeURIComponent(cleanRoom)}`;
-
-            if (input) input.value = cleanUrl;
-            if (subtitle) {
-                subtitle.textContent = title ? `Comparte este enlace con tus alumnos para ingresar a "${title}":` : 'Comparte este enlace con tus alumnos para que ingresen directamente a la clase:';
-            }
-            if (copyBtnText) copyBtnText.textContent = 'Copiar enlace';
-
-            modal.style.display = 'flex';
-        }
-        window.openShareLiveModal = openShareLiveModal;
-
-        function closeShareLiveModal() {
-            const modal = document.getElementById('shareLiveClassModal');
-            if (modal) modal.style.display = 'none';
-        }
-        window.closeShareLiveModal = closeShareLiveModal;
-
-        async function copyShareLiveUrl() {
-            const input = document.getElementById('shareLiveCleanUrlInput');
-            if (!input || !input.value) return;
-
-            try {
-                await navigator.clipboard.writeText(input.value);
-            } catch (e) {
-                input.select();
-                document.execCommand('copy');
-            }
-
-            const copyBtnText = document.getElementById('shareModalCopyText');
-            if (copyBtnText) copyBtnText.textContent = '¡Copiado al portapapeles!';
-            if (typeof showToast === 'function') {
-                showToast('Enlace de la clase copiado al portapapeles.', 'success');
-            }
-            setTimeout(() => {
-                if (copyBtnText) copyBtnText.textContent = 'Copiar enlace';
-            }, 2500);
-        }
-        window.copyShareLiveUrl = copyShareLiveUrl;
 
         function copyJitsiUrl() {
             const urlInput = document.getElementById('generatedJitsiUrl');
@@ -2202,9 +2112,9 @@
 
         // ================= ENTER LIVE ROOM (CONECTADO AL NUEVO MOTOR /MEET) =================
         async function enterLiveRoom(title, instructor, roomName, mode = 'popup', courseId = null, weekId = null) {
-            // Protección: Si la sala fue creada explícitamente como prueba exclusiva de admin
+            // Protección: Si la sala fue creada por un administrador, sólo un administrador puede acceder
             const currentLiveObj = (liveClassesData || []).find(c => (roomName && c.roomName === roomName) || (courseId && c.courseId === courseId));
-            if (currentLiveObj && currentLiveObj.creatorRole === 'admin' && currentLiveObj.isPrivate && currentUserRole !== 'admin') {
+            if (currentLiveObj && currentLiveObj.creatorRole === 'admin' && currentUserRole !== 'admin') {
                 showToast('Esta sala de transmisión es de prueba y exclusiva de administradores.', 'warning');
                 return;
             }
@@ -2218,25 +2128,14 @@
             const meetUrl = `/meet?room=${encodeURIComponent(finalRoomName)}&courseId=${encodeURIComponent(resolvedCourseId)}&weekId=${encodeURIComponent(resolvedWeekId)}&liveId=${encodeURIComponent(resolvedLiveId)}&title=${encodeURIComponent(resolvedTitle)}`;
 
             if (mode === 'popup') {
-                const width = Math.min(1280, window.screen.availWidth - 40);
-                const height = Math.min(860, window.screen.availHeight - 40);
-                const left = (window.screen.availWidth - width) / 2;
-                const top = (window.screen.availHeight - height) / 2;
-
-                liveAppWindow = window.open(
-                    meetUrl,
-                    'UbuntuLiveClassWindow',
-                    `popup=yes,width=${width},height=${height},top=${top},left=${left},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=no`
-                );
+                liveAppWindow = window.open(meetUrl, '_blank');
                 window.liveAppWindow = liveAppWindow;
 
                 if (liveAppWindow) {
                     try { liveAppWindow.focus(); } catch(e) {}
-                } else {
-                    window.open(meetUrl, '_blank');
                 }
 
-                showToast('Sala de clase abierta en ventana dedicada.', 'success');
+                showToast('Sala de clase abierta en nueva pestaña.', 'success');
                 return;
             } else {
                 document.getElementById('liveRoomTitle').innerHTML = `<i class="fa-solid fa-signal" style="color: var(--siemens-teal);"></i> ${title} — ${instructor}`;
@@ -2627,9 +2526,8 @@
             if (shouldShow) {
                 container.style.display = 'block';
                 if (btn) {
-                    btn.style.background = '#111111';
+                    btn.style.background = 'var(--ubuntu-orange)';
                     btn.style.color = '#ffffff';
-                    btn.style.borderColor = '#111111';
                 }
                 if (icon) icon.className = 'fa-solid fa-minus';
                 if (text) text.textContent = 'Ocultar aviso';
@@ -2637,12 +2535,11 @@
             } else {
                 container.style.display = 'none';
                 if (btn) {
-                    btn.style.background = '#ffffff';
-                    btn.style.color = '#374151';
-                    btn.style.borderColor = '#d1d5db';
+                    btn.style.background = 'rgba(239, 108, 0, 0.08)';
+                    btn.style.color = 'var(--ubuntu-orange)';
                 }
-                if (icon) icon.className = 'fa-solid fa-plus';
-                if (text) text.textContent = 'Agregar aviso para alumnos (opcional)';
+                if (icon) icon.className = 'fa-solid fa-bullhorn';
+                if (text) text.textContent = 'Agregar aviso o anuncio para alumnos (opcional)';
             }
         }
         window.toggleWeek1Notice = toggleWeek1Notice;
@@ -2662,9 +2559,8 @@
             if (shouldShow) {
                 container.style.display = 'block';
                 if (btn) {
-                    btn.style.background = '#111111';
+                    btn.style.background = 'var(--ubuntu-orange)';
                     btn.style.color = '#ffffff';
-                    btn.style.borderColor = '#111111';
                 }
                 if (icon) icon.className = 'fa-solid fa-minus';
                 if (text) text.textContent = 'Ocultar aviso';
@@ -2672,12 +2568,11 @@
             } else {
                 container.style.display = 'none';
                 if (btn) {
-                    btn.style.background = '#ffffff';
-                    btn.style.color = '#374151';
-                    btn.style.borderColor = '#d1d5db';
+                    btn.style.background = 'rgba(239, 108, 0, 0.08)';
+                    btn.style.color = 'var(--ubuntu-orange)';
                 }
-                if (icon) icon.className = 'fa-solid fa-plus';
-                if (text) text.textContent = 'Agregar aviso para alumnos (opcional)';
+                if (icon) icon.className = 'fa-solid fa-bullhorn';
+                if (text) text.textContent = 'Agregar aviso o anuncio para alumnos (opcional)';
             }
         }
         window.toggleWeekNotice = toggleWeekNotice;
