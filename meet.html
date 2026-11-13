@@ -2033,19 +2033,83 @@
                 if (el) el.textContent = `${hh}:${mm}`;
             },
 
-            // ================= LOBBY CONTROLS =================
+            // ================= LOBBY & MICROPHONE PERMISSION GUARD =================
+            describeMicError(err) {
+                const name = String(err && err.name ? err.name : '');
+                if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') {
+                    return 'Permiso de micrófono bloqueado en el navegador. Haz clic en el icono de ajustes junto a la URL (arriba a la izquierda), permite el Micrófono y vuelve a activarlo.';
+                }
+                if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+                    return 'No se detectó ningún micrófono conectado en tu equipo.';
+                }
+                if (name === 'NotReadableError' || name === 'TrackStartError') {
+                    return 'Tu micrófono está siendo ocupado por otra aplicación o pestaña. Ciérrala y vuelve a intentar.';
+                }
+                return 'No se pudo activar el micrófono. Verifica los permisos del navegador junto a la URL.';
+            },
+
+            async requestMicrophoneStream() {
+                if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+                    throw Object.assign(new Error('Navegador sin soporte de micrófono'), { name: 'NotSupportedError' });
+                }
+                let stream = null;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        }
+                    });
+                } catch (firstErr) {
+                    const errName = String(firstErr && firstErr.name ? firstErr.name : '');
+                    if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errName === 'NotFoundError' || errName === 'NotReadableError') {
+                        throw firstErr;
+                    }
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+
+                const audioTrack = stream ? stream.getAudioTracks()[0] : null;
+                if (!audioTrack || audioTrack.readyState === 'ended') {
+                    if (stream) stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+                    throw Object.assign(new Error('Pista de micrófono inactiva'), { name: 'NotReadableError' });
+                }
+
+                audioTrack.enabled = true;
+                audioTrack.onended = () => {
+                    if (this.micStream === stream && this.micEnabled) {
+                        this.micEnabled = false;
+                        this.stopMicStream();
+                        this.syncOutgoingAudio();
+                        this.syncControlButtonsUI();
+                        this.showStageToast('El micrófono se desconectó o el navegador revocó el permiso.', 4500);
+                    }
+                };
+
+                if (audioTrack.muted) {
+                    this.showStageToast('Tu micrófono está silenciado a nivel del sistema operativo o botón físico.', 4500);
+                }
+
+                return stream;
+            },
+
             async toggleLobbyMic() {
                 if (this.micEnabled) {
                     this.stopMicStream();
                     this.micEnabled = false;
                 } else {
                     try {
-                        this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        this.stopMicStream();
+                        this.micStream = await this.requestMicrophoneStream();
                         this.micEnabled = true;
                         this.attachLocalAudioAnalyser(this.micStream);
                     } catch (err) {
                         console.warn('Permiso de micrófono denegado o no disponible:', err);
                         this.micEnabled = false;
+                        const msg = this.describeMicError(err);
+                        const pillMic = document.getElementById('pillMicText');
+                        if (pillMic) pillMic.textContent = 'Micrófono: Permiso bloqueado';
+                        alert(msg);
                     }
                 }
                 this.syncControlButtonsUI();
@@ -2232,11 +2296,16 @@
                 const labelEl = document.getElementById('stageParticipantLabel');
                 const fsBtn = document.getElementById('btnStageFullscreen');
 
+                if (stageVideo) {
+                    stageVideo.muted = true;
+                }
+
                 // Prioridad: 1) Pantalla propia, 2) Cámara propia, 3) Video remoto activo, 4) Avatar centrado
                 if (this.screenEnabled && this.screenStream) {
                     if (stageVideo.srcObject !== this.screenStream) {
                         stageVideo.srcObject = this.screenStream;
                     }
+                    stageVideo.muted = true;
                     stageVideo.style.transform = 'none';
                     stageVideo.classList.add('is-visible');
                     stageVideo.play().catch(() => {});
@@ -2451,10 +2520,11 @@
                         }
                     }, 20000);
 
-                    if (this.micEnabled || this.camEnabled || this.screenEnabled) {
-                        await this.publishInitialLobbyTracks();
-                    } else if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                         this.ws.send(JSON.stringify({ type: 'request-sync' }));
+                    }
+                    if (this.micEnabled || this.camEnabled || this.screenEnabled || this._needsOffer) {
+                        await this.publishInitialLobbyTracks();
                     }
                 };
 
@@ -2549,6 +2619,7 @@
                 }
                 this.audioSender = null;
                 this.videoSender = null;
+                this._needsOffer = false;
                 this.pendingCandidates = [];
 
                 this.pc = new RTCPeerConnection({
@@ -2598,6 +2669,8 @@
                         this.attachRemoteAudioAnalyser(stream, safeId);
 
                         const tryPlayAudio = () => {
+                            audioEl.muted = false;
+                            audioEl.volume = 1.0;
                             const playPromise = audioEl.play();
                             if (playPromise !== undefined) {
                                 playPromise.then(() => {
@@ -2615,6 +2688,9 @@
                                     window.addEventListener('touchend', resumeOnGesture, { once: true });
                                 });
                             }
+                        };
+                        e.track.onunmute = () => {
+                            tryPlayAudio();
                         };
                         tryPlayAudio();
                         return;
@@ -2670,33 +2746,50 @@
                 if (this.screenEnabled && this.screenStream) {
                     const screenTrack = this.screenStream.getVideoTracks()[0];
                     if (screenTrack) {
-                        const sTr = this.pc.addTransceiver(screenTrack, {
-                            direction: 'sendonly',
-                            streams: [this.screenStream]
-                        });
-                        this.videoSender = sTr.sender;
-                        added = true;
+                        if (this.videoSender) {
+                            await this.videoSender.replaceTrack(screenTrack);
+                        } else {
+                            const sTr = this.pc.addTransceiver(screenTrack, {
+                                direction: 'sendonly',
+                                streams: [this.screenStream]
+                            });
+                            this.videoSender = sTr.sender;
+                            added = true;
+                        }
                     }
                 } else if (this.camEnabled && this.camStream) {
                     const videoTrack = this.camStream.getVideoTracks()[0];
                     if (videoTrack) {
-                        const vTr = this.pc.addTransceiver(videoTrack, {
-                            direction: 'sendonly',
-                            streams: [this.camStream]
-                        });
-                        this.videoSender = vTr.sender;
-                        added = true;
+                        if (this.videoSender) {
+                            await this.videoSender.replaceTrack(videoTrack);
+                        } else {
+                            const vTr = this.pc.addTransceiver(videoTrack, {
+                                direction: 'sendonly',
+                                streams: [this.camStream]
+                            });
+                            this.videoSender = vTr.sender;
+                            added = true;
+                        }
                     }
                 }
 
-                if (added) {
+                if (added || this.audioSender || this.videoSender || this._needsOffer) {
                     await this.sendOffer();
                 }
             },
 
             async sendOffer() {
+                this._needsOffer = true;
                 return this.enqueueSignalTask(async () => {
-                    if (!this.pc || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+                    if (!this.pc || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                        this._needsOffer = true;
+                        return;
+                    }
+                    if (this.pc.signalingState !== 'stable') {
+                        this._needsOffer = true;
+                        return;
+                    }
+                    this._needsOffer = false;
                     const offer = await this.pc.createOffer();
                     await this.pc.setLocalDescription(offer);
                     this.ws.send(JSON.stringify({
@@ -2864,10 +2957,10 @@
                                 sdp: answer.sdp
                             }));
                         }
-                        if (hadLocalOffer) {
+                        if (hadLocalOffer || this._needsOffer) {
                             setTimeout(() => {
                                 this.sendOffer();
-                            }, 80);
+                            }, 60);
                         }
                         break;
                     }
@@ -2879,6 +2972,11 @@
                                 sdp: msg.sdp
                             }));
                             await this.flushCandidates();
+                            if (this._needsOffer) {
+                                setTimeout(() => {
+                                    this.sendOffer();
+                                }, 40);
+                            }
                         }
                         break;
 
@@ -3356,18 +3454,25 @@
                     try {
                         this.ensureAudioContext();
                         this.unlockAllRemoteAudio();
-                        this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        this.stopMicStream();
+                        this.micStream = await this.requestMicrophoneStream();
                         const audioTrack = this.micStream.getAudioTracks()[0];
                         this.attachLocalAudioAnalyser(this.micStream);
-                        if (audioTrack && this.pc) {
+                        if (audioTrack) {
                             this.micEnabled = true;
-                            const needsOffer = await this.syncOutgoingAudio();
-                            if (needsOffer) {
-                                await this.sendOffer();
+                            if (this.pc) {
+                                const needsOffer = await this.syncOutgoingAudio();
+                                if (needsOffer || this._needsOffer) {
+                                    await this.sendOffer();
+                                }
+                            } else {
+                                this._needsOffer = true;
                             }
                         }
                     } catch (err) {
                         console.warn('No se pudo activar el micrófono:', err);
+                        this.micEnabled = false;
+                        this.showStageToast(this.describeMicError(err), 6500);
                     }
                 }
                 this.syncControlButtonsUI();
