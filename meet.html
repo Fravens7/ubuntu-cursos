@@ -1273,6 +1273,117 @@
                 padding: 6px 10px;
             }
         }
+
+        /* Grilla de tarjetas de participantes con palpitación individual de voz */
+        .voice-participants-grid {
+            position: absolute;
+            inset: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(132px, 164px));
+            justify-content: center;
+            align-content: center;
+            gap: 16px;
+            overflow-y: auto;
+            padding: 8px;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .call-stage.has-shared-screen #voiceParticipantsGrid,
+        .call-stage.has-shared-screen .voice-participants-grid {
+            display: none !important;
+        }
+
+        .voice-participant-card {
+            width: 100%;
+            min-height: 144px;
+            padding: 14px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+        }
+
+        .voice-participant-card.is-speaking {
+            border-color: #111111;
+            box-shadow: 0 8px 24px rgba(17, 17, 17, 0.10);
+        }
+
+        .voice-participant-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #111111;
+            background: #f9fafb;
+            font-size: 24px;
+            font-weight: 600;
+            border: 2px solid #d1d5db;
+            user-select: none;
+            transition: transform 80ms ease-out, box-shadow 80ms ease-out, border-color 100ms ease, background 100ms ease, color 100ms ease;
+            will-change: transform, box-shadow;
+        }
+
+        .voice-participant-card.is-speaking .voice-participant-avatar {
+            border-color: #111111;
+            background: #111111;
+            color: #ffffff;
+            transform: scale(1.07);
+            box-shadow:
+                0 0 0 6px rgba(17, 17, 17, 0.16),
+                0 0 0 12px rgba(17, 17, 17, 0.07);
+        }
+
+        .voice-participant-name {
+            max-width: 136px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #111111;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .voice-participant-meta {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #6b7280;
+            min-height: 15px;
+        }
+
+        @media (max-width: 640px) {
+            .voice-participants-grid {
+                inset: 12px;
+                grid-template-columns: repeat(auto-fit, minmax(104px, 130px));
+                gap: 10px;
+            }
+            .voice-participant-card {
+                min-height: 116px;
+                padding: 10px 8px;
+                border-radius: 12px;
+            }
+            .voice-participant-avatar {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            .voice-participant-name {
+                max-width: 108px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1531,6 +1642,8 @@
                 <div class="stage-avatar-circle" id="stageAvatarInitials">M</div>
             </div>
 
+            <div id="voiceParticipantsGrid" class="voice-participants-grid"></div>
+
             <video id="stageVideo" autoplay playsinline muted disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback"></video>
 
             <div class="stage-bottom-label" id="stageParticipantLabel">Merby</div>
@@ -1752,16 +1865,24 @@
             _signalChain: null,
             _outMixNodes: null,
 
-            // Audio Meter (Chiquiborde / Latido reactivo a voz)
+            // Audio Meter (Chiquiborde / Latido reactivo a voz por participante)
             audioCtx: null,
             localAnalyser: null,
             localSourceNode: null,
             remoteAnalyser: null,
+            remoteAnalysers: new Map(),
             remoteSourceNode: null,
             remoteAudioSources: new Map(),
             voiceDataArray: null,
             smoothedVoiceLevel: 0,
             voiceLoopRunning: false,
+
+            updateVoiceParticipantsLayout() {
+                const stage = document.getElementById('callStage');
+                if (!stage) return;
+                const hasActiveVideo = !!(this.screenEnabled || this.camEnabled || this.remoteVideoActive);
+                stage.classList.toggle('has-shared-screen', hasActiveVideo);
+            },
 
             ensureAudioContext() {
                 if (!this.audioCtx) {
@@ -1807,18 +1928,20 @@
                 try {
                     this.ensureAudioContext();
                     if (!this.audioCtx || !stream) return;
-                    if (!this.remoteAnalyser) {
-                        this.remoteAnalyser = this.audioCtx.createAnalyser();
-                        this.remoteAnalyser.fftSize = 256;
-                        this.remoteAnalyser.smoothingTimeConstant = 0.5;
-                    }
                     const sourceKey = key || stream.id || 'default';
                     if (this.remoteAudioSources.has(sourceKey)) {
                         try { this.remoteAudioSources.get(sourceKey).disconnect(); } catch (e) {}
                     }
+                    if (this.remoteAnalysers.has(sourceKey)) {
+                        try { this.remoteAnalysers.get(sourceKey).disconnect(); } catch (e) {}
+                    }
+                    const analyser = this.audioCtx.createAnalyser();
+                    analyser.fftSize = 256;
+                    analyser.smoothingTimeConstant = 0.5;
                     const srcNode = this.audioCtx.createMediaStreamSource(stream);
-                    srcNode.connect(this.remoteAnalyser);
+                    srcNode.connect(analyser);
                     this.remoteAudioSources.set(sourceKey, srcNode);
+                    this.remoteAnalysers.set(sourceKey, analyser);
                     this.remoteSourceNode = srcNode;
                 } catch (e) {}
             },
@@ -1835,15 +1958,110 @@
                 return Math.sqrt(sumSq / len);
             },
 
+            renderVoiceParticipants(peers) {
+                const grid = document.getElementById('voiceParticipantsGrid');
+                if (!grid) return;
+
+                const list = Array.isArray(peers) ? [...peers] : [];
+                if (this.peerId && !list.some(p => p.peerId === this.peerId)) {
+                    list.unshift({
+                        peerId: this.peerId,
+                        name: this.userName || 'Participante',
+                        role: this.userRole || 'estudiante',
+                        handRaised: this.handRaised
+                    });
+                }
+
+                const sorted = list.sort((a, b) => {
+                    const aRole = String(a.role || '').toLowerCase().trim();
+                    const bRole = String(b.role || '').toLowerCase().trim();
+                    const aHost = (aRole === 'admin' || aRole === 'profesor' || aRole === 'docente' || aRole === 'instructor' || aRole === 'teacher');
+                    const bHost = (bRole === 'admin' || bRole === 'profesor' || bRole === 'docente' || bRole === 'instructor' || bRole === 'teacher');
+                    if (aHost !== bHost) return aHost ? -1 : 1;
+                    return String(a.name || '').localeCompare(String(b.name || ''));
+                });
+
+                grid.innerHTML = sorted.map(peer => {
+                    const peerId = String(peer.peerId || '');
+                    const isSelf = (this.peerId && peerId === this.peerId);
+                    const safeAudId = 'aud_' + peerId.replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const rawName = peer.name || (isSelf ? this.userName : 'Participante') || 'Participante';
+                    const initial = rawName.trim().charAt(0).toUpperCase() || '?';
+                    const pRole = String(peer.role || '').toLowerCase().trim();
+                    const isPeerHost = (pRole === 'admin' || pRole === 'profesor' || pRole === 'docente' || pRole === 'instructor' || pRole === 'teacher');
+
+                    let metaHtml = '';
+                    if (isPeerHost) {
+                        metaHtml = `<span>${pRole === 'admin' ? 'Admin' : 'Profesor'}</span>`;
+                    } else if (peer.handRaised) {
+                        metaHtml = `
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+                                <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+                                <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+                                <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path>
+                            </svg>
+                            <span style="color:#111111;font-weight:600;">Mano</span>
+                        `;
+                    }
+
+                    return `
+                        <div class="voice-participant-card" id="voice-card-${safeAudId}" data-peer-id="${escapeHtml(peerId)}">
+                            <div class="voice-participant-avatar">${escapeHtml(initial)}</div>
+                            <div class="voice-participant-name">${escapeHtml(rawName)}${isSelf ? ' (Tú)' : ''}</div>
+                            <div class="voice-participant-meta">${metaHtml}</div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            updateSpeakingCard(cardKey, rms) {
+                const card = document.getElementById(`voice-card-${cardKey}`);
+                if (!card) return;
+                const avatar = card.querySelector('.voice-participant-avatar');
+
+                const raw = rms < 0.012 ? 0 : Math.min(1, (rms - 0.012) * 8.0);
+                const prev = Number(card._voiceLvl || 0);
+                const lvl = raw > prev ? (prev * 0.4 + raw * 0.6) : (prev * 0.80 + raw * 0.20);
+                card._voiceLvl = lvl;
+
+                const isSpeaking = lvl > 0.025;
+                card.classList.toggle('is-speaking', isSpeaking);
+
+                if (avatar) {
+                    if (isSpeaking) {
+                        const ring1 = (3 + lvl * 11).toFixed(1);
+                        const ring2 = (7 + lvl * 22).toFixed(1);
+                        const alpha1 = (0.14 + lvl * 0.18).toFixed(3);
+                        const alpha2 = (0.06 + lvl * 0.10).toFixed(3);
+                        const scale = (1 + lvl * 0.06).toFixed(3);
+                        avatar.style.transform = `scale(${scale})`;
+                        avatar.style.boxShadow = `0 0 0 ${ring1}px rgba(17, 17, 17, ${alpha1}), 0 0 0 ${ring2}px rgba(17, 17, 17, ${alpha2})`;
+                    } else {
+                        avatar.style.transform = '';
+                        avatar.style.boxShadow = '';
+                    }
+                }
+            },
+
             runVoicePulseLoop() {
                 const step = () => {
                     let maxRms = 0;
+                    let localRms = 0;
                     if (this.micEnabled && this.localAnalyser) {
-                        maxRms = Math.max(maxRms, this.readAnalyserRms(this.localAnalyser));
+                        localRms = this.readAnalyserRms(this.localAnalyser);
+                        maxRms = Math.max(maxRms, localRms);
                     }
-                    if (this.remoteAnalyser) {
-                        maxRms = Math.max(maxRms, this.readAnalyserRms(this.remoteAnalyser));
+                    if (this.peerId) {
+                        const selfCardKey = 'aud_' + String(this.peerId).replace(/[^a-zA-Z0-9_-]/g, '_');
+                        this.updateSpeakingCard(selfCardKey, this.micEnabled ? localRms : 0);
                     }
+
+                    this.remoteAnalysers.forEach((analyser, peerKey) => {
+                        const rms = this.readAnalyserRms(analyser);
+                        this.updateSpeakingCard(peerKey, rms);
+                        maxRms = Math.max(maxRms, rms);
+                    });
 
                     const rawLevel = maxRms < 0.01 ? 0 : Math.min(1, (maxRms - 0.01) * 8.0);
                     if (rawLevel > this.smoothedVoiceLevel) {
@@ -2283,14 +2501,21 @@
                     window.NuevoMotorGrabaciones.mountMeetControls(this);
                 }
 
+                if (!this.peerId) {
+                    const prefix = this.isHostUser() ? 'adm_' : 'est_';
+                    this.peerId = prefix + Math.random().toString(36).substring(2, 8);
+                }
+
                 this.startSessionTimer(this.sessionStartTimeMs);
                 this.syncControlButtonsUI();
                 this.renderChatMessages();
+                this.renderVoiceParticipants(this.currentRoomPeers);
                 this.updateStageDisplay();
                 this.connectSignaling();
             },
 
             updateStageDisplay() {
+                this.updateVoiceParticipantsLayout();
                 const stageVideo = document.getElementById('stageVideo');
                 const avatarBox = document.getElementById('stageAvatarBox');
                 const labelEl = document.getElementById('stageParticipantLabel');
@@ -2300,7 +2525,7 @@
                     stageVideo.muted = true;
                 }
 
-                // Prioridad: 1) Pantalla propia, 2) Cámara propia, 3) Video remoto activo, 4) Avatar centrado
+                // Prioridad: 1) Pantalla propia, 2) Cámara propia, 3) Video remoto activo, 4) Grilla de participantes
                 if (this.screenEnabled && this.screenStream) {
                     if (stageVideo.srcObject !== this.screenStream) {
                         stageVideo.srcObject = this.screenStream;
@@ -2310,7 +2535,10 @@
                     stageVideo.classList.add('is-visible');
                     stageVideo.play().catch(() => {});
                     avatarBox.style.display = 'none';
-                    labelEl.textContent = `${this.userName} (Compartiendo pantalla)`;
+                    if (labelEl) {
+                        labelEl.style.display = '';
+                        labelEl.textContent = `${this.userName} (Compartiendo pantalla)`;
+                    }
                     if (fsBtn) fsBtn.classList.add('is-visible');
                     return;
                 }
@@ -2323,7 +2551,10 @@
                     stageVideo.classList.add('is-visible');
                     stageVideo.play().catch(() => {});
                     avatarBox.style.display = 'none';
-                    labelEl.textContent = this.userName;
+                    if (labelEl) {
+                        labelEl.style.display = '';
+                        labelEl.textContent = this.userName;
+                    }
                     if (fsBtn) fsBtn.classList.add('is-visible');
                     return;
                 }
@@ -2336,7 +2567,10 @@
                     stageVideo.classList.add('is-visible');
                     stageVideo.play().catch(() => {});
                     avatarBox.style.display = 'none';
-                    labelEl.textContent = this.remoteSharingName || 'Participante';
+                    if (labelEl) {
+                        labelEl.style.display = '';
+                        labelEl.textContent = this.remoteSharingName || 'Participante';
+                    }
                     if (fsBtn) fsBtn.classList.add('is-visible');
                     return;
                 }
@@ -2350,8 +2584,15 @@
                 if (callStage && callStage.classList.contains('is-pseudo-fullscreen')) {
                     callStage.classList.remove('is-pseudo-fullscreen');
                 }
-                avatarBox.style.display = 'flex';
-                labelEl.textContent = this.userName;
+                avatarBox.style.display = 'none';
+                if (labelEl) {
+                    labelEl.style.display = 'none';
+                    labelEl.textContent = this.userName;
+                }
+                const grid = document.getElementById('voiceParticipantsGrid');
+                if (grid && grid.children.length === 0) {
+                    this.renderVoiceParticipants(this.currentRoomPeers);
+                }
             },
 
             unlockAllRemoteAudio() {
@@ -2829,12 +3070,17 @@
                                 try { this.remoteAudioSources.get(safeAudId).disconnect(); } catch (e) {}
                                 this.remoteAudioSources.delete(safeAudId);
                             }
+                            if (this.remoteAnalysers.has(safeAudId)) {
+                                try { this.remoteAnalysers.get(safeAudId).disconnect(); } catch (e) {}
+                                this.remoteAnalysers.delete(safeAudId);
+                            }
                             const audEl = document.getElementById(safeAudId);
                             if (audEl) audEl.remove();
                             this.handleRemoteVideoStopped(msg.peerId);
                         }
                         if (msg.peers) {
                             this.currentRoomPeers = msg.peers;
+                            this.renderVoiceParticipants(msg.peers);
                             this.renderPeers(msg.peers);
                             msg.peers.forEach(p => {
                                 if (p.peerId !== this.peerId) {
@@ -2887,6 +3133,7 @@
                         }
                         if (msg.peers) {
                             this.currentRoomPeers = msg.peers;
+                            this.renderVoiceParticipants(msg.peers);
                             this.renderPeers(msg.peers);
                         }
                         break;
@@ -3533,26 +3780,61 @@
                     return;
                 }
 
+                if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
+                    this.showStageToast('Este navegador móvil/tablet no soporta compartir pantalla web. Prueba desde iPad (Safari) o PC.', 5000);
+                    return;
+                }
+
+                const ua = navigator.userAgent || '';
+                const isIPadOrIOS = /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                const isAndroid = /Android/i.test(ua);
+                const isSafari = /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(ua);
+                const isTabletOrTouch = isIPadOrIOS || isAndroid || (navigator.maxTouchPoints > 1 && window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
                 try {
-                    const stream = await navigator.mediaDevices.getDisplayMedia({
-                        video: {
-                            width: { ideal: 1920, max: 1920 },
-                            height: { ideal: 1080, max: 1080 },
-                            frameRate: { ideal: 24, max: 30 },
-                            displaySurface: 'monitor'
-                        },
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: false,
-                            restrictOwnAudio: true
-                        },
-                        preferCurrentTab: false,
-                        selfBrowserSurface: 'exclude',
-                        systemAudio: 'include',
-                        surfaceSwitching: 'include',
-                        monitorTypeSurfaces: 'include'
-                    });
+                    let stream = null;
+                    if (isIPadOrIOS || isSafari) {
+                        // En iPadOS / Safari se llama directo con { video: true } en el primer gesto táctil
+                        // (evita TypeError por constraints max/restrictOwnAudio y conserva la activación de usuario).
+                        stream = await navigator.mediaDevices.getDisplayMedia({
+                            video: true
+                        });
+                    } else if (isTabletOrTouch) {
+                        try {
+                            stream = await navigator.mediaDevices.getDisplayMedia({
+                                video: true,
+                                audio: true
+                            });
+                        } catch (touchErr) {
+                            const errName = String(touchErr && touchErr.name ? touchErr.name : '');
+                            if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errName === 'AbortError') {
+                                throw touchErr;
+                            }
+                            stream = await navigator.mediaDevices.getDisplayMedia({
+                                video: true
+                            });
+                        }
+                    } else {
+                        try {
+                            stream = await navigator.mediaDevices.getDisplayMedia({
+                                video: {
+                                    width: { ideal: 1920 },
+                                    height: { ideal: 1080 },
+                                    frameRate: { ideal: 24 }
+                                },
+                                audio: true,
+                                systemAudio: 'include'
+                            });
+                        } catch (deskErr) {
+                            const errName = String(deskErr && deskErr.name ? deskErr.name : '');
+                            if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errName === 'AbortError') {
+                                throw deskErr;
+                            }
+                            stream = await navigator.mediaDevices.getDisplayMedia({
+                                video: true
+                            });
+                        }
+                    }
 
                     // Si tenía cámara encendida, apagar cámara para mostrar la pantalla
                     if (this.camEnabled) {
@@ -3563,8 +3845,8 @@
                     this.screenStream = stream;
                     this.screenEnabled = true;
 
-                    // Chiquiaviso inmediato si el profesor olvidó activar la pastilla "Share with system audio"
-                    if (stream.getAudioTracks().length === 0) {
+                    // Chiquiaviso inmediato en PC si el profesor olvidó activar la pastilla "Share with system audio"
+                    if (!isTabletOrTouch && !isSafari && stream.getAudioTracks().length === 0) {
                         this.showNoAudioNotice();
                     } else {
                         this.hideNoAudioNotice();
@@ -3604,7 +3886,11 @@
                     this.syncControlButtonsUI();
                     this.updateStageDisplay();
                 } catch (err) {
-                    console.warn('Compartir pantalla cancelado:', err);
+                    const errName = String(err && err.name ? err.name : '');
+                    if (errName && errName !== 'NotAllowedError' && errName !== 'PermissionDeniedError' && errName !== 'AbortError') {
+                        this.showStageToast('Este navegador o tablet no permite compartir pantalla desde la web.', 4500);
+                    }
+                    console.warn('Compartir pantalla cancelado o no compatible:', err);
                 }
             },
 
@@ -3783,6 +4069,10 @@
                 if (this.remoteAudioSources && this.remoteAudioSources.size > 0) {
                     this.remoteAudioSources.forEach(n => { try { n.disconnect(); } catch (e) {} });
                     this.remoteAudioSources.clear();
+                }
+                if (this.remoteAnalysers && this.remoteAnalysers.size > 0) {
+                    this.remoteAnalysers.forEach(a => { try { a.disconnect(); } catch (e) {} });
+                    this.remoteAnalysers.clear();
                 }
                 if (this.remoteSourceNode) {
                     try { this.remoteSourceNode.disconnect(); } catch (e) {}
